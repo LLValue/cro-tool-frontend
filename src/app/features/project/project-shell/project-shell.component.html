@@ -1,0 +1,42 @@
+<div class="project-shell">
+  <mat-sidenav-container class="shell-container">
+    <mat-sidenav mode="side" opened class="project-nav">
+      <mat-nav-list class="project-nav-list">
+        <a mat-list-item [routerLink]="['/projects', projectId, 'setup']" routerLinkActive="active">
+          <mat-icon class="nav-icon">settings</mat-icon>
+          <span class="nav-text">Setup</span>
+        </a>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'points']" routerLinkActive="active">
+          <mat-icon class="nav-icon">gps_fixed</mat-icon>
+          <span class="nav-text">Points</span>
+        </a>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'context']" routerLinkActive="active">
+          <mat-icon class="nav-icon">description</mat-icon>
+          <span class="nav-text">Context</span>
+        </a>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'variants']" routerLinkActive="active">
+          <mat-icon class="nav-icon">view_module</mat-icon>
+          <span class="nav-text">Variants</span>
+        </a>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'goals']" routerLinkActive="active">
+          <mat-icon class="nav-icon">flag</mat-icon>
+          <span class="nav-text">Goals</span>
+        </a>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'reporting']" routerLinkActive="active">
+          <mat-icon class="nav-icon">analytics</mat-icon>
+          <span class="nav-text">Reporting</span>
+        </a>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'preview']" routerLinkActive="active">
+          <mat-icon class="nav-icon">preview</mat-icon>
+          <span class="nav-text">Preview</span>
+        </a>
+      </mat-nav-list>
+    </mat-sidenav>
+    <mat-sidenav-content>
+      <div class="project-content">
+        <router-outlet></router-outlet>
+      </div>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>
+

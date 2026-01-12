@@ -1,0 +1,101 @@
+<app-page-header title="Settings"></app-page-header>
+
+<mat-tab-group>
+  <mat-tab label="Appearance">
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>Appearance Settings</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="appearanceForm" class="settings-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Theme Color</mat-label>
+            <mat-select formControlName="theme" (selectionChange)="onThemeChange()">
+              <mat-option value="purple">Purple</mat-option>
+              <mat-option value="blue">Blue</mat-option>
+              <mat-option value="green">Green</mat-option>
+              <mat-option value="orange">Orange</mat-option>
+              <mat-option value="red">Red</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="toggle-section">
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <h4>Dark Mode</h4>
+                <p>Switch to dark theme for better visibility in low light</p>
+              </div>
+              <mat-slide-toggle formControlName="darkMode"></mat-slide-toggle>
+            </div>
+
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <h4>Compact Mode</h4>
+                <p>Reduce spacing for a more compact interface</p>
+              </div>
+              <mat-slide-toggle formControlName="compactMode"></mat-slide-toggle>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button mat-raised-button color="primary" (click)="onAppearanceSave()">
+              <mat-icon>save</mat-icon>
+              Save Appearance Settings
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+
+  <mat-tab label="General">
+    <mat-card class="settings-card">
+      <mat-card-header>
+        <mat-card-title>General Settings</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="generalForm" class="settings-form">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Language</mat-label>
+            <mat-select formControlName="language">
+              <mat-option value="en">English</mat-option>
+              <mat-option value="es">Spanish</mat-option>
+              <mat-option value="fr">French</mat-option>
+              <mat-option value="de">German</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Timezone</mat-label>
+            <mat-select formControlName="timezone">
+              <mat-option value="UTC">UTC</mat-option>
+              <mat-option value="America/New_York">Eastern Time</mat-option>
+              <mat-option value="America/Chicago">Central Time</mat-option>
+              <mat-option value="America/Denver">Mountain Time</mat-option>
+              <mat-option value="America/Los_Angeles">Pacific Time</mat-option>
+              <mat-option value="Europe/London">London</mat-option>
+              <mat-option value="Europe/Paris">Paris</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Date Format</mat-label>
+            <mat-select formControlName="dateFormat">
+              <mat-option value="MM/DD/YYYY">MM/DD/YYYY</mat-option>
+              <mat-option value="DD/MM/YYYY">DD/MM/YYYY</mat-option>
+              <mat-option value="YYYY-MM-DD">YYYY-MM-DD</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="actions">
+            <button mat-raised-button color="primary" (click)="onGeneralSave()">
+              <mat-icon>save</mat-icon>
+              Save General Settings
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+</mat-tab-group>
+

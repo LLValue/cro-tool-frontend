@@ -1,0 +1,84 @@
+<app-page-header title="Projects">
+  <button mat-raised-button color="primary" (click)="openCreateDialog()" class="create-button">
+    <mat-icon>add</mat-icon>
+    Create Project
+  </button>
+</app-page-header>
+
+<div class="projects-container">
+  <mat-card class="projects-card">
+    <mat-card-content class="table-container">
+      <table mat-table [dataSource]="projects" class="projects-table">
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let project">
+            <div class="project-name-cell">
+              <mat-icon class="project-icon">folder</mat-icon>
+              <span class="project-name">{{ project.name }}</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="pageUrl">
+          <th mat-header-cell *matHeaderCellDef>URL</th>
+          <td mat-cell *matCellDef="let project">
+            <a [href]="project.pageUrl" target="_blank" class="url-link">
+              <mat-icon>link</mat-icon>
+              {{ project.pageUrl }}
+            </a>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="updatedAt">
+          <th mat-header-cell *matHeaderCellDef>Last Updated</th>
+          <td mat-cell *matCellDef="let project">
+            <div class="date-cell">
+              <mat-icon>schedule</mat-icon>
+              {{ project.updatedAt | date:'short' }}
+            </div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let project">
+            <mat-chip [class]="'status-' + project.status">
+              {{ project.status | titlecase }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let project">
+            <div class="actions-cell">
+              <button mat-icon-button (click)="openProject(project.id)" matTooltip="Open" color="primary">
+                <mat-icon>open_in_new</mat-icon>
+              </button>
+              <button mat-icon-button (click)="duplicateProject(project)" matTooltip="Duplicate" color="accent">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="deleteProject(project)" matTooltip="Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns" class="table-header"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+      </table>
+
+      <div *ngIf="projects.length === 0" class="empty-state">
+        <mat-icon class="empty-icon">folder_open</mat-icon>
+        <h3>No projects yet</h3>
+        <p>Create your first project to get started</p>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          Create Project
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+

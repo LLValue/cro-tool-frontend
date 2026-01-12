@@ -1,0 +1,108 @@
+<app-page-header title="Profile Settings"></app-page-header>
+
+<mat-tab-group>
+  <mat-tab label="Email">
+    <mat-card class="profile-card">
+      <mat-card-header>
+        <mat-card-title>Change Email</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="emailForm" (ngSubmit)="onEmailChange()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Current Email</mat-label>
+            <input matInput formControlName="currentEmail" readonly>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>New Email</mat-label>
+            <input matInput type="email" formControlName="newEmail" required>
+            <mat-error *ngIf="emailForm.get('newEmail')?.hasError('required')">
+              New email is required
+            </mat-error>
+            <mat-error *ngIf="emailForm.get('newEmail')?.hasError('email')">
+              Invalid email format
+            </mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Confirm New Email</mat-label>
+            <input matInput type="email" formControlName="confirmEmail" required>
+            <mat-error *ngIf="emailForm.get('confirmEmail')?.hasError('required')">
+              Please confirm your email
+            </mat-error>
+            <mat-error *ngIf="emailForm.hasError('emailMismatch')">
+              Emails do not match
+            </mat-error>
+          </mat-form-field>
+          <button mat-raised-button color="primary" type="submit" [disabled]="emailForm.invalid">
+            <mat-icon>save</mat-icon>
+            Update Email
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+
+  <mat-tab label="Password">
+    <mat-card class="profile-card">
+      <mat-card-header>
+        <mat-card-title>Change Password</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="passwordForm" (ngSubmit)="onPasswordChange()">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Current Password</mat-label>
+            <input matInput type="password" formControlName="currentPassword" required>
+            <mat-error *ngIf="passwordForm.get('currentPassword')?.hasError('required')">
+              Current password is required
+            </mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>New Password</mat-label>
+            <input matInput type="password" formControlName="newPassword" required>
+            <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('required')">
+              New password is required
+            </mat-error>
+            <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('minlength')">
+              Password must be at least 6 characters
+            </mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Confirm New Password</mat-label>
+            <input matInput type="password" formControlName="confirmPassword" required>
+            <mat-error *ngIf="passwordForm.get('confirmPassword')?.hasError('required')">
+              Please confirm your password
+            </mat-error>
+            <mat-error *ngIf="passwordForm.hasError('passwordMismatch')">
+              Passwords do not match
+            </mat-error>
+          </mat-form-field>
+          <button mat-raised-button color="primary" type="submit" [disabled]="passwordForm.invalid">
+            <mat-icon>lock</mat-icon>
+            Update Password
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+
+  <mat-tab label="Avatar">
+    <mat-card class="profile-card">
+      <mat-card-header>
+        <mat-card-title>Change Avatar</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="avatar-section">
+          <div class="avatar-preview">
+            <img [src]="avatarUrl" alt="Avatar Preview" />
+          </div>
+          <input type="file" id="avatar-input" accept="image/*" (change)="onAvatarChange($event)" style="display: none;">
+          <button mat-raised-button color="primary" (click)="triggerAvatarInput()">
+            <mat-icon>photo_camera</mat-icon>
+            Choose Image
+          </button>
+          <p class="avatar-hint">Recommended: Square image, at least 200x200 pixels</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </mat-tab>
+</mat-tab-group>
+

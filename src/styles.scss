@@ -1,0 +1,593 @@
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+// CSS Variables for theming
+:root {
+  --theme-primary: #673ab7;
+  --theme-accent: #9c27b0;
+}
+
+// Global styles
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+  background: #f5f5f5;
+  color: #212121;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+// Custom scrollbar
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+
+  &:hover {
+    background: #555;
+  }
+}
+
+// Material overrides
+.mat-card {
+  border-radius: 12px !important;
+}
+
+// Increase spacing between mat-card-header and mat-card-content
+.mat-mdc-card-header {
+  margin-bottom: 24px !important;
+}
+
+.mat-card-header {
+  margin-bottom: 24px !important;
+}
+
+// Hide empty form field hint/error wrapper to prevent empty space
+// Hide the spacer completely - it only reserves space and shows nothing
+.mat-mdc-form-field-hint-spacer {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  visibility: hidden !important;
+}
+
+// Hide hint wrapper when empty
+.mat-mdc-form-field-hint-wrapper:empty {
+  display: none !important;
+  min-height: 0 !important;
+  height: 0 !important;
+}
+
+// Hide subscript wrapper by default, show only when there are errors
+.mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+// Show subscript wrapper only when there are actual errors
+.mat-mdc-form-field-subscript-wrapper:has(.mat-mdc-form-field-error-wrapper .mat-mdc-form-field-error:not(:empty)) {
+  display: block !important;
+  min-height: auto !important;
+  height: auto !important;
+}
+
+// Also show when there are actual hints (not just spacer)
+.mat-mdc-form-field-subscript-wrapper:has(.mat-mdc-form-field-hint-wrapper .mat-mdc-form-field-hint:not(:empty)) {
+  display: block !important;
+  min-height: auto !important;
+  height: auto !important;
+}
+
+.mat-raised-button {
+  border-radius: 8px !important;
+}
+
+.mat-form-field-appearance-outline .mat-form-field-outline {
+  border-radius: 8px;
+}
+
+// Dark mode styles - Material Design Dark Theme
+body.dark-mode {
+  background: #121212;
+  color: #ffffff;
+
+  // Main content
+  .main-content {
+    background: #121212;
+    color: #ffffff;
+  }
+
+  // Sidebar
+  .sidenav {
+    background: #1e1e1e;
+    color: #ffffff;
+    border-right-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .sidenav-header {
+    background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-accent) 100%);
+  }
+
+  .user-profile-section {
+    background: #1e1e1e;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .user-name {
+    color: #ffffff;
+  }
+
+  .user-email {
+    color: #ffffff;
+  }
+
+  .nav-list {
+    background: #1e1e1e;
+
+    a {
+      color: #ffffff;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      &.active {
+        background: rgba(103, 58, 183, 0.2);
+      }
+    }
+  }
+
+  .nav-icon {
+    color: #ffffff;
+  }
+
+  // Toolbar
+  .main-toolbar {
+    background: #1e1e1e !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .toolbar-title {
+    color: #ffffff;
+  }
+
+  .menu-toggle {
+    color: #ffffff !important;
+
+    .mat-icon,
+    mat-icon {
+      color: #ffffff !important;
+    }
+
+    &:hover {
+      color: var(--theme-primary) !important;
+
+      .mat-icon,
+      mat-icon {
+        color: var(--theme-primary) !important;
+      }
+    }
+  }
+
+  .toolbar-actions {
+    button.mat-mdc-icon-button,
+    button[mat-icon-button] {
+      color: #ffffff !important;
+
+      .mat-icon,
+      mat-icon {
+        color: #ffffff !important;
+      }
+
+      &:hover {
+        color: var(--theme-primary) !important;
+
+        .mat-icon,
+        mat-icon {
+          color: var(--theme-primary) !important;
+        }
+      }
+    }
+  }
+
+  .user-actions {
+    button.mat-mdc-icon-button,
+    button[mat-icon-button] {
+      color: #ffffff !important;
+
+      .mat-icon,
+      mat-icon {
+        color: #ffffff !important;
+      }
+
+      &:hover {
+        color: var(--theme-primary) !important;
+
+        .mat-icon,
+        mat-icon {
+          color: var(--theme-primary) !important;
+        }
+      }
+    }
+  }
+
+  .nav-list {
+    a[mat-list-item] {
+      .nav-label,
+      span.nav-label {
+        color: #ffffff !important;
+      }
+
+      &.active {
+        .nav-label,
+        span.nav-label {
+          color: var(--theme-primary) !important;
+        }
+      }
+
+      &:hover {
+        .nav-label,
+        span.nav-label {
+          color: var(--theme-primary) !important;
+        }
+      }
+    }
+  }
+
+  .project-nav-list,
+  .nav-list {
+    a[mat-list-item] {
+      .nav-text,
+      span.nav-text,
+      .mdc-list-item__primary-text .nav-text,
+      .mdc-list-item__primary-text .nav-label {
+        color: #ffffff !important;
+      }
+
+      &.active {
+        .nav-text,
+        span.nav-text,
+        .mdc-list-item__primary-text .nav-text,
+        .mdc-list-item__primary-text .nav-label {
+          color: var(--theme-primary) !important;
+        }
+      }
+
+      &:hover {
+        .nav-text,
+        span.nav-text,
+        .mdc-list-item__primary-text .nav-text,
+        .mdc-list-item__primary-text .nav-label {
+          color: var(--theme-primary) !important;
+        }
+      }
+    }
+  }
+
+  // Cards
+  mat-card {
+    background: #1e1e1e !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .mat-mdc-card-title,
+  .mat-card-title {
+    color: #ffffff !important;
+  }
+
+  .mat-mdc-card-subtitle,
+  .mat-card-subtitle {
+    color: #ffffff !important;
+  }
+
+  // Form fields
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .mat-mdc-form-field-label {
+      color: #ffffff !important;
+    }
+
+    mat-label {
+      color: #ffffff !important;
+    }
+
+    .mdc-floating-label,
+    .mat-mdc-floating-label {
+      color: #ffffff !important;
+
+      mat-label {
+        color: #ffffff !important;
+      }
+    }
+
+    .mat-mdc-input-element {
+      color: #ffffff;
+    }
+
+    .mat-mdc-form-field-outline {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    &.mat-focused {
+      .mat-mdc-form-field-outline {
+        color: var(--theme-primary);
+      }
+
+      mat-label,
+      .mat-mdc-form-field-label,
+      .mdc-floating-label,
+      .mat-mdc-floating-label {
+        color: var(--theme-primary) !important;
+
+        mat-label {
+          color: var(--theme-primary) !important;
+        }
+      }
+    }
+  }
+
+  // Select fields
+  .mat-mdc-select {
+    .mat-mdc-select-min-line,
+    .mat-mdc-select-value {
+      color: #ffffff !important;
+    }
+
+    .mat-mdc-select-placeholder {
+      color: #ffffff !important;
+    }
+
+    .mat-mdc-select-arrow {
+      color: #ffffff !important;
+    }
+  }
+
+  // Buttons
+  .mat-mdc-button,
+  .mat-mdc-raised-button,
+  .mat-mdc-outlined-button {
+    color: #ffffff;
+
+    &.mat-primary {
+      background-color: var(--theme-primary);
+      color: white;
+    }
+  }
+
+  // Lists
+  .mat-mdc-list-item {
+    color: #ffffff;
+  }
+
+  // Tabs
+  .mat-mdc-tab-group {
+    .mat-mdc-tab-label {
+      color: #ffffff;
+
+      &.mdc-tab--active {
+        color: var(--theme-primary);
+      }
+    }
+
+    .mdc-tab__text-label {
+      color: #ffffff !important;
+    }
+
+    .mdc-tab--active .mdc-tab__text-label {
+      color: var(--theme-primary) !important;
+    }
+
+    .mat-mdc-tab-header {
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+    }
+  }
+
+  // Page header
+  .page-header {
+    background: #1e1e1e;
+    color: #ffffff;
+  }
+
+  // Settings specific
+  .toggle-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+
+    h4 {
+      color: #ffffff;
+    }
+
+    p {
+      color: #ffffff;
+    }
+  }
+
+  // Tables
+  .mat-mdc-table {
+    background: #1e1e1e;
+    color: #ffffff;
+  }
+
+  .mat-mdc-header-cell {
+    color: #ffffff;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .mat-mdc-cell {
+    color: #ffffff;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  // Dividers
+  mat-divider {
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
+
+  // Chips
+  .mat-mdc-chip {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  // Scrollbar
+  ::-webkit-scrollbar-track {
+    background: #1e1e1e;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  // Preview section styles
+  .preview-section {
+    .preview-header {
+      h3 {
+        color: #ffffff !important;
+      }
+
+      button {
+        color: #ffffff !important;
+
+        .mat-icon,
+        mat-icon {
+          color: #ffffff !important;
+        }
+
+        &:hover {
+          color: var(--theme-primary) !important;
+
+          .mat-icon,
+          mat-icon {
+            color: var(--theme-primary) !important;
+          }
+        }
+      }
+    }
+
+    .preview-wrapper {
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      background: #1e1e1e !important;
+    }
+
+    .preview-content {
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      background: #1e1e1e !important;
+    }
+
+    .selection-controls {
+      button {
+        color: #ffffff !important;
+
+        .mat-icon,
+        mat-icon {
+          color: #ffffff !important;
+        }
+      }
+    }
+  }
+
+  // Points header
+  .points-header {
+    h3 {
+      color: #ffffff !important;
+    }
+
+    button {
+      color: #ffffff !important;
+
+      .mat-icon,
+      mat-icon {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  // Mandatory claims
+  .mandatory-claims {
+    h4 {
+      color: #ffffff !important;
+    }
+
+    button {
+      color: #ffffff !important;
+
+      .mat-icon,
+      mat-icon {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  // Variants container
+  .variants-container {
+    h3 {
+      color: #ffffff !important;
+    }
+  }
+
+  .variants-header {
+    h3 {
+      color: #ffffff !important;
+    }
+  }
+
+  .points-list {
+    h3 {
+      color: #ffffff !important;
+    }
+  }
+
+  // Material chips
+  mat-chip {
+    .mdc-evolution-chip__text-label,
+    .mat-mdc-chip-action-label {
+      color: #ffffff !important;
+    }
+
+    &.selected {
+      .mdc-evolution-chip__text-label,
+      .mat-mdc-chip-action-label {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  // List items
+  .mat-mdc-list-item {
+    p {
+      color: #ffffff !important;
+    }
+
+    .mdc-list-item__primary-text {
+      color: #ffffff !important;
+    }
+  }
+}
+

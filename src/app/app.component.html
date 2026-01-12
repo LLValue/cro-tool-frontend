@@ -1,0 +1,90 @@
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav #sidenav mode="side" [opened]="(authService.isLoggedIn$ | async) || false" class="sidenav" *ngIf="authService.isLoggedIn$ | async">
+    <div class="sidenav-header">
+      <div class="logo-section">
+        <div class="logo-icon"></div>
+        <span class="logo-text">CRO Tool</span>
+      </div>
+    </div>
+
+    <div class="user-profile-section">
+      <div class="user-avatar">
+        <img src="https://cdn.iconscout.com/icon/free/png-256/free-avatar-icon-svg-download-png-456322.png" alt="User Avatar" />
+      </div>
+      <div class="user-info">
+        <div class="user-name">{{ (authService.isLoggedIn$ | async) ? 'Admin User' : 'Guest' }}</div>
+        <div class="user-email">{{ (authService.isLoggedIn$ | async) ? 'admin@crotool.com' : 'guest@example.com' }}</div>
+      </div>
+      <div class="user-actions">
+        <button mat-icon-button matTooltip="Settings" routerLink="/settings">
+          <mat-icon>settings</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Profile" routerLink="/profile">
+          <mat-icon>person</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Logout" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <mat-nav-list class="nav-list">
+      <a mat-list-item routerLink="/projects" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}">
+        <mat-icon class="nav-icon">folder</mat-icon>
+        <span class="nav-label">Projects</span>
+      </a>
+      <a mat-list-item routerLink="/debug/mock-settings" routerLinkActive="active">
+        <mat-icon class="nav-icon">settings</mat-icon>
+        <span class="nav-label">Mock Settings</span>
+      </a>
+      <mat-divider></mat-divider>
+      <a mat-list-item *ngIf="authService.isLoggedIn$ | async" (click)="logout()">
+        <mat-icon class="nav-icon">logout</mat-icon>
+        <span class="nav-label">Logout</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="main-toolbar" color="primary">
+      <button mat-icon-button (click)="sidenav.toggle()" class="menu-toggle" *ngIf="authService.isLoggedIn$ | async">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="toolbar-title">CRO Tool Admin</span>
+      <span class="spacer"></span>
+      <div class="toolbar-actions" *ngIf="authService.isLoggedIn$ | async">
+        <button mat-icon-button matTooltip="Fullscreen" (click)="toggleFullscreen()">
+          <mat-icon>fullscreen</mat-icon>
+        </button>
+        <button mat-icon-button matTooltip="Notifications" class="notification-button">
+          <mat-icon>notifications</mat-icon>
+          <span class="notification-badge" *ngIf="notificationCount > 0">{{ notificationCount }}</span>
+        </button>
+        <div class="user-menu">
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-avatar-button">
+            <img src="https://cdn.iconscout.com/icon/free/png-256/free-avatar-icon-svg-download-png-456322.png" alt="User Avatar" class="toolbar-avatar" />
+          </button>
+          <mat-menu #userMenu="matMenu">
+            <button mat-menu-item routerLink="/profile">
+              <mat-icon>person</mat-icon>
+              <span>Profile</span>
+            </button>
+            <button mat-menu-item routerLink="/settings">
+              <mat-icon>settings</mat-icon>
+              <span>Settings</span>
+            </button>
+            <mat-divider></mat-divider>
+            <button mat-menu-item (click)="logout()">
+              <mat-icon>logout</mat-icon>
+              <span>Logout</span>
+            </button>
+          </mat-menu>
+        </div>
+      </div>
+    </mat-toolbar>
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
+
