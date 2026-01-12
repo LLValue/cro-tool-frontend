@@ -55,6 +55,7 @@ import { Subscription } from 'rxjs';
                   (click)="selectPoint(point.id)">
           <mat-card-content>
             <strong>{{ point.name }}</strong>
+            <p *ngIf="point.text">{{ point.text }}</p>
             <p *ngIf="point.selector"><code>{{ point.selector }}</code></p>
             <p *ngIf="!point.selector" class="no-selector">No selector set</p>
           </mat-card-content>

@@ -3,6 +3,7 @@ export interface OptimizationPointDto {
   projectId: string;
   name: string;
   selector: string;
+  text: string;
   objective: string;
   generationRules: string;
   createdAt: string; // ISO string
@@ -12,6 +13,7 @@ export interface OptimizationPointDto {
 export interface CreatePointRequest {
   name: string;
   selector?: string;
+  text?: string;
   objective?: string;
   generationRules?: string;
 }
@@ -19,6 +21,7 @@ export interface CreatePointRequest {
 export interface UpdatePointRequest {
   name?: string;
   selector?: string;
+  text?: string;
   objective?: string;
   generationRules?: string;
 }

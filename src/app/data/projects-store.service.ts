@@ -212,6 +212,7 @@ export class ProjectsStoreService {
     const req = {
       name: point.name || 'New Point',
       selector: point.selector || '',
+      text: point.text || '',
       objective: point.objective || '',
       generationRules: point.generationRules || ''
     };
@@ -235,6 +236,7 @@ export class ProjectsStoreService {
     const req: any = {};
     if (updates.name !== undefined) req.name = updates.name;
     if (updates.selector !== undefined) req.selector = updates.selector;
+    if (updates.text !== undefined) req.text = updates.text;
     if (updates.objective !== undefined) req.objective = updates.objective;
     if (updates.generationRules !== undefined) req.generationRules = updates.generationRules;
 

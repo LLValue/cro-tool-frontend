@@ -22,6 +22,7 @@ export interface OptimizationPoint {
   projectId: string;
   name: string;
   selector: string;
+  text: string;
   objective: string;
   generationRules: string;
 }

@@ -123,6 +123,7 @@ import { SelectorInputDialogComponent } from './selector-input-dialog/selector-i
             <mat-card-title>{{ point.name }}</mat-card-title>
           </mat-card-header>
           <mat-card-content>
+            <p *ngIf="point.text"><strong>Text:</strong> {{ point.text }}</p>
             <p *ngIf="point.selector"><strong>Selector:</strong> <code>{{ point.selector }}</code></p>
             <p *ngIf="!point.selector" class="no-selector">No selector set</p>
           </mat-card-content>
@@ -718,7 +719,8 @@ export class PointsComponent implements OnInit, OnDestroy {
       width: '600px',
       data: {
         suggestedName: this.selectedText || 'New Point',
-        suggestedSelector: this.currentSelector || ''
+        suggestedSelector: this.currentSelector || '',
+        suggestedText: this.selectedText || ''
       }
     });
 
@@ -735,6 +737,7 @@ export class PointsComponent implements OnInit, OnDestroy {
         const newPoint: Partial<OptimizationPoint> = {
           name: result.name.trim(),
           selector: result.selector.trim(),
+          text: result.text?.trim() || this.selectedText || '',
           objective: '',
           generationRules: ''
         };
@@ -979,6 +982,7 @@ export class PointsComponent implements OnInit, OnDestroy {
         const newPoint: Partial<OptimizationPoint> = {
           name: name.trim(),
           selector: this.currentSelector,
+          text: this.selectedText || '',
           objective: '',
           generationRules: ''
         };

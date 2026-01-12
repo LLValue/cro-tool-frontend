@@ -44,6 +44,7 @@ export class PointsApiService {
       projectId: dto.projectId,
       name: dto.name,
       selector: dto.selector,
+      text: dto.text || '',
       objective: dto.objective,
       generationRules: dto.generationRules
     };

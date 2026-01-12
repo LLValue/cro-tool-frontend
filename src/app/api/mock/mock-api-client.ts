@@ -401,6 +401,7 @@ export class MockApiClient implements ApiClient {
       projectId,
       name: req.name,
       selector: req.selector || '',
+      text: req.text || '',
       objective: req.objective || '',
       generationRules: req.generationRules || '',
       createdAt: new Date().toISOString(),
