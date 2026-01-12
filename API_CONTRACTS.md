@@ -825,6 +825,7 @@ Authorization: Bearer <token>
   {
     "id": "string",
     "projectId": "string",
+    "name": "string",
     "type": "clickSelector" | "urlReached" | "dataLayerEvent",
     "isPrimary": "boolean",
     "value": "string",
@@ -857,6 +858,7 @@ Content-Type: application/json
 {
   "goals": [
     {
+      "name": "string (required)",
       "type": "clickSelector" | "urlReached" | "dataLayerEvent",
       "isPrimary": "boolean",
       "value": "string (required)"
@@ -871,6 +873,7 @@ Content-Type: application/json
   {
     "id": "string",
     "projectId": "string",
+    "name": "string",
     "type": "clickSelector" | "urlReached" | "dataLayerEvent",
     "isPrimary": "boolean",
     "value": "string",
@@ -889,11 +892,12 @@ Content-Type: application/json
 **Response 422:**
 ```json
 {
-  "message": "Goal value is required" | "Event name must be 50 characters or less"
+  "message": "Goal name is required" | "Goal value is required" | "Event name must be 50 characters or less"
 }
 ```
 
 **Validaciones:**
+- `name`: Requerido para todos los goals
 - `value`: Requerido para todos los goals
 - Si `type === "dataLayerEvent"`, el `value` debe tener máximo 50 caracteres
 - Debe haber exactamente un goal con `isPrimary: true`

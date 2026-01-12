@@ -347,6 +347,7 @@ export class ProjectsStoreService {
   // Goals
   setGoals(projectId: string, goals: Goal[]): void {
     const goalsToSet = goals.map(g => ({
+      name: g.name,
       type: g.type,
       isPrimary: g.isPrimary,
       value: g.value

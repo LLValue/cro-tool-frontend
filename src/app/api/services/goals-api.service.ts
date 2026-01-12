@@ -24,6 +24,7 @@ export class GoalsApiService {
   setGoals(projectId: string, goals: Omit<Goal, 'id' | 'projectId'>[]): Observable<Goal[]> {
     const req: SetGoalsRequest = {
       goals: goals.map(g => ({
+        name: g.name,
         type: g.type,
         isPrimary: g.isPrimary,
         value: g.value
@@ -38,6 +39,7 @@ export class GoalsApiService {
     return {
       id: dto.id,
       projectId: dto.projectId,
+      name: dto.name,
       type: dto.type,
       isPrimary: dto.isPrimary,
       value: dto.value

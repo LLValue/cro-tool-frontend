@@ -602,6 +602,13 @@ export class MockApiClient implements ApiClient {
 
     // Validation
     for (const goal of req.goals) {
+      if (!goal.name || goal.name.trim().length === 0) {
+        return throwError(() => new HttpErrorResponse({
+          status: 422,
+          statusText: 'Unprocessable Entity',
+          error: { message: 'Goal name is required' }
+        }));
+      }
       if (!goal.value || goal.value.trim().length === 0) {
         return throwError(() => new HttpErrorResponse({
           status: 422,

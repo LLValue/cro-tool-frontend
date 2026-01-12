@@ -40,6 +40,10 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
         <mat-card-content>
           <form [formGroup]="primaryGoalForm">
             <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Goal Name</mat-label>
+              <input matInput formControlName="name" placeholder="e.g., Primary Conversion">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width">
               <mat-label>Goal Type</mat-label>
               <mat-select formControlName="type">
                 <mat-option value="clickSelector">Click Selector</mat-option>
@@ -63,6 +67,10 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
           <form [formGroup]="secondaryGoalsForm">
             <div formArrayName="goals">
               <div *ngFor="let goal of goalsArray.controls; let i = index" [formGroupName]="i" class="goal-row">
+                <mat-form-field appearance="outline" class="goal-name">
+                  <mat-label>Name</mat-label>
+                  <input matInput formControlName="name" placeholder="e.g., Secondary Goal">
+                </mat-form-field>
                 <mat-form-field appearance="outline" class="goal-type">
                   <mat-label>Type</mat-label>
                   <mat-select formControlName="type">
@@ -122,8 +130,11 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
       align-items: center;
       margin-bottom: 16px;
     }
-    .goal-type {
+    .goal-name {
       width: 200px;
+    }
+    .goal-type {
+      width: 180px;
     }
     .goal-value {
       flex: 1;
@@ -142,6 +153,7 @@ export class GoalsComponent implements OnInit {
     private toast: ToastHelperService
   ) {
     this.primaryGoalForm = this.fb.group({
+      name: ['Primary Goal', Validators.required],
       type: ['clickSelector', Validators.required],
       value: ['', Validators.required]
     });
@@ -167,6 +179,7 @@ export class GoalsComponent implements OnInit {
       const primary = goals.find(g => g.isPrimary);
       if (primary) {
         this.primaryGoalForm.patchValue({
+          name: primary.name,
           type: primary.type,
           value: primary.value
         });
@@ -176,6 +189,7 @@ export class GoalsComponent implements OnInit {
       this.goalsArray.clear();
       secondary.forEach(goal => {
         this.goalsArray.push(this.fb.group({
+          name: [goal.name, Validators.required],
           type: [goal.type, Validators.required],
           value: [goal.value, Validators.required]
         }));
@@ -185,6 +199,7 @@ export class GoalsComponent implements OnInit {
 
   addSecondaryGoal(): void {
     this.goalsArray.push(this.fb.group({
+      name: ['', Validators.required],
       type: ['clickSelector', Validators.required],
       value: ['', Validators.required]
     }));
@@ -228,14 +243,20 @@ export class GoalsComponent implements OnInit {
   }
 
   getPrimaryGoalSummary(): string {
+    const name = this.primaryGoalForm.get('name')?.value;
     const type = this.primaryGoalForm.get('type')?.value;
     const value = this.primaryGoalForm.get('value')?.value;
-    return `${type}: ${value || 'Not set'}`;
+    if (!name && !type && !value) return 'Not set';
+    return `${name || 'Unnamed'}: ${type} - ${value || 'Not set'}`;
   }
 
   getSecondaryGoalsSummary(): string {
     const count = this.goalsArray.length;
-    return count === 0 ? 'None' : `${count} goal(s)`;
+    if (count === 0) return 'None';
+    const names = this.goalsArray.controls
+      .map(control => control.get('name')?.value || 'Unnamed')
+      .filter(name => name);
+    return names.length > 0 ? names.join(', ') : `${count} goal(s)`;
   }
 
   saveGoals(): void {
