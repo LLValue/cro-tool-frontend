@@ -236,7 +236,7 @@ export class GoalsComponent implements OnInit {
   getPlaceholderForType(type: string): string {
     switch (type) {
       case 'clickSelector': return '.cta-button';
-      case 'urlReached': return 'https://pack.stage.es/?packageId=209&from=app&success=true';
+      case 'urlReached': return 'https://pack.stage.es';
       case 'dataLayerEvent': return 'purchase';
       default: return '';
     }

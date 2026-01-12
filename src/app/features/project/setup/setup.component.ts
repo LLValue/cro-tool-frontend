@@ -271,7 +271,7 @@ export class SetupComponent implements OnInit {
     
     // Use default URL if not configured (for development)
     if (!urlToUse || !urlToUse.trim()) {
-      this.pageUrl = 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same';
+      this.pageUrl = 'https://pack.stage.es';
     } else {
       this.pageUrl = urlToUse;
     }

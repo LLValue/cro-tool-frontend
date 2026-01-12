@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -8,7 +8,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
-import { debounceTime } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
+import { debounceTime, map } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
@@ -162,12 +163,14 @@ import { ChipsInputComponent } from '../../../shared/chips-input/chips-input.com
     }
   `]
 })
-export class ContextComponent implements OnInit {
+export class ContextComponent implements OnInit, OnDestroy {
   globalForm: FormGroup;
   pointForm: FormGroup;
   projectId: string = '';
   points: OptimizationPoint[] = [];
   mandatoryClaims: FormArray;
+  private subscriptions = new Subscription();
+  private isUpdatingForm = false;
 
   constructor(
     private fb: FormBuilder,
@@ -195,43 +198,151 @@ export class ContextComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe((params: any) => {
-      this.projectId = params['projectId'];
-      const project = this.store.getProject(this.projectId);
-      if (project) {
-        this.globalForm.patchValue({
-          language: project.language,
-          pageContext: project.pageContext,
-          croGuidelines: project.croGuidelines,
-          brandGuardrails: project.brandGuardrails,
-          forbiddenWords: project.forbiddenWords || [],
-          toneAllowed: project.toneAllowed || [],
-          toneDisallowed: project.toneDisallowed || []
-        });
-        project.mandatoryClaims?.forEach(claim => {
-          this.mandatoryClaims.push(this.fb.control(claim));
-        });
+    // Get projectId from multiple sources (for nested routes)
+    const getProjectId = (): string | null => {
+      // Try current route params first
+      const currentParams = this.route.snapshot.params;
+      if (currentParams['projectId']) {
+        return currentParams['projectId'];
       }
+      // Try parent route params (for nested routes)
+      const parentParams = this.route.snapshot.parent?.params;
+      if (parentParams?.['projectId']) {
+        return parentParams['projectId'];
+      }
+      return null;
+    };
+
+    const initialProjectId = getProjectId();
+    if (initialProjectId) {
+      this.projectId = initialProjectId;
+      this.loadProjectData();
       this.loadPoints();
+    }
+
+    // Subscribe to params changes (both current and parent)
+    const paramsSub = this.route.params.subscribe((params: any) => {
+      const newProjectId = params['projectId'];
+      if (newProjectId && newProjectId !== this.projectId) {
+        this.projectId = newProjectId;
+        this.loadProjectData();
+        this.loadPoints();
+      }
     });
+    this.subscriptions.add(paramsSub);
+
+    // Also subscribe to parent params (for nested routes)
+    if (this.route.parent) {
+      const parentParamsSub = this.route.parent.params.subscribe((params: any) => {
+        const newProjectId = params['projectId'];
+        if (newProjectId && newProjectId !== this.projectId) {
+          this.projectId = newProjectId;
+          this.loadProjectData();
+          this.loadPoints();
+        }
+      });
+      this.subscriptions.add(parentParamsSub);
+    }
 
     // Autosave with debounce
-    this.globalForm.valueChanges.pipe(debounceTime(500)).subscribe(() => {
-      this.saveGlobal();
+    const globalFormSub = this.globalForm.valueChanges.pipe(debounceTime(500)).subscribe(() => {
+      if (!this.isUpdatingForm) {
+        this.saveGlobal();
+      }
     });
+    this.subscriptions.add(globalFormSub);
 
-    this.pointForm.valueChanges.pipe(debounceTime(500)).subscribe(() => {
-      this.savePoint();
+    const pointFormSub = this.pointForm.valueChanges.pipe(debounceTime(500)).subscribe(() => {
+      if (!this.isUpdatingForm) {
+        this.savePoint();
+      }
     });
+    this.subscriptions.add(pointFormSub);
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  private getProjectId(): string {
+    // Try current route params first
+    const currentParams = this.route.snapshot.params;
+    if (currentParams['projectId']) {
+      return currentParams['projectId'];
+    }
+    // Try parent route params (for nested routes)
+    const parentParams = this.route.snapshot.parent?.params;
+    if (parentParams?.['projectId']) {
+      return parentParams['projectId'];
+    }
+    // Fallback to instance variable
+    return this.projectId || '';
+  }
+
+  private loadProjectData(): void {
+    const projectId = this.getProjectId();
+    if (!projectId) {
+      return;
+    }
+    this.projectId = projectId; // Update instance variable
+
+    const project = this.store.getProject(this.projectId);
+    if (project) {
+      this.isUpdatingForm = true;
+      this.globalForm.patchValue({
+        language: project.language,
+        pageContext: project.pageContext,
+        croGuidelines: project.croGuidelines,
+        brandGuardrails: project.brandGuardrails,
+        forbiddenWords: project.forbiddenWords || [],
+        toneAllowed: project.toneAllowed || [],
+        toneDisallowed: project.toneDisallowed || []
+      }, { emitEvent: false });
+      // Clear existing mandatory claims
+      while (this.mandatoryClaims.length !== 0) {
+        this.mandatoryClaims.removeAt(0);
+      }
+      project.mandatoryClaims?.forEach(claim => {
+        this.mandatoryClaims.push(this.fb.control(claim), { emitEvent: false });
+      });
+      this.isUpdatingForm = false;
+    }
   }
 
   loadPoints(): void {
-    this.store.listPoints(this.projectId).subscribe({
+    // Ensure projectId is set from route
+    const projectId = this.getProjectId();
+    if (!projectId) {
+      return;
+    }
+    this.projectId = projectId; // Update instance variable
+
+    // Subscribe to points$ observable and filter by projectId
+    // This will automatically update when points are added/updated/deleted
+    const currentProjectId = this.projectId; // Capture for closure
+    const pointsSub = this.store.points$.pipe(
+      map((allPoints: OptimizationPoint[]) => allPoints.filter(p => p.projectId === currentProjectId))
+    ).subscribe({
       next: (points: OptimizationPoint[]) => {
         this.points = points;
-        if (points.length > 0 && !this.pointForm.get('pointId')?.value) {
-          this.pointForm.patchValue({ pointId: points[0].id });
-          this.loadPointData(points[0].id);
+        const currentPointId = this.pointForm.get('pointId')?.value;
+        
+        // If no point is selected or the selected point no longer exists, select the first one
+        if (points.length > 0) {
+          if (!currentPointId || !points.find(p => p.id === currentPointId)) {
+            this.isUpdatingForm = true;
+            this.pointForm.patchValue({ pointId: points[0].id }, { emitEvent: false });
+            this.isUpdatingForm = false;
+            this.loadPointData(points[0].id);
+          } else {
+            // Reload data for currently selected point in case it was updated
+            this.loadPointData(currentPointId);
+          }
+        } else {
+          // No points available, clear the form
+          this.isUpdatingForm = true;
+          this.pointForm.patchValue({ pointId: '', objective: '', generationRules: '' }, { emitEvent: false });
+          this.isUpdatingForm = false;
         }
       },
       error: () => {
@@ -239,10 +350,26 @@ export class ContextComponent implements OnInit {
         this.points = [];
       }
     });
+    this.subscriptions.add(pointsSub);
 
-    this.pointForm.get('pointId')?.valueChanges.subscribe((pointId: string) => {
-      if (pointId) {
+    // Subscribe to pointId changes (only once)
+    const pointIdSub = this.pointForm.get('pointId')?.valueChanges.subscribe((pointId: string) => {
+      if (pointId && !this.isUpdatingForm) {
         this.loadPointData(pointId);
+      }
+    });
+    if (pointIdSub) {
+      this.subscriptions.add(pointIdSub);
+    }
+
+    // Trigger initial load from API
+    // Use the captured projectId from above
+    this.store.listPoints(currentProjectId).subscribe({
+      next: () => {
+        // Points will be updated via the points$ subscription above
+      },
+      error: () => {
+        // Silently handle error
       }
     });
   }
@@ -250,10 +377,12 @@ export class ContextComponent implements OnInit {
   loadPointData(pointId: string): void {
     const point = this.points.find(p => p.id === pointId);
     if (point) {
+      this.isUpdatingForm = true;
       this.pointForm.patchValue({
         objective: point.objective,
         generationRules: point.generationRules
-      });
+      }, { emitEvent: false });
+      this.isUpdatingForm = false;
     }
   }
 

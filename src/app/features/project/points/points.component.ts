@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, Renderer2 } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, Renderer2, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,8 +18,9 @@ import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { PreviewService } from '../../../shared/preview.service';
 import { Subscription, combineLatest } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { take, map } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
+import { SelectorInputDialogComponent } from './selector-input-dialog/selector-input-dialog.component';
 
 @Component({
   selector: 'app-points',
@@ -55,22 +56,40 @@ import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-brows
           </button>
         </div>
         <div *ngIf="selectionMode && currentSelector" class="selector-display">
-          <strong>Current Selector:</strong> <code>{{ currentSelector }}</code>
+          <div><strong>Selected Text:</strong> <span>{{ selectedText || 'No text' }}</span></div>
+          <div><strong>CSS Selector:</strong> <code>{{ currentSelector }}</code></div>
+          <div *ngIf="useIframe && !canAccessIframe && selectionMode" class="iframe-warning">
+            <mat-icon>warning</mat-icon>
+            <span>Cross-origin iframe detected. Cannot select elements directly.</span>
+            <div class="iframe-warning-actions">
+              <button mat-button (click)="attemptLoadHtmlDirectly()">
+                <mat-icon>refresh</mat-icon>
+                Try Load HTML
+              </button>
+              <button mat-raised-button color="primary" (click)="openManualSelectorDialog()">
+                <mat-icon>edit</mat-icon>
+                Enter Selector Manually
+              </button>
+            </div>
+          </div>
         </div>
         <div #previewContainer class="preview-wrapper" [class.selection-mode]="selectionMode">
           <iframe 
             *ngIf="useIframe && safeIframeUrl" 
+            #previewIframe
             [src]="safeIframeUrl" 
             class="preview-iframe"
-            frameborder="0">
+            frameborder="0"
+            (load)="onIframeLoad()">
           </iframe>
           <div 
             *ngIf="!useIframe" 
             class="preview-content" 
             [innerHTML]="safePreviewHtml" 
-            (click)="onPreviewClick($event)">
+            (click)="onPreviewClick($event)"
+            (mouseover)="onPreviewMouseOver($event)"
+            (mouseout)="onPreviewMouseOut($event)">
           </div>
-          <div *ngIf="selectionMode && !useIframe" class="selection-overlay" [style.display]="hoveredElement ? 'block' : 'none'"></div>
         </div>
         <div *ngIf="selectionMode" class="selection-controls">
           <button mat-button (click)="selectParent()">
@@ -96,6 +115,9 @@ import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-brows
             Add Point
           </button>
         </div>
+        <div *ngIf="points.length === 0" class="empty-points">
+          <p>No optimization points yet. Click "Add Point" to create one.</p>
+        </div>
         <mat-card *ngFor="let point of points" class="point-card" [class.selected]="selectedPointId === point.id">
           <mat-card-header>
             <mat-card-title>{{ point.name }}</mat-card-title>
@@ -105,17 +127,8 @@ import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-brows
             <p *ngIf="!point.selector" class="no-selector">No selector set</p>
           </mat-card-content>
           <mat-card-actions>
-            <button mat-button (click)="startSelection(point.id)" *ngIf="!point.selector">
-              <mat-icon>gps_fixed</mat-icon>
-              Start Selection
-            </button>
-            <button mat-button (click)="editPoint(point)">
-              <mat-icon>edit</mat-icon>
-              Edit
-            </button>
-            <button mat-button color="warn" (click)="deletePoint(point.id)">
+            <button mat-icon-button color="warn" (click)="deletePoint(point.id)" matTooltip="Delete point">
               <mat-icon>delete</mat-icon>
-              Delete
             </button>
           </mat-card-actions>
         </mat-card>
@@ -172,6 +185,15 @@ import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-brows
     .points-list-section {
       overflow-y: auto;
     }
+    .empty-points {
+      padding: 24px;
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+    .point-card {
+      margin-bottom: 16px;
+    }
     .preview-header {
       display: flex;
       justify-content: space-between;
@@ -192,6 +214,43 @@ import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-brows
       border-radius: 3px;
       font-family: monospace;
       color: #1976d2;
+    }
+    .selector-display > div {
+      margin-bottom: 8px;
+    }
+    .selector-display > div:last-child {
+      margin-bottom: 0;
+    }
+    .iframe-warning {
+      margin-top: 12px;
+      padding: 12px;
+      background: #fff3cd;
+      border-left: 3px solid #ffc107;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #856404;
+    }
+    .iframe-warning > div:first-child {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .iframe-warning mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .iframe-warning-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .iframe-warning-actions button {
+      font-size: 12px;
+      padding: 4px 12px;
+      min-width: auto;
     }
     .points-header {
       display: flex;
@@ -280,6 +339,7 @@ import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-brows
 })
 export class PointsComponent implements OnInit, OnDestroy {
   @ViewChild('previewContainer', { static: false }) previewContainer!: ElementRef;
+  @ViewChild('previewIframe', { static: false }) previewIframe!: ElementRef<HTMLIFrameElement>;
   
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
@@ -291,12 +351,17 @@ export class PointsComponent implements OnInit, OnDestroy {
   selectionMode = false;
   selectedPointId: string | null = null;
   hoveredElement: HTMLElement | null = null;
+  selectedElement: HTMLElement | null = null;
   currentSelector: string = '';
+  selectedText: string = '';
   viewMode: 'desktop' | 'mobile' = 'desktop';
   useIframe: boolean = false;
   pageUrl: string = '';
   safeIframeUrl: SafeResourceUrl = '';
+  iframeLoaded: boolean = false;
+  canAccessIframe: boolean = false;
   private subscriptions = new Subscription();
+  private pointsSubscription: Subscription | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -306,27 +371,93 @@ export class PointsComponent implements OnInit, OnDestroy {
     private toast: ToastHelperService,
     private sanitizer: DomSanitizer,
     private renderer: Renderer2,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.projectId = params['projectId'];
-      // Load project first, then load points and variants
+    // Get projectId from multiple sources (for nested routes)
+    const getProjectId = (): string | null => {
+      // Try current route params first
+      const currentParams = this.route.snapshot.params;
+      if (currentParams['projectId']) {
+        return currentParams['projectId'];
+      }
+      // Try parent route params (for nested routes)
+      const parentParams = this.route.snapshot.parent?.params;
+      if (parentParams?.['projectId']) {
+        return parentParams['projectId'];
+      }
+      return null;
+    };
+
+    const initialProjectId = getProjectId();
+    if (initialProjectId) {
+      this.projectId = initialProjectId;
       this.loadProject();
+    }
+    
+    // Subscribe to params changes (both current and parent)
+    this.route.params.subscribe(params => {
+      const newProjectId = params['projectId'];
+      if (newProjectId && newProjectId !== this.projectId) {
+        this.projectId = newProjectId;
+        // Unsubscribe from previous subscriptions
+        this.subscriptions.unsubscribe();
+        this.subscriptions = new Subscription();
+        // Load project first, then load points and variants
+        this.loadProject();
+      }
     });
+
+    // Also subscribe to parent params (for nested routes)
+    if (this.route.parent) {
+      this.route.parent.params.subscribe(params => {
+        const newProjectId = params['projectId'];
+        if (newProjectId && newProjectId !== this.projectId) {
+          this.projectId = newProjectId;
+          // Unsubscribe from previous subscriptions
+          this.subscriptions.unsubscribe();
+          this.subscriptions = new Subscription();
+          // Load project first, then load points and variants
+          this.loadProject();
+        }
+      });
+    }
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
 
+  private getProjectId(): string {
+    // Try current route params first
+    const currentParams = this.route.snapshot.params;
+    if (currentParams['projectId']) {
+      return currentParams['projectId'];
+    }
+    // Try parent route params (for nested routes)
+    const parentParams = this.route.snapshot.parent?.params;
+    if (parentParams?.['projectId']) {
+      return parentParams['projectId'];
+    }
+    // Fallback to instance variable
+    return this.projectId || '';
+  }
+
   loadProject(): void {
+    // Ensure projectId is set from route
+    const projectId = this.getProjectId();
+    if (!projectId) {
+      return;
+    }
+    this.projectId = projectId; // Update instance variable
+    
     // First try to get from store (synchronous, faster)
     const storeProject = this.store.getProject(this.projectId);
     if (storeProject) {
       this.project = storeProject;
-      this.pageUrl = storeProject.pageUrl || 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same';
+      this.pageUrl = storeProject.pageUrl || 'https://pack.stage.es';
       this.loadPagePreview();
       this.loadPoints();
       this.loadVariants();
@@ -339,7 +470,7 @@ export class PointsComponent implements OnInit, OnDestroy {
         const foundProject = projects.find(p => p.id === this.projectId);
         if (foundProject) {
           this.project = foundProject;
-          this.pageUrl = foundProject.pageUrl || 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same';
+          this.pageUrl = foundProject.pageUrl || 'https://pack.stage.es';
           this.loadPagePreview();
           this.loadPoints();
           this.loadVariants();
@@ -348,7 +479,7 @@ export class PointsComponent implements OnInit, OnDestroy {
           this.projectsApi.getProject(this.projectId).subscribe({
             next: project => {
               this.project = project;
-              this.pageUrl = project.pageUrl || 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same';
+              this.pageUrl = project.pageUrl || 'https://pack.stage.es';
               this.loadPagePreview();
               this.loadPoints();
               this.loadVariants();
@@ -365,7 +496,7 @@ export class PointsComponent implements OnInit, OnDestroy {
         this.projectsApi.getProject(this.projectId).subscribe({
           next: project => {
             this.project = project;
-            this.pageUrl = project.pageUrl || 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same';
+            this.pageUrl = project.pageUrl || 'https://pack.stage.es';
             this.loadPagePreview();
             this.loadPoints();
             this.loadVariants();
@@ -384,7 +515,7 @@ export class PointsComponent implements OnInit, OnDestroy {
     this.project = {
       id: this.projectId || '1',
       name: 'Landing Page A',
-      pageUrl: 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same',
+      pageUrl: 'https://pack.stage.es',
       notes: 'Main conversion page',
       status: 'active',
       createdAt: new Date('2024-01-01'),
@@ -408,65 +539,85 @@ export class PointsComponent implements OnInit, OnDestroy {
   loadPagePreview(): void {
     // Use default URL if not configured (for development)
     if (!this.pageUrl) {
-      this.pageUrl = 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same';
+      this.pageUrl = 'https://pack.stage.es';
     }
 
     // Use saved preview HTML if no URL (fallback only)
     if (!this.pageUrl && this.project?.previewHtml) {
       this.basePreviewHtml = this.project.previewHtml;
+      this.useIframe = false;
       this.updatePreview();
       return;
     }
 
-    // Check if we need to use iframe (different origin)
-    this.useIframe = this.previewService.shouldUseIframe(this.pageUrl);
-
-    if (this.useIframe) {
-      // For external URLs, we'll use iframe in the template
-      this.basePreviewHtml = '';
-      this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
-      this.updatePreview();
-    } else {
-      // Try to load HTML directly
-      this.previewService.loadPageFromUrl(this.pageUrl).subscribe({
-        next: html => {
-          if (html) {
-            this.basePreviewHtml = html;
-            this.updatePreview();
-          } else {
-            // Fallback to iframe
-            this.useIframe = true;
-            this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
-            this.updatePreview();
-          }
-        },
-        error: () => {
-          // Fallback to iframe
+    // ALWAYS try to load HTML directly first (even for cross-origin)
+    // This allows element selection to work
+    this.previewService.loadPageFromUrl(this.pageUrl).subscribe({
+      next: html => {
+        if (html && html.trim().length > 0) {
+          // Successfully loaded HTML directly
+          this.useIframe = false;
+          this.canAccessIframe = false;
+          this.basePreviewHtml = html;
+          this.updatePreview();
+        } else {
+          // Failed to load HTML, fallback to iframe
           this.useIframe = true;
           this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
           this.updatePreview();
         }
-      });
-    }
+      },
+      error: () => {
+        // Failed to load HTML, fallback to iframe
+        this.useIframe = true;
+        this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
+        this.updatePreview();
+      }
+    });
   }
 
   loadPoints(): void {
-    if (!this.projectId) {
+    // Ensure projectId is set from route
+    const projectId = this.getProjectId();
+    if (!projectId) {
       return;
     }
+    this.projectId = projectId; // Update instance variable
     
-    const sub = this.store.listPoints(this.projectId).subscribe({
+    // Unsubscribe from previous subscription if exists
+    if (this.pointsSubscription) {
+      this.pointsSubscription.unsubscribe();
+      this.subscriptions.remove(this.pointsSubscription);
+    }
+    
+    // Subscribe to points$ observable and filter by projectId
+    // This will automatically update when points are added/updated/deleted
+    const currentProjectId = this.projectId; // Capture projectId to avoid closure issues
+    this.pointsSubscription = this.store.points$.pipe(
+      map(allPoints => allPoints.filter(p => p.projectId === currentProjectId))
+    ).subscribe({
       next: points => {
         this.points = points;
+        this.cdr.markForCheck(); // Force change detection
         this.updatePreview();
       },
       error: err => {
         // Silently handle error - points might not exist yet
-        console.warn('No points found for project', this.projectId);
         this.points = [];
+        this.updatePreview();
       }
     });
-    this.subscriptions.add(sub);
+    this.subscriptions.add(this.pointsSubscription);
+    
+    // Also trigger initial load from API
+    this.store.listPoints(this.projectId).subscribe({
+      next: () => {
+        // Points will be updated via the points$ subscription above
+      },
+      error: () => {
+        // Silently handle error
+      }
+    });
   }
 
   loadVariants(): void {
@@ -508,26 +659,250 @@ export class PointsComponent implements OnInit, OnDestroy {
   }
 
   openAddPointDialog(): void {
-    // Simple prompt for MVP
-    const name = prompt('Enter point name:');
-    if (name) {
-      this.store.addPoint(this.projectId, { name });
-      this.toast.showSuccess('Point added');
-      this.loadPoints();
+    // Check if we're using iframe and cannot access it
+    if (this.useIframe && !this.canAccessIframe) {
+      // If we can't access iframe, offer manual input directly
+      this.openManualSelectorDialog();
+      return;
     }
+
+    // Enter selection mode to allow user to click on text in preview
+    this.selectedPointId = null; // New point, no ID yet
+    this.selectionMode = true;
+    
+    // If using iframe and can access it, attach listeners
+    if (this.useIframe && this.canAccessIframe && this.iframeLoaded && this.previewIframe?.nativeElement) {
+      try {
+        const iframe = this.previewIframe.nativeElement;
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          this.attachIframeListeners(iframeDoc);
+        }
+      } catch (e) {
+        // Cannot access iframe, offer manual input
+        this.openManualSelectorDialog();
+        this.cancelSelection();
+        return;
+      }
+    }
+    
+    this.toast.showInfo('Click on the text you want to optimize in the preview');
+  }
+
+  attemptLoadHtmlDirectly(): void {
+    // Try to load HTML directly to enable selection
+    if (!this.pageUrl) return;
+    
+    this.toast.showInfo('Loading page HTML for selection...');
+    this.previewService.loadPageFromUrl(this.pageUrl).subscribe({
+      next: html => {
+        if (html && html.trim().length > 0) {
+          // Successfully loaded HTML, switch to direct HTML mode
+          this.useIframe = false;
+          this.canAccessIframe = false;
+          this.basePreviewHtml = html;
+          this.updatePreview();
+          this.toast.showSuccess('Page loaded. You can now select elements.');
+        } else {
+          this.toast.showError('Cannot load page HTML due to CORS restrictions. Use "Enter Selector Manually" instead.');
+        }
+      },
+      error: () => {
+        this.toast.showError('Cannot load page HTML due to CORS restrictions. Use "Enter Selector Manually" instead.');
+      }
+    });
+  }
+
+  openManualSelectorDialog(): void {
+    const dialogRef = this.dialog.open(SelectorInputDialogComponent, {
+      width: '600px',
+      data: {
+        suggestedName: this.selectedText || 'New Point',
+        suggestedSelector: this.currentSelector || ''
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && result.name && result.selector) {
+        // Get projectId from route (may be in parent for nested routes)
+        const projectId = this.getProjectId();
+        if (!projectId) {
+          this.toast.showError('Project ID is not available. Please refresh the page.');
+          return;
+        }
+        
+        // Create the point with manual selector
+        const newPoint: Partial<OptimizationPoint> = {
+          name: result.name.trim(),
+          selector: result.selector.trim(),
+          objective: '',
+          generationRules: ''
+        };
+        this.store.addPoint(projectId, newPoint).subscribe({
+          next: () => {
+            this.toast.showSuccess('Point created with manual selector');
+            this.cancelSelection();
+            this.cdr.markForCheck(); // Force change detection
+            // No need to call listPoints - addPoint already does it internally
+          },
+          error: (err) => {
+            const errorMessage = err?.error?.message || err?.message || 'Unknown error';
+            this.toast.showError(`Failed to create point: ${errorMessage}`);
+          }
+        });
+      }
+    });
   }
 
   startSelection(pointId: string): void {
     this.selectedPointId = pointId;
     this.selectionMode = true;
+    // Attach iframe listeners if iframe is loaded and accessible
+    if (this.useIframe && this.iframeLoaded && this.canAccessIframe && this.previewIframe?.nativeElement) {
+      try {
+        const iframe = this.previewIframe.nativeElement;
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          this.attachIframeListeners(iframeDoc);
+        }
+      } catch (e) {
+        // Cannot access iframe
+      }
+    }
+    this.toast.showInfo('Click on the text you want to optimize in the preview');
   }
 
   onPreviewClick(event: MouseEvent): void {
     if (!this.selectionMode) return;
+    event.preventDefault();
     event.stopPropagation();
     const target = event.target as HTMLElement;
-    this.hoveredElement = target;
-    this.currentSelector = this.generateSelector(target);
+    this.selectElement(target);
+  }
+
+  onPreviewMouseOver(event: MouseEvent): void {
+    if (!this.selectionMode) return;
+    const target = event.target as HTMLElement;
+    if (target && target.ownerDocument) {
+      this.highlightElement(target, target.ownerDocument);
+    }
+  }
+
+  onPreviewMouseOut(event: MouseEvent): void {
+    if (!this.selectionMode) return;
+    const target = event.target as HTMLElement;
+    if (target && target.ownerDocument) {
+      this.clearHighlight(target.ownerDocument);
+    }
+  }
+
+  onIframeLoad(): void {
+    this.iframeLoaded = true;
+    // Check if we can access iframe content (same-origin only)
+    if (this.previewIframe?.nativeElement) {
+      try {
+        const iframe = this.previewIframe.nativeElement;
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          this.canAccessIframe = true;
+          // Add click listener to iframe content
+          if (this.selectionMode) {
+            this.attachIframeListeners(iframeDoc);
+          }
+        } else {
+          this.canAccessIframe = false;
+        }
+      } catch (e) {
+        // Cross-origin iframe, cannot access
+        this.canAccessIframe = false;
+      }
+    }
+  }
+
+  attachIframeListeners(doc: Document): void {
+    // Remove existing listeners if they exist
+    if (this.iframeClickHandler) {
+      doc.removeEventListener('click', this.iframeClickHandler, true);
+    }
+    if (this.iframeMouseOverHandler) {
+      doc.removeEventListener('mouseover', this.iframeMouseOverHandler, true);
+    }
+    if (this.iframeMouseOutHandler) {
+      doc.removeEventListener('mouseout', this.iframeMouseOutHandler, true);
+    }
+    
+    // Add new listeners
+    this.iframeClickHandler = (e: MouseEvent) => {
+      if (!this.selectionMode) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      this.selectElement(target);
+    };
+    
+    this.iframeMouseOverHandler = (e: MouseEvent) => {
+      if (!this.selectionMode) return;
+      const target = e.target as HTMLElement;
+      this.highlightElement(target, doc);
+    };
+    
+    this.iframeMouseOutHandler = () => {
+      if (!this.selectionMode) return;
+      this.clearHighlight(doc);
+    };
+    
+    doc.addEventListener('click', this.iframeClickHandler, true);
+    doc.addEventListener('mouseover', this.iframeMouseOverHandler, true);
+    doc.addEventListener('mouseout', this.iframeMouseOutHandler, true);
+  }
+
+  private iframeClickHandler: ((e: MouseEvent) => void) | null = null;
+  private iframeMouseOverHandler: ((e: MouseEvent) => void) | null = null;
+  private iframeMouseOutHandler: (() => void) | null = null;
+
+  selectElement(element: HTMLElement): void {
+    this.selectedElement = element;
+    this.hoveredElement = element;
+    this.currentSelector = this.generateSelector(element);
+    this.selectedText = this.getElementText(element);
+    
+    // Show visual feedback
+    this.highlightElement(element, element.ownerDocument);
+  }
+
+  highlightElement(element: HTMLElement, doc: Document): void {
+    // Remove existing highlight
+    this.clearHighlight(doc);
+    
+    // Add highlight overlay
+    const rect = element.getBoundingClientRect();
+    const highlight = doc.createElement('div');
+    highlight.id = 'cro-selection-highlight';
+    highlight.style.position = 'absolute';
+    highlight.style.left = `${rect.left + (doc.defaultView?.scrollX || 0)}px`;
+    highlight.style.top = `${rect.top + (doc.defaultView?.scrollY || 0)}px`;
+    highlight.style.width = `${rect.width}px`;
+    highlight.style.height = `${rect.height}px`;
+    highlight.style.border = '2px solid #2196F3';
+    highlight.style.backgroundColor = 'rgba(33, 150, 243, 0.1)';
+    highlight.style.pointerEvents = 'none';
+    highlight.style.zIndex = '9999';
+    highlight.style.boxSizing = 'border-box';
+    doc.body.appendChild(highlight);
+  }
+
+  clearHighlight(doc: Document): void {
+    const existing = doc.getElementById('cro-selection-highlight');
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  getElementText(element: HTMLElement): string {
+    // Get text content, prioritizing visible text
+    const text = element.textContent?.trim() || element.innerText?.trim() || '';
+    // Limit to first 100 characters for display
+    return text.length > 100 ? text.substring(0, 100) + '...' : text;
   }
 
   generateSelector(element: HTMLElement): string {
@@ -585,11 +960,46 @@ export class PointsComponent implements OnInit, OnDestroy {
   }
 
   confirmSelection(): void {
-    if (this.selectedPointId && this.currentSelector) {
+    if (!this.currentSelector || !this.selectedElement) {
+      this.toast.showError('Please select an element first');
+      return;
+    }
+
+    // Get projectId from route (may be in parent for nested routes)
+    const projectId = this.getProjectId();
+    if (!projectId) {
+      this.toast.showError('Project ID is not available. Please refresh the page.');
+      return;
+    }
+
+    // If it's a new point (no selectedPointId), create it
+    if (!this.selectedPointId) {
+      const name = prompt('Enter a name for this optimization point:', this.selectedText || 'New Point');
+      if (name && name.trim()) {
+        const newPoint: Partial<OptimizationPoint> = {
+          name: name.trim(),
+          selector: this.currentSelector,
+          objective: '',
+          generationRules: ''
+        };
+        this.store.addPoint(projectId, newPoint).subscribe({
+          next: () => {
+            this.toast.showSuccess('Point created');
+            this.cancelSelection();
+            this.cdr.markForCheck(); // Force change detection
+            // No need to call listPoints - addPoint already does it internally
+          },
+          error: (err) => {
+            const errorMessage = err?.error?.message || err?.message || 'Unknown error';
+            this.toast.showError(`Failed to create point: ${errorMessage}`);
+          }
+        });
+      }
+    } else {
+      // Update existing point selector
       this.store.updatePoint(this.selectedPointId, { selector: this.currentSelector });
       this.toast.showSuccess('Selector saved');
       this.cancelSelection();
-      this.loadPoints();
     }
   }
 
@@ -597,15 +1007,39 @@ export class PointsComponent implements OnInit, OnDestroy {
     this.selectionMode = false;
     this.selectedPointId = null;
     this.hoveredElement = null;
+    this.selectedElement = null;
     this.currentSelector = '';
-  }
-
-  editPoint(point: OptimizationPoint): void {
-    const name = prompt('Enter new name:', point.name);
-    if (name && name !== point.name) {
-      this.store.updatePoint(point.id, { name });
-      this.toast.showSuccess('Point updated');
-      this.loadPoints();
+    this.selectedText = '';
+    
+    // Remove iframe listeners
+    if (this.useIframe && this.canAccessIframe && this.previewIframe?.nativeElement) {
+      try {
+        const iframe = this.previewIframe.nativeElement;
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          this.clearHighlight(iframeDoc);
+          if (this.iframeClickHandler) {
+            iframeDoc.removeEventListener('click', this.iframeClickHandler, true);
+          }
+          if (this.iframeMouseOverHandler) {
+            iframeDoc.removeEventListener('mouseover', this.iframeMouseOverHandler, true);
+          }
+          if (this.iframeMouseOutHandler) {
+            iframeDoc.removeEventListener('mouseout', this.iframeMouseOutHandler, true);
+          }
+        }
+      } catch (e) {
+        // Cannot access iframe
+      }
+    }
+    
+    // Clear highlight in direct HTML mode
+    if (!this.useIframe && this.selectedElement) {
+      const element = this.selectedElement as HTMLElement;
+      const doc = element.ownerDocument;
+      if (doc) {
+        this.clearHighlight(doc);
+      }
     }
   }
 

@@ -113,7 +113,7 @@ constructor(
 createProject() {
   this.projectsApi.createProject({
     name: 'My Project',
-    pageUrl: 'https://pack.stage.es/?packageId=209&from=app'
+    pageUrl: 'https://pack.stage.es'
   }).subscribe({
     next: project => {
       this.toast.showSuccess('Project created');

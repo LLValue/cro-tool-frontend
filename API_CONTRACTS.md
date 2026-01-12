@@ -1124,7 +1124,7 @@ POST /api/projects
 Authorization: Bearer <token>
 {
   "name": "Landing Page Test",
-  "pageUrl": "https://pack.stage.es/?packageId=209&from=app",
+  "pageUrl": "https://pack.stage.es",
   "notes": "Test project"
 }
 ```

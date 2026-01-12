@@ -217,7 +217,7 @@ export class MockApiClient implements ApiClient {
         const defaultProject: ProjectDto = {
           id: id || '1',
           name: 'Landing Page A',
-          pageUrl: 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same',
+          pageUrl: 'https://pack.stage.es',
           notes: 'Main conversion page',
           status: 'active',
           createdAt: new Date('2024-01-01').toISOString(),
@@ -370,13 +370,21 @@ export class MockApiClient implements ApiClient {
   }
 
   pointsCreate(projectId: string, req: CreatePointRequest): Observable<OptimizationPointDto> {
-    const project = this.db.getProject(projectId);
+    let project = this.db.getProject(projectId);
+    
+    // For development: if project not found, use default project
     if (!project) {
-      return throwError(() => new HttpErrorResponse({
-        status: 404,
-        statusText: 'Not Found',
-        error: { message: 'Project not found' }
-      }));
+      project = this.db.getProject('1');
+      if (!project) {
+        // Return error only if we can't find default project either
+        return throwError(() => new HttpErrorResponse({
+          status: 404,
+          statusText: 'Not Found',
+          error: { message: 'Project not found' }
+        }));
+      }
+      // Use default project ID if original not found
+      projectId = '1';
     }
 
     // Validation

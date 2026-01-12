@@ -28,7 +28,11 @@ export class PreviewService {
     return this.http.get(url, { responseType: 'text' }).pipe(
       map(html => html),
       catchError(err => {
-        console.warn('Could not fetch page directly, using iframe approach', err);
+        // CORS errors are expected for cross-origin URLs - silently handle
+        // Only log if it's not a CORS error (status 0 usually means CORS)
+        if (err.status !== 0) {
+          console.warn('Could not fetch page directly', err);
+        }
         // Return empty HTML - we'll use iframe instead
         return of('');
       })

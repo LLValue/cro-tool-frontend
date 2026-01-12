@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { map, catchError, tap, switchMap, shareReplay } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Project, OptimizationPoint, Variant, Goal, ReportingMetrics } from './models';
 import { ProjectsApiService } from '../api/services/projects-api.service';
@@ -19,11 +19,11 @@ export class ProjectsStoreService {
   private goalsSubject = new BehaviorSubject<Goal[]>([]);
   private metricsSubject = new BehaviorSubject<Map<string, ReportingMetrics>>(new Map());
 
-  public projects$ = this.projectsSubject.asObservable();
-  public points$ = this.pointsSubject.asObservable();
-  public variants$ = this.variantsSubject.asObservable();
-  public goals$ = this.goalsSubject.asObservable();
-  public metrics$ = this.metricsSubject.asObservable();
+  public projects$ = this.projectsSubject.asObservable().pipe(shareReplay(1));
+  public points$ = this.pointsSubject.asObservable().pipe(shareReplay(1));
+  public variants$ = this.variantsSubject.asObservable().pipe(shareReplay(1));
+  public goals$ = this.goalsSubject.asObservable().pipe(shareReplay(1));
+  public metrics$ = this.metricsSubject.asObservable().pipe(shareReplay(1));
 
   constructor(
     private projectsApi: ProjectsApiService,
@@ -44,7 +44,7 @@ export class ProjectsStoreService {
           const defaultProject: Project = {
             id: '1',
             name: 'Landing Page A',
-            pageUrl: 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same',
+            pageUrl: 'https://pack.stage.es',
             notes: 'Main conversion page',
             status: 'active',
             createdAt: new Date('2024-01-01'),
@@ -69,7 +69,7 @@ export class ProjectsStoreService {
         const defaultProject: Project = {
           id: '1',
           name: 'Landing Page A',
-          pageUrl: 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same',
+          pageUrl: 'https://pack.stage.es',
           notes: 'Main conversion page',
           status: 'active',
           createdAt: new Date('2024-01-01'),
@@ -190,15 +190,25 @@ export class ProjectsStoreService {
   }
 
   // Points CRUD
-  listPoints(projectId: string): Observable<OptimizationPoint[]> {
+              listPoints(projectId: string): Observable<OptimizationPoint[]> {
+    if (!projectId) {
+      return this.points$;
+    }
     this.pointsApi.listPoints(projectId).subscribe({
-      next: points => this.pointsSubject.next(points),
-      error: () => {} // Error handling done in components
+      next: points => {
+        // Merge new points with existing ones, replacing points for this project
+        const currentPoints = this.pointsSubject.value.filter(p => p.projectId !== projectId);
+        const updatedPoints = [...currentPoints, ...points];
+        this.pointsSubject.next(updatedPoints);
+      },
+      error: () => {
+        // Error handling done in components
+      }
     });
     return this.points$;
   }
 
-  addPoint(projectId: string, point: Partial<OptimizationPoint>): OptimizationPoint {
+  addPoint(projectId: string, point: Partial<OptimizationPoint>): Observable<OptimizationPoint> {
     const req = {
       name: point.name || 'New Point',
       selector: point.selector || '',
@@ -206,25 +216,16 @@ export class ProjectsStoreService {
       generationRules: point.generationRules || ''
     };
 
-    let createdPoint: OptimizationPoint | null = null;
-    this.pointsApi.createPoint(projectId, req).subscribe({
-      next: p => {
-        createdPoint = p;
-        this.listPoints(projectId);
-      },
-      error: err => {
-        throw err;
-      }
-    });
-
-    return createdPoint || {
-      id: '',
-      projectId,
-      name: req.name,
-      selector: req.selector,
-      objective: req.objective,
-      generationRules: req.generationRules
-    };
+    return this.pointsApi.createPoint(projectId, req).pipe(
+      tap(createdPoint => {
+        // After creating, reload the list to update all subscribers
+        // Use the projectId from the created point (it might have been corrected by the API)
+        const actualProjectId = createdPoint.projectId || projectId;
+        if (actualProjectId) {
+          this.listPoints(actualProjectId);
+        }
+      })
+    );
   }
 
   updatePoint(id: string, updates: Partial<OptimizationPoint>): void {

@@ -71,7 +71,7 @@ export class InMemoryDbService {
       'http://example.com',
       'http://example.com/landing'
     ];
-    const newUrl = 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same';
+    const newUrl = 'https://pack.stage.es';
     let hasChanges = false;
 
     // Update projects with old URLs or old pack.stage.es URLs without the full parameters
@@ -79,8 +79,8 @@ export class InMemoryDbService {
       if (oldUrls.some(oldUrl => project.pageUrl?.includes(oldUrl) || project.pageUrl === oldUrl)) {
         project.pageUrl = newUrl;
         hasChanges = true;
-      } else if (project.pageUrl?.includes('pack.stage.es') && !project.pageUrl.includes('next_results_tab=same')) {
-        // Update existing pack.stage.es URLs to include the new parameter
+      } else if (project.pageUrl?.includes('pack.stage.es') && project.pageUrl !== 'https://pack.stage.es') {
+        // Update existing pack.stage.es URLs to the new simple URL
         project.pageUrl = newUrl;
         hasChanges = true;
       }
@@ -114,7 +114,7 @@ export class InMemoryDbService {
     const defaultProject: ProjectDto = {
       id: '1',
       name: 'Landing Page A',
-      pageUrl: 'https://pack.stage.es/?packageId=209&from=app&next_results_tab=same',
+      pageUrl: 'https://pack.stage.es',
       notes: 'Main conversion page',
       status: 'active',
       createdAt: new Date('2024-01-01').toISOString(),

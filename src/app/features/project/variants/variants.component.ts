@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormControl, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -15,6 +15,8 @@ import { OptimizationPoint, Variant } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { VariantDetailsDialogComponent } from './variant-details-dialog/variant-details-dialog.component';
+import { map } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-variants',
@@ -44,6 +46,9 @@ import { VariantDetailsDialogComponent } from './variant-details-dialog/variant-
     <div class="variants-container">
       <div class="points-list">
         <h3>Optimization Points</h3>
+        <div *ngIf="points.length === 0" class="empty-points">
+          <p>No points created yet. Create points in the Points page first.</p>
+        </div>
         <mat-card *ngFor="let point of points" 
                   class="point-card" 
                   [class.selected]="selectedPointId === point.id"
@@ -51,6 +56,7 @@ import { VariantDetailsDialogComponent } from './variant-details-dialog/variant-
           <mat-card-content>
             <strong>{{ point.name }}</strong>
             <p *ngIf="point.selector"><code>{{ point.selector }}</code></p>
+            <p *ngIf="!point.selector" class="no-selector">No selector set</p>
           </mat-card-content>
         </mat-card>
       </div>
@@ -156,6 +162,17 @@ import { VariantDetailsDialogComponent } from './variant-details-dialog/variant-
       font-size: 12px;
       color: #999;
     }
+    .empty-points {
+      padding: 24px;
+      text-align: center;
+      color: #666;
+      font-style: italic;
+    }
+    .no-selector {
+      color: #999;
+      font-style: italic;
+      font-size: 12px;
+    }
     :host-context(body.dark-mode) {
       .variants-container {
         h3 {
@@ -210,12 +227,13 @@ import { VariantDetailsDialogComponent } from './variant-details-dialog/variant-
     }
   `]
 })
-export class VariantsComponent implements OnInit {
+export class VariantsComponent implements OnInit, OnDestroy {
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
   selectedPointId: string | null = null;
   filter: 'all' | 'active' | 'discarded' = 'all';
   projectId: string = '';
+  private subscriptions = new Subscription();
 
   constructor(
     private route: ActivatedRoute,
@@ -225,19 +243,100 @@ export class VariantsComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.projectId = params['projectId'];
+    // Get projectId from multiple sources (for nested routes)
+    const getProjectId = (): string | null => {
+      // Try current route params first
+      const currentParams = this.route.snapshot.params;
+      if (currentParams['projectId']) {
+        return currentParams['projectId'];
+      }
+      // Try parent route params (for nested routes)
+      const parentParams = this.route.snapshot.parent?.params;
+      if (parentParams?.['projectId']) {
+        return parentParams['projectId'];
+      }
+      return null;
+    };
+
+    const initialProjectId = getProjectId();
+    if (initialProjectId) {
+      this.projectId = initialProjectId;
       this.loadPoints();
+    }
+
+    // Subscribe to params changes (both current and parent)
+    const paramsSub = this.route.params.subscribe(params => {
+      const newProjectId = params['projectId'];
+      if (newProjectId && newProjectId !== this.projectId) {
+        this.projectId = newProjectId;
+        this.loadPoints();
+      }
     });
+    this.subscriptions.add(paramsSub);
+
+    // Also subscribe to parent params (for nested routes)
+    if (this.route.parent) {
+      const parentParamsSub = this.route.parent.params.subscribe(params => {
+        const newProjectId = params['projectId'];
+        if (newProjectId && newProjectId !== this.projectId) {
+          this.projectId = newProjectId;
+          this.loadPoints();
+        }
+      });
+      this.subscriptions.add(parentParamsSub);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  private getProjectId(): string {
+    // Try current route params first
+    const currentParams = this.route.snapshot.params;
+    if (currentParams['projectId']) {
+      return currentParams['projectId'];
+    }
+    // Try parent route params (for nested routes)
+    const parentParams = this.route.snapshot.parent?.params;
+    if (parentParams?.['projectId']) {
+      return parentParams['projectId'];
+    }
+    // Fallback to instance variable
+    return this.projectId || '';
   }
 
   loadPoints(): void {
-    this.store.listPoints(this.projectId).subscribe(points => {
+    // Ensure projectId is set from route
+    const projectId = this.getProjectId();
+    if (!projectId) {
+      return;
+    }
+    this.projectId = projectId; // Update instance variable
+
+    // Subscribe to points$ filtered by projectId
+    const currentProjectId = this.projectId; // Capture for closure
+    const pointsSub = this.store.points$.pipe(
+      map(allPoints => allPoints.filter(p => p.projectId === currentProjectId))
+    ).subscribe(points => {
       this.points = points;
       if (points.length > 0 && !this.selectedPointId) {
         this.selectPoint(points[0].id);
       }
     });
+    this.subscriptions.add(pointsSub);
+
+    // Trigger initial load from API
+    this.subscriptions.add(
+      this.store.listPoints(currentProjectId).subscribe({
+        next: () => {
+          // Points will be updated via the points$ subscription above
+        },
+        error: () => {
+          // Silently handle error
+        }
+      })
+    );
   }
 
   selectPoint(pointId: string): void {
