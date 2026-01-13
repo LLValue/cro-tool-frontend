@@ -2,7 +2,6 @@
   <mat-sidenav #sidenav mode="side" [opened]="(authService.isLoggedIn$ | async) || false" class="sidenav" *ngIf="authService.isLoggedIn$ | async">
     <div class="sidenav-header">
       <div class="logo-section">
-        <div class="logo-icon"></div>
         <span class="logo-text">CRO Tool</span>
       </div>
     </div>
@@ -45,12 +44,12 @@
     </mat-nav-list>
   </mat-sidenav>
 
-  <mat-sidenav-content>
+  <mat-sidenav-content style="overflow: clip;">
     <mat-toolbar class="main-toolbar" color="primary">
       <button mat-icon-button (click)="sidenav.toggle()" class="menu-toggle" *ngIf="authService.isLoggedIn$ | async">
         <mat-icon>menu</mat-icon>
       </button>
-      <span class="toolbar-title">CRO Tool Admin</span>
+      <span class="toolbar-title" routerLink="/projects" style="cursor: pointer;">CRO Tool Admin</span>
       <span class="spacer"></span>
       <div class="toolbar-actions" *ngIf="authService.isLoggedIn$ | async">
         <button mat-icon-button matTooltip="Fullscreen" (click)="toggleFullscreen()">

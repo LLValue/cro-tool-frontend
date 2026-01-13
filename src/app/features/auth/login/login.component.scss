@@ -59,30 +59,6 @@ $accent-color: #ff4081;
   margin: 0;
 }
 
-.login-logo {
-  margin-bottom: 16px;
-}
-
-.logo-icon-large {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-
-  &::before {
-    content: 'C';
-    font-size: 36px;
-    font-weight: bold;
-    color: white;
-  }
-}
-
 .login-title {
   font-size: 28px;
   font-weight: 600;

@@ -28,24 +28,6 @@ $warn-color: #f44336;
   gap: 12px;
 }
 
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  
-  &::before {
-    content: 'C';
-    font-size: 24px;
-    font-weight: bold;
-    color: white;
-  }
-}
-
 .logo-text {
   font-size: 20px;
   font-weight: 600;
@@ -115,11 +97,10 @@ $warn-color: #f44336;
 }
 
 .nav-list {
-  padding: 8px 0;
+  padding: 8px 8px;
   background: white;
 
   a {
-    margin: 4px 8px;
     border-radius: 8px;
     transition: all 0.2s ease;
     color: #424242;
@@ -130,10 +111,8 @@ $warn-color: #f44336;
     }
 
     &.active {
-      background: linear-gradient(90deg, rgba(103, 58, 183, 0.15) 0%, rgba(103, 58, 183, 0.05) 100%);
       color: var(--theme-primary);
       font-weight: 600;
-      border-left: 3px solid var(--theme-primary);
 
       .nav-icon {
         color: var(--theme-primary);
@@ -176,6 +155,13 @@ $warn-color: #f44336;
   font-size: 18px;
   font-weight: 500;
   color: #212121;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  user-select: none;
+  
+  &:hover {
+    color: var(--theme-primary) !important;
+  }
 }
 
 .spacer {

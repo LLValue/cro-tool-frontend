@@ -9,7 +9,6 @@ $primary-color: #673ab7;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border-left: 4px solid $primary-color;
 }
 
 .page-header-content {
@@ -42,7 +41,6 @@ $primary-color: #673ab7;
 :host-context(body.dark-mode) {
   .page-header {
     background: #1e1e1e;
-    border-left-color: var(--theme-primary, $primary-color);
 
     h1 {
       color: #ffffff;
