@@ -1,0 +1,44 @@
+::ng-deep {
+  .mat-tab-group {
+    margin-top: 48px;
+  }
+}
+
+.form-container {
+  padding: 24px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.mandatory-claims {
+  margin-top: 24px;
+}
+
+.claim-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.claim-input {
+  flex: 1;
+}
+
+:host-context(body.dark-mode) {
+  .mandatory-claims {
+    h4 {
+      color: #ffffff !important;
+    }
+    button {
+      color: #ffffff !important;
+      mat-icon {
+        color: #ffffff !important;
+      }
+    }
+  }
+}
+

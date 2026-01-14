@@ -1,0 +1,31 @@
+.goals-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.goal-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.goal-name {
+  width: 200px;
+}
+
+.goal-type {
+  width: 180px;
+}
+
+.goal-value {
+  flex: 1;
+}
+

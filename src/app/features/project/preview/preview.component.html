@@ -1,0 +1,43 @@
+<app-page-header title="Preview">
+  <button mat-button (click)="goBack()">
+    <mat-icon>arrow_back</mat-icon>
+    Back to Reporting
+  </button>
+</app-page-header>
+
+<div class="preview-container">
+  <div class="preview-content">
+    <iframe 
+      *ngIf="useIframe && safeIframeUrl" 
+      [src]="safeIframeUrl" 
+      class="preview-iframe"
+      frameborder="0">
+    </iframe>
+    <div 
+      *ngIf="!useIframe" 
+      class="preview-wrapper" 
+      [innerHTML]="safePreviewHtml">
+    </div>
+  </div>
+  <div class="variants-panel">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Applied Variants</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-list>
+          <mat-list-item *ngFor="let variant of appliedVariants">
+            <div class="variant-item">
+              <strong>{{ getPointName(variant.optimizationPointId) }}</strong>
+              <p>{{ variant.text }}</p>
+            </div>
+          </mat-list-item>
+          <mat-list-item *ngIf="appliedVariants.length === 0">
+            <p>No variants applied</p>
+          </mat-list-item>
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>
+

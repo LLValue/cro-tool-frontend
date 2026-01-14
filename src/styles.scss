@@ -46,6 +46,7 @@ html, body {
 
 // Increase spacing between mat-card-header and mat-card-content
 .mat-mdc-card-header {
+  padding: 16px !important;
   margin-bottom: 0 !important;
 }
 
@@ -265,6 +266,7 @@ body.dark-mode {
 
       &.active {
         .nav-text,
+        .nav-icon,
         span.nav-text,
         .mdc-list-item__primary-text .nav-text,
         .mdc-list-item__primary-text .nav-label {
@@ -274,6 +276,7 @@ body.dark-mode {
 
       &:hover {
         .nav-text,
+        .nav-icon,
         span.nav-text,
         .mdc-list-item__primary-text .nav-text,
         .mdc-list-item__primary-text .nav-label {
@@ -325,6 +328,41 @@ body.dark-mode {
 
     .mat-mdc-input-element {
       color: #ffffff;
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+
+      &::-webkit-input-placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+
+      &::-moz-placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+
+      &:-ms-input-placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+    }
+
+    .mat-mdc-chip-input,
+    .mat-mdc-chip-input.mat-mdc-input-element {
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+
+      &::-webkit-input-placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+
+      &::-moz-placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+
+      &:-ms-input-placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
     }
 
     .mat-mdc-form-field-outline {
@@ -363,6 +401,25 @@ body.dark-mode {
     .mat-mdc-select-arrow {
       color: #ffffff !important;
     }
+  }
+
+  // Select options
+  .mat-mdc-option {
+    .mdc-list-item__primary-text {
+      color: #ffffff !important;
+    }
+
+    &:hover:not(.mdc-list-item--disabled) {
+      background: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    &.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+      background: rgba(var(--theme-primary-rgb, 103, 58, 183), 0.2) !important;
+    }
+  }
+
+  .mat-mdc-select-panel {
+    background: #1e1e1e !important;
   }
 
   // Buttons
@@ -619,6 +676,15 @@ body.dark-mode {
     .mdc-label {
       color: #ffffff !important;
     }
+  }
+
+  // Code elements
+  code {
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
   }
 }
 

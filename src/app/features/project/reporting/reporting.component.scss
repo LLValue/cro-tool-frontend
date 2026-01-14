@@ -1,0 +1,40 @@
+::ng-deep {
+  .reporting-tabs {
+    margin-top: 48px;
+  }
+}
+
+.reporting-content {
+  padding: 24px;
+}
+
+.metrics-table {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.winner {
+  background-color: #e8f5e9;
+}
+
+.loser {
+  opacity: 0.5;
+  background-color: #ffebee;
+}
+
+.loser::after {
+  content: ' (Discarded)';
+  color: #f44336;
+  font-weight: bold;
+}
+
+:host-context(body.dark-mode) {
+  .winner {
+    background-color: rgba(76, 175, 80, 0.2);
+  }
+
+  .loser {
+    background-color: rgba(244, 67, 54, 0.2);
+  }
+}
+

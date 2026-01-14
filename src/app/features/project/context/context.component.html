@@ -1,0 +1,91 @@
+<app-page-header title="Context & Guidelines"></app-page-header>
+
+<mat-tab-group>
+  <mat-tab label="Global">
+    <form [formGroup]="globalForm" class="form-container">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Language</mat-label>
+        <mat-select formControlName="language">
+          <mat-option value="en">English</mat-option>
+          <mat-option value="es">Spanish</mat-option>
+          <mat-option value="fr">French</mat-option>
+          <mat-option value="de">German</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Page Context</mat-label>
+        <textarea matInput formControlName="pageContext" rows="4"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>CRO Guidelines</mat-label>
+        <textarea matInput formControlName="croGuidelines" rows="4"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Brand Guardrails</mat-label>
+        <textarea matInput formControlName="brandGuardrails" rows="4"></textarea>
+      </mat-form-field>
+
+      <app-chips-input
+        formControlName="forbiddenWords"
+        label="Forbidden Words"
+        placeholder="Add forbidden word">
+      </app-chips-input>
+
+      <app-chips-input
+        formControlName="toneAllowed"
+        label="Allowed Tones"
+        placeholder="Add allowed tone">
+      </app-chips-input>
+
+      <app-chips-input
+        formControlName="toneDisallowed"
+        label="Disallowed Tones"
+        placeholder="Add disallowed tone">
+      </app-chips-input>
+
+      <div class="mandatory-claims">
+        <h4>Mandatory Claims</h4>
+        <div *ngFor="let claim of mandatoryClaims.controls; let i = index" class="claim-row">
+          <mat-form-field appearance="outline" class="claim-input">
+            <mat-label>Claim {{ i + 1 }}</mat-label>
+            <input matInput [formControl]="$any(claim)">
+          </mat-form-field>
+          <button mat-icon-button (click)="removeClaim(i)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+        <button mat-button (click)="addClaim()">
+          <mat-icon>add</mat-icon>
+          Add Claim
+        </button>
+      </div>
+    </form>
+  </mat-tab>
+
+  <mat-tab label="Per-Point">
+    <form [formGroup]="pointForm" class="form-container">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Select Point</mat-label>
+        <mat-select formControlName="pointId">
+          <mat-option *ngFor="let point of points" [value]="point.id">
+            {{ point.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Objective</mat-label>
+        <textarea matInput formControlName="objective" rows="4"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Generation Rules</mat-label>
+        <textarea matInput formControlName="generationRules" rows="4"></textarea>
+      </mat-form-field>
+    </form>
+  </mat-tab>
+</mat-tab-group>
+

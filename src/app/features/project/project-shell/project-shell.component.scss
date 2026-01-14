@@ -134,6 +134,7 @@ $accent-color: #ff4081;
 
       &.active {
         .nav-text,
+        .nav-icon,
         span.nav-text,
         .mdc-list-item__primary-text .nav-text {
           color: var(--theme-primary) !important;
@@ -142,6 +143,7 @@ $accent-color: #ff4081;
 
       &:hover {
         .nav-text,
+        .nav-icon,
         span.nav-text,
         .mdc-list-item__primary-text .nav-text {
           color: var(--theme-primary) !important;
