@@ -1,21 +1,21 @@
 $primary-color: var(--theme-primary, #673ab7);
-$accent-color: var(--theme-accent, #ff4081);
+$accent-color: var(--theme-accent, #9c27b0);
 $warn-color: #f44336;
 
 .sidenav-container {
   height: 100vh;
-  background: #f5f5f5;
+  background: #ffffff;
 }
 
 .sidenav {
   width: 280px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-  border-right: 1px solid #e0e0e0;
+  background: #ffffff;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.08);
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .sidenav-header {
-  padding: 20px 16px;
+  padding: 24px 20px;
   background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-accent) 100%);
   color: white;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);

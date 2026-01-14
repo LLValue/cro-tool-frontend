@@ -1,26 +1,122 @@
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
 
+// Override Material Design font to use Inter
+.mat-typography,
+.mat-body,
+.mat-body-1,
+.mat-body-2,
+.mat-headline,
+.mat-title,
+.mat-subheading-1,
+.mat-subheading-2,
+.mat-display-1,
+.mat-display-2,
+.mat-display-3,
+.mat-display-4 {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
 // CSS Variables for theming
 :root {
   --theme-primary: #673ab7;
   --theme-accent: #9c27b0;
+  --theme-primary-rgb: 103, 58, 183;
 }
 
-// Global styles
 html, body {
   height: 100%;
   margin: 0;
-  font-family: 'Roboto', 'Helvetica Neue', sans-serif;
-  background: #f5f5f5;
-  color: #212121;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #ffffff;
+  color: #1a1a1a;
   transition: background-color 0.3s ease, color 0.3s ease;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
   box-sizing: border-box;
 }
 
-// Custom scrollbar
+h1, .h1 {
+  font-size: 3rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  margin: 0 0 1.5rem 0;
+  color: #1a1a1a;
+}
+
+h2, .h2 {
+  font-size: 2.25rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.25rem 0;
+  color: #1a1a1a;
+}
+
+h3, .h3 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin: 0 0 1rem 0;
+  color: #1a1a1a;
+}
+
+h4, .h4 {
+  font-size: 1.375rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  margin: 0 0 0.875rem 0;
+  color: #1a1a1a;
+}
+
+h5, .h5 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0;
+  margin: 0 0 0.75rem 0;
+  color: #1a1a1a;
+}
+
+h6, .h6 {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0;
+  margin: 0 0 0.625rem 0;
+  color: #1a1a1a;
+}
+
+p {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.7;
+  margin: 0 0 1.25rem 0;
+  color: #1a1a1a;
+}
+
+strong, b {
+  font-weight: 600;
+}
+
+body.dark-mode {
+  h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 {
+    color: #ffffff;
+  }
+
+  p {
+    color: #ffffff;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -39,12 +135,12 @@ html, body {
   }
 }
 
-// Material overrides
 .mat-card {
-  border-radius: 12px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
 }
 
-// Increase spacing between mat-card-header and mat-card-content
 .mat-mdc-card-header {
   padding: 16px !important;
   margin-bottom: 0 !important;
@@ -54,8 +150,6 @@ html, body {
   margin-bottom: 24px !important;
 }
 
-// Hide empty form field hint/error wrapper to prevent empty space
-// Hide the spacer completely - it only reserves space and shows nothing
 .mat-mdc-form-field-hint-spacer {
   display: none !important;
   width: 0 !important;
@@ -66,14 +160,12 @@ html, body {
   visibility: hidden !important;
 }
 
-// Hide hint wrapper when empty
 .mat-mdc-form-field-hint-wrapper:empty {
   display: none !important;
   min-height: 0 !important;
   height: 0 !important;
 }
 
-// Hide subscript wrapper by default, show only when there are errors
 .mat-mdc-form-field-subscript-wrapper {
   display: none !important;
   min-height: 0 !important;
@@ -83,14 +175,12 @@ html, body {
   overflow: hidden !important;
 }
 
-// Show subscript wrapper only when there are actual errors
 .mat-mdc-form-field-subscript-wrapper:has(.mat-mdc-form-field-error-wrapper .mat-mdc-form-field-error:not(:empty)) {
   display: block !important;
   min-height: auto !important;
   height: auto !important;
 }
 
-// Also show when there are actual hints (not just spacer)
 .mat-mdc-form-field-subscript-wrapper:has(.mat-mdc-form-field-hint-wrapper .mat-mdc-form-field-hint:not(:empty)) {
   display: block !important;
   min-height: auto !important;
@@ -105,18 +195,21 @@ html, body {
   border-radius: 8px;
 }
 
-// Dark mode styles - Material Design Dark Theme
+.main-content {
+  background: #ffffff;
+  padding: 24px 32px;
+  min-height: calc(100vh - 64px);
+}
+
 body.dark-mode {
   background: #121212;
   color: #ffffff;
 
-  // Main content
   .main-content {
     background: #121212;
     color: #ffffff;
   }
 
-  // Sidebar
   .sidenav {
     background: #1e1e1e;
     color: #ffffff;
@@ -160,7 +253,6 @@ body.dark-mode {
     color: #ffffff;
   }
 
-  // Toolbar
   .main-toolbar {
     background: #1e1e1e !important;
     color: #ffffff !important;
@@ -286,7 +378,6 @@ body.dark-mode {
     }
   }
 
-  // Cards
   mat-card {
     background: #1e1e1e !important;
     color: #ffffff !important;
@@ -303,7 +394,6 @@ body.dark-mode {
     color: #ffffff !important;
   }
 
-  // Form fields
   .mat-mdc-form-field {
     .mat-mdc-text-field-wrapper {
       background-color: rgba(255, 255, 255, 0.05);
@@ -387,7 +477,6 @@ body.dark-mode {
     }
   }
 
-  // Select fields
   .mat-mdc-select {
     .mat-mdc-select-min-line,
     .mat-mdc-select-value {
@@ -403,7 +492,6 @@ body.dark-mode {
     }
   }
 
-  // Select options
   .mat-mdc-option {
     .mdc-list-item__primary-text {
       color: #ffffff !important;
@@ -422,24 +510,23 @@ body.dark-mode {
     background: #1e1e1e !important;
   }
 
-  // Buttons
   .mat-mdc-button,
   .mat-mdc-raised-button,
   .mat-mdc-outlined-button {
     color: #ffffff;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
 
     &.mat-primary {
-      background-color: var(--theme-primary);
-      color: white;
+      background-color: var(--theme-primary) !important;
+      color: white !important;
     }
   }
 
-  // Lists
   .mat-mdc-list-item {
     color: #ffffff;
   }
 
-  // Tabs
   .mat-mdc-tab-group {
     .mat-mdc-tab-label {
       color: #ffffff;
@@ -462,13 +549,11 @@ body.dark-mode {
     }
   }
 
-  // Page header
   .page-header {
     background: #1e1e1e;
     color: #ffffff;
   }
 
-  // Settings specific
   .toggle-item {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.12);
@@ -482,7 +567,6 @@ body.dark-mode {
     }
   }
 
-  // Tables
   .mat-mdc-table {
     background: #1e1e1e;
     color: #ffffff;
@@ -498,18 +582,15 @@ body.dark-mode {
     border-bottom-color: rgba(255, 255, 255, 0.12);
   }
 
-  // Dividers
   mat-divider {
     border-top-color: rgba(255, 255, 255, 0.12);
   }
 
-  // Chips
   .mat-mdc-chip {
     background-color: rgba(255, 255, 255, 0.12);
     color: rgba(255, 255, 255, 0.87);
   }
 
-  // Scrollbar
   ::-webkit-scrollbar-track {
     background: #1e1e1e;
   }
@@ -522,7 +603,6 @@ body.dark-mode {
     }
   }
 
-  // Preview section styles
   .preview-section {
     .preview-header {
       h3 {
@@ -570,7 +650,6 @@ body.dark-mode {
     }
   }
 
-  // Points header
   .points-header {
     h3 {
       color: #ffffff !important;
@@ -586,7 +665,6 @@ body.dark-mode {
     }
   }
 
-  // Mandatory claims
   .mandatory-claims {
     h4 {
       color: #ffffff !important;
@@ -602,7 +680,6 @@ body.dark-mode {
     }
   }
 
-  // Variants container
   .variants-container {
     h3 {
       color: #ffffff !important;
@@ -621,7 +698,6 @@ body.dark-mode {
     }
   }
 
-  // Material chips
   mat-chip {
     .mdc-evolution-chip__text-label,
     .mat-mdc-chip-action-label {
@@ -636,7 +712,6 @@ body.dark-mode {
     }
   }
 
-  // List items
   .mat-mdc-list-item {
     p {
       color: #ffffff !important;
@@ -647,7 +722,6 @@ body.dark-mode {
     }
   }
 
-  // Checkboxes
   mat-checkbox {
     .mdc-label,
     label.mdc-label {
@@ -678,7 +752,6 @@ body.dark-mode {
     }
   }
 
-  // Code elements
   code {
     background: rgba(255, 255, 255, 0.15) !important;
     color: #ffffff !important;
