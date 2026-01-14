@@ -28,6 +28,21 @@
   font-weight: bold;
 }
 
+.no-data-message {
+  padding: 48px 24px;
+  text-align: center;
+  color: #666;
+  
+  p {
+    margin: 8px 0;
+  }
+  
+  .warning {
+    color: #ff9800;
+    font-weight: 500;
+  }
+}
+
 :host-context(body.dark-mode) {
   .winner {
     background-color: rgba(76, 175, 80, 0.2);
@@ -35,6 +50,14 @@
 
   .loser {
     background-color: rgba(244, 67, 54, 0.2);
+  }
+  
+  .no-data-message {
+    color: rgba(255, 255, 255, 0.7);
+    
+    .warning {
+      color: #ff9800;
+    }
   }
 }
 

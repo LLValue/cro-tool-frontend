@@ -381,8 +381,15 @@ export class ProjectsStoreService {
           observer.next();
           observer.complete();
         },
-        error: err => {
-          observer.error(err);
+        error: (err: HttpErrorResponse) => {
+          if (err.status === 404) {
+            const metricsMap = new Map<string, ReportingMetrics>();
+            this.metricsSubject.next(metricsMap);
+            observer.next();
+            observer.complete();
+          } else {
+            observer.error(err);
+          }
         }
       });
     });
@@ -391,10 +398,18 @@ export class ProjectsStoreService {
   getMetrics(projectId: string): Observable<ReportingMetrics[]> {
     return this.reportingApi.getReporting(projectId).pipe(
       map(metrics => {
-        const metricsMap = new Map<string, ReportingMetrics>();
-        metrics.forEach(m => metricsMap.set(m.variantId, m));
-        this.metricsSubject.next(metricsMap);
+        if (metrics && metrics.length > 0) {
+          const metricsMap = new Map<string, ReportingMetrics>();
+          metrics.forEach(m => metricsMap.set(m.variantId, m));
+          this.metricsSubject.next(metricsMap);
+        }
         return metrics;
+      }),
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 404) {
+          return of([]);
+        }
+        return throwError(() => error);
       })
     );
   }

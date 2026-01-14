@@ -651,17 +651,44 @@ export class MockApiClient implements ApiClient {
 
   // Reporting
   reportingGet(projectId: string): Observable<ReportingResponse> {
-    const project = this.db.getProject(projectId);
+    let project = this.db.getProject(projectId);
+    
     if (!project) {
-      return throwError(() => new HttpErrorResponse({
-        status: 404,
-        statusText: 'Not Found',
-        error: { message: 'Project not found' }
-      }));
+      project = this.db.getProject('1');
+      if (!project) {
+        const defaultProject: ProjectDto = {
+          id: projectId || '1',
+          name: 'Landing Page A',
+          pageUrl: 'https://pack.stage.es',
+          notes: 'Main conversion page',
+          status: 'active',
+          createdAt: new Date('2024-01-01').toISOString(),
+          updatedAt: new Date('2024-01-10').toISOString(),
+          previewHtml: this.getDefaultPreviewHtml(),
+          language: 'en',
+          pageContext: 'E-commerce landing page',
+          croGuidelines: 'Focus on clarity and urgency',
+          brandGuardrails: 'Maintain professional tone',
+          forbiddenWords: [],
+          mandatoryClaims: [],
+          toneAllowed: ['professional', 'friendly'],
+          toneDisallowed: ['casual', 'slang']
+        };
+        this.db.addProject(defaultProject);
+        project = defaultProject;
+      }
     }
 
     const metricsMap = this.db.getMetrics();
-    const variants = this.db.getVariants('').filter(v => v.projectId === projectId && v.status === 'active');
+    const pointIds = this.db.getPoints(projectId).map(p => p.id);
+    
+    const allVariants: VariantDto[] = [];
+    pointIds.forEach(pointId => {
+      const pointVariants = this.db.getVariants(pointId);
+      allVariants.push(...pointVariants);
+    });
+    
+    const variants = allVariants.filter(v => v.projectId === projectId && v.status === 'active');
     const metrics: ReportingMetricsDto[] = variants
       .map(v => metricsMap.get(v.id))
       .filter((m): m is ReportingMetricsDto => !!m);
@@ -678,60 +705,82 @@ export class MockApiClient implements ApiClient {
   }
 
   simulateStart(projectId: string, req: SimulationStartRequest): Observable<ReportingResponse> {
-    const project = this.db.getProject(projectId);
+    let project = this.db.getProject(projectId);
+    
     if (!project) {
-      return throwError(() => new HttpErrorResponse({
-        status: 404,
-        statusText: 'Not Found',
-        error: { message: 'Project not found' }
-      }));
+      project = this.db.getProject('1');
+      if (!project) {
+        const defaultProject: ProjectDto = {
+          id: projectId || '1',
+          name: 'Landing Page A',
+          pageUrl: 'https://pack.stage.es',
+          notes: 'Main conversion page',
+          status: 'active',
+          createdAt: new Date('2024-01-01').toISOString(),
+          updatedAt: new Date('2024-01-10').toISOString(),
+          previewHtml: this.getDefaultPreviewHtml(),
+          language: 'en',
+          pageContext: 'E-commerce landing page',
+          croGuidelines: 'Focus on clarity and urgency',
+          brandGuardrails: 'Maintain professional tone',
+          forbiddenWords: [],
+          mandatoryClaims: [],
+          toneAllowed: ['professional', 'friendly'],
+          toneDisallowed: ['casual', 'slang']
+        };
+        this.db.addProject(defaultProject);
+        project = defaultProject;
+      }
     }
 
     const durationMs = req.durationMs || 6000;
     const intervalMs = req.intervalMs || 200;
     const pointIds = this.db.getPoints(projectId).map(p => p.id);
-    const variantIds = this.db.getVariants('').filter(v => v.projectId === projectId && v.status === 'active').map(v => v.id);
+    
+    const allVariants: VariantDto[] = [];
+    pointIds.forEach(pointId => {
+      const pointVariants = this.db.getVariants(pointId);
+      allVariants.push(...pointVariants);
+    });
+    const variantIds = allVariants.filter(v => v.projectId === projectId && v.status === 'active').map(v => v.id);
     const config = this.settings.getSettings();
     const fixedSeed = config.fixedSeed;
 
     const metricsMap = new Map<string, ReportingMetricsDto>();
 
-    // Initialize metrics
-    variantIds.forEach((variantId, index) => {
-      const variant = this.db.getVariant(variantId);
-      if (variant) {
-        const seed = fixedSeed ?? (parseInt(variantId) || index * 1000);
-        metricsMap.set(variantId, {
-          variantId,
-          pointId: variant.optimizationPointId,
-          users: 0,
-          conversions: 0,
-          conversionRate: 0,
-          confidence: 0
-        });
-      }
-    });
+    if (variantIds.length > 0) {
+      variantIds.forEach((variantId, index) => {
+        const variant = this.db.getVariant(variantId);
+        if (variant) {
+          const seed = fixedSeed ?? (parseInt(variantId) || index * 1000);
+          metricsMap.set(variantId, {
+            variantId,
+            pointId: variant.optimizationPointId,
+            users: 0,
+            conversions: 0,
+            conversionRate: 0,
+            confidence: 0
+          });
+        }
+      });
 
-    // Simulate over time
-    const startTime = Date.now();
-    const progress = 1; // For immediate response, we'll return the final state
+      variantIds.forEach((variantId, index) => {
+        const variant = this.db.getVariant(variantId);
+        if (variant) {
+          const seed = fixedSeed ?? (parseInt(variantId) || index * 1000);
+          const baseUsers = Math.floor(this.seededRandom(seed, 100, 1000));
+          const baseCR = this.seededRandom(seed + 1000, 0.02, 0.15);
 
-    variantIds.forEach((variantId, index) => {
-      const variant = this.db.getVariant(variantId);
-      if (variant) {
-        const seed = fixedSeed ?? (parseInt(variantId) || index * 1000);
-        const baseUsers = Math.floor(this.seededRandom(seed, 100, 1000));
-        const baseCR = this.seededRandom(seed + 1000, 0.02, 0.15);
+          const current = metricsMap.get(variantId)!;
+          current.users = baseUsers;
+          current.conversions = Math.floor(current.users * baseCR);
+          current.conversionRate = current.users > 0 ? current.conversions / current.users : 0;
+          current.confidence = Math.min(99, Math.floor(80 + this.seededRandom(seed + 2000, 0, 19)));
+        }
+      });
 
-        const current = metricsMap.get(variantId)!;
-        current.users = baseUsers;
-        current.conversions = Math.floor(current.users * baseCR);
-        current.conversionRate = current.users > 0 ? current.conversions / current.users : 0;
-        current.confidence = Math.min(99, Math.floor(80 + this.seededRandom(seed + 2000, 0, 19)));
-      }
-    });
-
-    this.db.setMetrics(metricsMap);
+      this.db.setMetrics(metricsMap);
+    }
 
     const metrics: ReportingMetricsDto[] = Array.from(metricsMap.values());
     const response: ReportingResponse = {

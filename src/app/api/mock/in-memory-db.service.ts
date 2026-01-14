@@ -4,6 +4,41 @@ import { OptimizationPointDto } from '../../api-contracts/points.contracts';
 import { VariantDto } from '../../api-contracts/variants.contracts';
 import { GoalDto } from '../../api-contracts/goals.contracts';
 
+function seededRandom(seed: number, min: number, max: number): number {
+  const x = Math.sin(seed) * 10000;
+  return min + (x - Math.floor(x)) * (max - min);
+}
+
+function generateFallbackText(pointName: string, index: number): string {
+  const templates = [
+    `Transform your ${pointName.toLowerCase()} experience`,
+    `Discover the power of ${pointName.toLowerCase()}`,
+    `Elevate your ${pointName.toLowerCase()} journey`,
+    `Unlock ${pointName.toLowerCase()} potential`,
+    `Revolutionize your ${pointName.toLowerCase()} approach`,
+    `Maximize ${pointName.toLowerCase()} results`,
+    `Optimize your ${pointName.toLowerCase()} strategy`,
+    `Enhance ${pointName.toLowerCase()} performance`,
+    `Streamline your ${pointName.toLowerCase()} process`,
+    `Amplify ${pointName.toLowerCase()} impact`
+  ];
+  return templates[index % templates.length];
+}
+
+function generateRationale(type: 'ux' | 'compliance', score: number): string {
+  if (type === 'ux') {
+    if (score >= 8) return 'Excellent clarity and user appeal';
+    if (score >= 6) return 'Good user experience potential';
+    if (score >= 4) return 'Average user engagement expected';
+    return 'Low user appeal, needs improvement';
+  } else {
+    if (score >= 8) return 'Fully compliant with guidelines';
+    if (score >= 6) return 'Mostly compliant, minor concerns';
+    if (score >= 4) return 'Some compliance issues detected';
+    return 'Significant compliance violations';
+  }
+}
+
 export interface InMemoryDbData {
   projects: ProjectDto[];
   points: OptimizationPointDto[];
@@ -26,6 +61,62 @@ export class InMemoryDbService {
     } else {
       // Ensure existing projects have the correct URL
       this.migrateOldUrls(this.data);
+      // Ensure default point and variants exist for project '1'
+      this.ensureDefaultData();
+    }
+  }
+
+  private ensureDefaultData(): void {
+    const project = this.data.projects.find(p => p.id === '1');
+    if (!project) return;
+
+    let point = this.data.points.find(p => p.projectId === '1');
+    if (!point) {
+      point = {
+        id: 'point_1',
+        projectId: '1',
+        name: 'Hero Title',
+        selector: 'c-home__hero__text__title',
+        text: 'Reserva Entradas El Rey León + Hotel',
+        objective: 'Increase click-through rate',
+        generationRules: 'Keep it professional and engaging',
+        createdAt: new Date('2024-01-01').toISOString(),
+        updatedAt: new Date('2024-01-01').toISOString()
+      };
+      this.data.points.push(point);
+    }
+
+    if (!point) return;
+
+    const existingVariants = this.data.variants.filter(v => v.projectId === '1' && v.optimizationPointId === point!.id);
+    if (existingVariants.length === 0) {
+      const defaultVariants: VariantDto[] = [];
+      const pointId = point.id;
+      const projectId = '1';
+      const seed = 12345;
+
+      for (let i = 0; i < 10; i++) {
+        const variantSeed = seed + i;
+        const uxScore = seededRandom(variantSeed, 6, 10);
+        const complianceScore = seededRandom(variantSeed + 100, 6, 10);
+
+        defaultVariants.push({
+          id: `${pointId}_${i}_${Date.now()}`,
+          projectId,
+          optimizationPointId: pointId,
+          text: generateFallbackText(point.name, i),
+          uxScore: Math.round(uxScore * 10) / 10,
+          uxRationale: generateRationale('ux', uxScore),
+          complianceScore: Math.round(complianceScore * 10) / 10,
+          complianceRationale: generateRationale('compliance', complianceScore),
+          status: 'active',
+          createdAt: new Date('2024-01-01').toISOString(),
+          source: 'fallback'
+        });
+      }
+
+      this.data.variants.push(...defaultVariants);
+      this.saveToStorage();
     }
   }
 
@@ -130,6 +221,47 @@ export class InMemoryDbService {
       toneDisallowed: ['casual', 'slang']
     };
     this.data.projects.push(defaultProject);
+
+    const defaultPoint: OptimizationPointDto = {
+      id: 'point_1',
+      projectId: '1',
+      name: 'Hero Title',
+      selector: 'c-home__hero__text__title',
+      text: 'Reserva Entradas El Rey León + Hotel',
+      objective: 'Increase click-through rate',
+      generationRules: 'Keep it professional and engaging',
+      createdAt: new Date('2024-01-01').toISOString(),
+      updatedAt: new Date('2024-01-01').toISOString()
+    };
+    this.data.points.push(defaultPoint);
+
+    const defaultVariants: VariantDto[] = [];
+    const pointId = defaultPoint.id;
+    const projectId = defaultProject.id;
+    const seed = 12345;
+
+    for (let i = 0; i < 10; i++) {
+      const variantSeed = seed + i;
+      const uxScore = seededRandom(variantSeed, 6, 10);
+      const complianceScore = seededRandom(variantSeed + 100, 6, 10);
+      const status = 'active';
+
+      defaultVariants.push({
+        id: `${pointId}_${i}_${Date.now()}`,
+        projectId,
+        optimizationPointId: pointId,
+        text: generateFallbackText(defaultPoint.name, i),
+        uxScore: Math.round(uxScore * 10) / 10,
+        uxRationale: generateRationale('ux', uxScore),
+        complianceScore: Math.round(complianceScore * 10) / 10,
+        complianceRationale: generateRationale('compliance', complianceScore),
+        status,
+        createdAt: new Date('2024-01-01').toISOString(),
+        source: 'fallback'
+      });
+    }
+
+    this.data.variants.push(...defaultVariants);
     this.saveToStorage();
   }
 
