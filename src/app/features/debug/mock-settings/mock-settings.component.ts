@@ -80,6 +80,43 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
       gap: 8px;
       margin-top: 16px;
     }
+
+    :host-context(body.dark-mode) {
+      ::ng-deep {
+        mat-checkbox {
+          .mdc-label,
+          label.mdc-label {
+            color: white !important;
+          }
+          
+          .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
+            background-color: white !important;
+            border-color: white !important;
+          }
+          
+          .mdc-checkbox__native-control:enabled ~ .mdc-checkbox__background {
+            border-color: white !important;
+          }
+          
+          .mdc-checkbox__checkmark,
+          .mdc-checkbox__checkmark-path {
+            color: #000 !important;
+            stroke: #000 !important;
+          }
+          
+          .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background .mdc-checkbox__checkmark-path {
+            stroke: #000 !important;
+            fill: none !important;
+          }
+        }
+        
+        .mdc-form-field {
+          .mdc-label {
+            color: white !important;
+          }
+        }
+      }
+    }
   `]
 })
 export class MockSettingsComponent implements OnInit {
