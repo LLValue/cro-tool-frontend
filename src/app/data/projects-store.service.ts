@@ -376,7 +376,7 @@ export class ProjectsStoreService {
       this.reportingApi.startSimulation(projectId, { durationMs, intervalMs }).subscribe({
         next: metrics => {
           const metricsMap = new Map<string, ReportingMetrics>();
-          metrics.forEach(m => metricsMap.set(m.variantId, m));
+          metrics.forEach(m => metricsMap.set(`${m.variantId}:${m.goalType}`, m));
           this.metricsSubject.next(metricsMap);
           observer.next();
           observer.complete();
@@ -400,7 +400,7 @@ export class ProjectsStoreService {
       map(metrics => {
         if (metrics && metrics.length > 0) {
           const metricsMap = new Map<string, ReportingMetrics>();
-          metrics.forEach(m => metricsMap.set(m.variantId, m));
+          metrics.forEach(m => metricsMap.set(`${m.variantId}:${m.goalType}`, m));
           this.metricsSubject.next(metricsMap);
         }
         return metrics;

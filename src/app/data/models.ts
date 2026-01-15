@@ -61,7 +61,7 @@ export interface Variant {
   uxRationale: string;
   complianceScore: number;
   complianceRationale: string;
-  status: 'active' | 'discarded';
+  status: 'active' | 'pending' | 'discarded';
   createdAt: Date;
   source: 'fallback' | 'manual';
 }
@@ -78,6 +78,7 @@ export interface Goal {
 export interface ReportingMetrics {
   variantId: string;
   pointId: string;
+  goalType: 'clickSelector' | 'urlReached' | 'dataLayerEvent' | 'all';
   users: number;
   conversions: number;
   conversionRate: number;

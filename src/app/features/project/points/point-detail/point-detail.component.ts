@@ -152,6 +152,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     } else {
       this.filteredVariants = this.variants.filter(v => {
         if (this.variantFilter === 'active') return v.status === 'active';
+        if (this.variantFilter === 'pending') return v.status === 'pending';
         if (this.variantFilter === 'discarded') return v.status === 'discarded';
         return true;
       });
@@ -207,6 +208,11 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   approveVariant(variantId: string): void {
     this.store.approveVariant(variantId);
     this.toast.showSuccess('Variant approved');
+  }
+
+  unapproveVariant(variantId: string): void {
+    this.store.updateVariant(variantId, { status: 'pending' });
+    this.toast.showSuccess('Variant disabled');
   }
 
   deleteVariant(variantId: string): void {

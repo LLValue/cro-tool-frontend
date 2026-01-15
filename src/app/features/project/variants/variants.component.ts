@@ -42,7 +42,7 @@ export class VariantsComponent implements OnInit, OnDestroy {
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
   selectedPointId: string | null = null;
-  filter: 'all' | 'active' | 'discarded' = 'all';
+  filter: 'all' | 'active' | 'pending' | 'discarded' = 'all';
   projectId: string = '';
   private subscriptions = new Subscription();
 
@@ -183,6 +183,12 @@ export class VariantsComponent implements OnInit, OnDestroy {
   approveVariant(id: string): void {
     this.store.approveVariant(id);
     this.toast.showSuccess('Variant approved');
+    this.loadVariants();
+  }
+
+  unapproveVariant(id: string): void {
+    this.store.updateVariant(id, { status: 'pending' });
+    this.toast.showSuccess('Variant disabled');
     this.loadVariants();
   }
 

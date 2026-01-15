@@ -1,6 +1,7 @@
 export interface ReportingMetricsDto {
   variantId: string;
   pointId: string;
+  goalType: 'clickSelector' | 'urlReached' | 'dataLayerEvent';
   users: number;
   conversions: number;
   conversionRate: number;

@@ -44,7 +44,7 @@ export interface InMemoryDbData {
   points: OptimizationPointDto[];
   variants: VariantDto[];
   goals: GoalDto[];
-  metrics: Map<string, any>; // variantId -> metrics
+  metrics: Map<string, any>; // `${variantId}:${goalType}` -> metrics
 }
 
 @Injectable({

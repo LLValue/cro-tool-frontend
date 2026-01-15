@@ -93,6 +93,23 @@
   margin-bottom: 16px;
 }
 
+::ng-deep {
+  .mat-mdc-chip.pending {
+    background: rgba(255, 193, 7, 0.18) !important;
+    border: 1px solid rgba(255, 193, 7, 0.35) !important;
+  }
+
+  .mat-mdc-chip.active {
+    background: rgba(76, 175, 80, 0.18) !important;
+    border: 1px solid rgba(76, 175, 80, 0.35) !important;
+  }
+
+  .mat-mdc-chip.discarded {
+    background: rgba(244, 67, 54, 0.18) !important;
+    border: 1px solid rgba(244, 67, 54, 0.35) !important;
+  }
+}
+
 .variant-header {
   display: flex;
   justify-content: space-between;

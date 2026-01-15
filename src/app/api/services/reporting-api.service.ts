@@ -32,6 +32,7 @@ export class ReportingApiService {
     return {
       variantId: dto.variantId,
       pointId: dto.pointId,
+      goalType: dto.goalType,
       users: dto.users,
       conversions: dto.conversions,
       conversionRate: dto.conversionRate,

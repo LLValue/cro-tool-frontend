@@ -154,6 +154,7 @@
             <mat-select [(ngModel)]="variantFilter" [ngModelOptions]="{standalone: true}" (selectionChange)="filterVariants()">
               <mat-option value="all">All</mat-option>
               <mat-option value="active">Active</mat-option>
+              <mat-option value="pending">Pending</mat-option>
               <mat-option value="discarded">Discarded</mat-option>
             </mat-select>
           </mat-form-field>
@@ -180,7 +181,10 @@
                   <span class="score-value">{{ variant.complianceScore }}/10</span>
                 </div>
                 <mat-chip-set>
-                  <mat-chip [class.active]="variant.status === 'active'" [class.discarded]="variant.status === 'discarded'">
+                  <mat-chip
+                    [class.active]="variant.status === 'active'"
+                    [class.pending]="variant.status === 'pending'"
+                    [class.discarded]="variant.status === 'discarded'">
                     {{ variant.status }}
                   </mat-chip>
                 </mat-chip-set>
@@ -188,6 +192,9 @@
               <div class="variant-actions">
                 <button *ngIf="variant.status !== 'active'" mat-icon-button (click)="approveVariant(variant.id)" matTooltip="Approve">
                   <mat-icon>check_circle</mat-icon>
+                </button>
+                <button *ngIf="variant.status === 'active'" mat-icon-button (click)="unapproveVariant(variant.id)" matTooltip="Disable">
+                  <mat-icon>remove_circle</mat-icon>
                 </button>
                 <button mat-icon-button color="warn" (click)="deleteVariant(variant.id)" matTooltip="Delete">
                   <mat-icon>delete</mat-icon>

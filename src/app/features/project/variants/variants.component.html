@@ -30,6 +30,7 @@
       <mat-chip-set>
         <mat-chip (click)="filter = 'all'" [class.selected]="filter === 'all'">All</mat-chip>
         <mat-chip (click)="filter = 'active'" [class.selected]="filter === 'active'">Active</mat-chip>
+        <mat-chip (click)="filter = 'pending'" [class.selected]="filter === 'pending'">Pending</mat-chip>
         <mat-chip (click)="filter = 'discarded'" [class.selected]="filter === 'discarded'">Discarded</mat-chip>
       </mat-chip-set>
     </div>
@@ -61,9 +62,13 @@
           </div>
         </mat-card-content>
         <mat-card-actions>
-          <button mat-button (click)="approveVariant(variant.id)" *ngIf="variant.status === 'discarded'">
+          <button mat-button (click)="approveVariant(variant.id)" *ngIf="variant.status !== 'active'">
             <mat-icon>check_circle</mat-icon>
             Approve
+          </button>
+          <button mat-button (click)="unapproveVariant(variant.id)" *ngIf="variant.status === 'active'">
+            <mat-icon>remove_circle</mat-icon>
+            Disable
           </button>
           <button mat-button color="warn" (click)="deleteVariant(variant.id)">
             <mat-icon>delete</mat-icon>

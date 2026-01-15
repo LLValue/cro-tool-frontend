@@ -7,7 +7,7 @@ export interface VariantDto {
   uxRationale: string;
   complianceScore: number;
   complianceRationale: string;
-  status: 'active' | 'discarded';
+  status: 'active' | 'pending' | 'discarded';
   createdAt: string; // ISO string
   source: 'fallback' | 'manual';
 }
@@ -22,6 +22,6 @@ export interface UpdateVariantRequest {
   uxRationale?: string;
   complianceScore?: number;
   complianceRationale?: string;
-  status?: 'active' | 'discarded';
+  status?: 'active' | 'pending' | 'discarded';
 }
 

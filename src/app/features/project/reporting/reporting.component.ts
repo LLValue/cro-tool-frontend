@@ -45,6 +45,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
   goals: Goal[] = [];
   globalMetrics: ReportingMetrics[] = [];
   pointMetrics: ReportingMetrics[] = [];
+  private latestMetrics: ReportingMetrics[] = [];
   selectedPointId: string = '';
   selectedGoalType: string = 'all';
   simulating = false;
@@ -145,18 +146,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
           return variant !== undefined;
         });
 
-      this.globalMetrics = this.sortMetrics(allMetrics);
-
-      if (this.selectedPointId) {
-        this.pointMetrics = this.sortMetrics(
-          allMetrics.filter(m => {
-            const variant = projectVariants.find(v => v.id === m.variantId);
-            return variant?.optimizationPointId === this.selectedPointId;
-          })
-        );
-      } else {
-        this.pointMetrics = [];
-      }
+      this.latestMetrics = allMetrics;
+      this.recomputeMetrics();
     });
     this.subscriptions.add(metricsSub);
 
@@ -178,20 +169,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
           return variant !== undefined;
         });
 
-        if (allMetrics.length > 0) {
-          this.globalMetrics = this.sortMetrics(allMetrics);
-
-          if (this.selectedPointId) {
-            this.pointMetrics = this.sortMetrics(
-              allMetrics.filter(m => {
-                const variant = projectVariants.find(v => v.id === m.variantId);
-                return variant?.optimizationPointId === this.selectedPointId;
-              })
-            );
-          } else {
-            this.pointMetrics = [];
-          }
-        }
+        this.latestMetrics = allMetrics;
+        this.recomputeMetrics();
       },
       error: () => {
         this.globalMetrics = [];
@@ -224,7 +203,60 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   onGoalTypeChange(): void {
-    this.updateMetrics();
+    // Filter should be instant; no need to refetch
+    this.recomputeMetrics();
+  }
+
+  private recomputeMetrics(): void {
+    const projectVariants = this.variants;
+    const filtered = this.applyGoalTypeFilter(this.latestMetrics, this.selectedGoalType);
+
+    this.globalMetrics = this.sortMetrics(filtered);
+
+    if (this.selectedPointId) {
+      this.pointMetrics = this.sortMetrics(
+        filtered.filter(m => {
+          const variant = projectVariants.find(v => v.id === m.variantId);
+          return variant?.optimizationPointId === this.selectedPointId;
+        })
+      );
+    } else {
+      this.pointMetrics = [];
+    }
+  }
+
+  private applyGoalTypeFilter(metrics: ReportingMetrics[], goalType: string): ReportingMetrics[] {
+    if (goalType === 'all') {
+      // Aggregate metrics across goal types per variant
+      const byVariant = new Map<string, { users: number; conversions: number; confidenceSum: number; confidenceWeight: number; pointId: string }>();
+      for (const m of metrics) {
+        const current = byVariant.get(m.variantId) || { users: 0, conversions: 0, confidenceSum: 0, confidenceWeight: 0, pointId: m.pointId };
+        current.users += m.users;
+        current.conversions += m.conversions;
+        // weight confidence by users (fallback to 1)
+        const w = Math.max(1, m.users);
+        current.confidenceSum += m.confidence * w;
+        current.confidenceWeight += w;
+        current.pointId = m.pointId;
+        byVariant.set(m.variantId, current);
+      }
+
+      return Array.from(byVariant.entries()).map(([variantId, agg]) => {
+        const users = agg.users;
+        const conversions = agg.conversions;
+        return {
+          variantId,
+          pointId: agg.pointId,
+          goalType: 'all',
+          users,
+          conversions,
+          conversionRate: users > 0 ? conversions / users : 0,
+          confidence: agg.confidenceWeight > 0 ? Math.round(agg.confidenceSum / agg.confidenceWeight) : 0
+        };
+      });
+    }
+
+    return metrics.filter(m => m.goalType === goalType);
   }
 
   exportCSV(): void {

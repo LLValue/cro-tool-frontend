@@ -689,8 +689,13 @@ export class MockApiClient implements ApiClient {
     });
     
     const variants = allVariants.filter(v => v.projectId === projectId && v.status === 'active');
-    const metrics: ReportingMetricsDto[] = variants
-      .map(v => metricsMap.get(v.id))
+    const activeVariantIds = new Set(variants.map(v => v.id));
+    const metrics: ReportingMetricsDto[] = Array.from(metricsMap.entries())
+      .filter(([key]) => {
+        const [variantId] = key.split(':');
+        return activeVariantIds.has(variantId);
+      })
+      .map(([, value]) => value as ReportingMetricsDto)
       .filter((m): m is ReportingMetricsDto => !!m);
 
     const response: ReportingResponse = {
@@ -747,19 +752,27 @@ export class MockApiClient implements ApiClient {
     const fixedSeed = config.fixedSeed;
 
     const metricsMap = new Map<string, ReportingMetricsDto>();
+    const goalTypes: Array<ReportingMetricsDto['goalType']> = (() => {
+      const goals = this.db.getGoals(projectId);
+      const unique = Array.from(new Set(goals.map(g => g.type))) as Array<ReportingMetricsDto['goalType']>;
+      return unique.length > 0 ? unique : ['clickSelector', 'urlReached', 'dataLayerEvent'];
+    })();
 
     if (variantIds.length > 0) {
       variantIds.forEach((variantId, index) => {
         const variant = this.db.getVariant(variantId);
         if (variant) {
           const seed = fixedSeed ?? (parseInt(variantId) || index * 1000);
-          metricsMap.set(variantId, {
-            variantId,
-            pointId: variant.optimizationPointId,
-            users: 0,
-            conversions: 0,
-            conversionRate: 0,
-            confidence: 0
+          goalTypes.forEach(goalType => {
+            metricsMap.set(`${variantId}:${goalType}`, {
+              variantId,
+              pointId: variant.optimizationPointId,
+              goalType,
+              users: 0,
+              conversions: 0,
+              conversionRate: 0,
+              confidence: 0
+            });
           });
         }
       });
@@ -771,11 +784,19 @@ export class MockApiClient implements ApiClient {
           const baseUsers = Math.floor(this.seededRandom(seed, 100, 1000));
           const baseCR = this.seededRandom(seed + 1000, 0.02, 0.15);
 
-          const current = metricsMap.get(variantId)!;
-          current.users = baseUsers;
-          current.conversions = Math.floor(current.users * baseCR);
-          current.conversionRate = current.users > 0 ? current.conversions / current.users : 0;
-          current.confidence = Math.min(99, Math.floor(80 + this.seededRandom(seed + 2000, 0, 19)));
+          goalTypes.forEach((goalType, goalIndex) => {
+            // Slightly vary metrics per goal type so the filter has visible impact
+            const typeSeed = seed + 3000 + goalIndex * 777;
+            const typeUsers = Math.max(50, Math.floor(baseUsers * this.seededRandom(typeSeed, 0.6, 1.1)));
+            const typeCR = Math.min(0.3, Math.max(0.005, baseCR * this.seededRandom(typeSeed + 1000, 0.8, 1.25)));
+            const confidence = Math.min(99, Math.floor(75 + this.seededRandom(typeSeed + 2000, 0, 24)));
+
+            const current = metricsMap.get(`${variantId}:${goalType}`)!;
+            current.users = typeUsers;
+            current.conversions = Math.floor(current.users * typeCR);
+            current.conversionRate = current.users > 0 ? current.conversions / current.users : 0;
+            current.confidence = confidence;
+          });
         }
       });
 
