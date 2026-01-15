@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { debounceTime, map } from 'rxjs/operators';
@@ -27,6 +28,7 @@ import { ChipsInputComponent } from '../../../shared/chips-input/chips-input.com
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatCardModule,
     CommonModule,
     PageHeaderComponent,
     ChipsInputComponent
@@ -50,13 +52,34 @@ export class ContextComponent implements OnInit, OnDestroy {
     private toast: ToastHelperService
   ) {
     this.globalForm = this.fb.group({
-      language: [''],
+      // Language & Voice
+      language: ['', Validators.required],
+      tone: [''],
+      styleComplexity: ['simple'],
+      styleLength: ['med'],
+      // Business & Page Context
+      industry: [''],
+      productSummary: [''],
+      pageIntent: [''],
+      funnelStage: [''],
+      valueProps: [[]],
+      typicalObjections: [[]],
+      marketLocale: [''],
+      // Proof & Source of Truth
+      allowedFacts: [[]],
+      mustNotClaim: [[]],
+      // Legal & Brand Guardrails
+      riskLevel: ['Standard'],
+      forbiddenWords: [[]],
+      mandatoryClaims: [[]],
+      prohibitedClaims: [[]],
+      requiredDisclaimer: [''],
+      toneAllowed: [[]],
+      toneDisallowed: [[]],
+      // Legacy fields
       pageContext: [''],
       croGuidelines: [''],
-      brandGuardrails: [''],
-      forbiddenWords: [[]],
-      toneAllowed: [[]],
-      toneDisallowed: [[]]
+      brandGuardrails: ['']
     });
 
     this.pointForm = this.fb.group({
@@ -161,13 +184,28 @@ export class ContextComponent implements OnInit, OnDestroy {
     if (project) {
       this.isUpdatingForm = true;
       this.globalForm.patchValue({
-        language: project.language,
-        pageContext: project.pageContext,
-        croGuidelines: project.croGuidelines,
-        brandGuardrails: project.brandGuardrails,
+        language: project.language || '',
+        tone: project.tone || '',
+        styleComplexity: project.styleComplexity || 'simple',
+        styleLength: project.styleLength || 'med',
+        industry: project.industry || '',
+        productSummary: project.productSummary || '',
+        pageIntent: project.pageIntent || '',
+        funnelStage: project.funnelStage || '',
+        valueProps: project.valueProps || [],
+        typicalObjections: project.typicalObjections || [],
+        marketLocale: project.marketLocale || '',
+        allowedFacts: project.allowedFacts || [],
+        mustNotClaim: project.mustNotClaim || [],
+        riskLevel: project.riskLevel || 'Standard',
         forbiddenWords: project.forbiddenWords || [],
+        prohibitedClaims: project.prohibitedClaims || [],
+        requiredDisclaimer: project.requiredDisclaimer || '',
         toneAllowed: project.toneAllowed || [],
-        toneDisallowed: project.toneDisallowed || []
+        toneDisallowed: project.toneDisallowed || [],
+        pageContext: project.pageContext || '',
+        croGuidelines: project.croGuidelines || '',
+        brandGuardrails: project.brandGuardrails || ''
       }, { emitEvent: false });
       // Clear existing mandatory claims
       while (this.mandatoryClaims.length !== 0) {

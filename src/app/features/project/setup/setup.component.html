@@ -16,7 +16,15 @@
 
   <mat-form-field appearance="outline" class="full-width">
     <mat-label>Page URL</mat-label>
-    <input matInput formControlName="pageUrl" type="url">
+    <input matInput formControlName="pageUrl" type="url" required>
+    <mat-error *ngIf="form.get('pageUrl')?.hasError('required')">
+      Page URL is required
+    </mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Industry</mat-label>
+    <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
   </mat-form-field>
 
   <mat-form-field appearance="outline" class="full-width">

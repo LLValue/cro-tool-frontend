@@ -1,66 +1,199 @@
-<app-page-header title="Context & Guidelines"></app-page-header>
+<app-page-header title="Brief & Guardrails"></app-page-header>
 
-<mat-tab-group>
-  <mat-tab label="Global">
+<mat-card class="tabs-card">
+  <mat-tab-group>
+  <mat-tab label="Language & Voice">
     <form [formGroup]="globalForm" class="form-container">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Language</mat-label>
-        <mat-select formControlName="language">
+        <mat-select formControlName="language" required>
           <mat-option value="en">English</mat-option>
           <mat-option value="es">Spanish</mat-option>
           <mat-option value="fr">French</mat-option>
           <mat-option value="de">German</mat-option>
+          <mat-option value="it">Italian</mat-option>
+          <mat-option value="pt">Portuguese</mat-option>
+        </mat-select>
+        <mat-error *ngIf="globalForm.get('language')?.hasError('required')">
+          Language is required
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Tone</mat-label>
+        <mat-select formControlName="tone">
+          <mat-option value="professional">Professional</mat-option>
+          <mat-option value="friendly">Friendly</mat-option>
+          <mat-option value="casual">Casual</mat-option>
+          <mat-option value="formal">Formal</mat-option>
+          <mat-option value="conversational">Conversational</mat-option>
+          <mat-option value="authoritative">Authoritative</mat-option>
         </mat-select>
       </mat-form-field>
 
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Style Complexity</mat-label>
+          <mat-select formControlName="styleComplexity">
+            <mat-option value="simple">Simple</mat-option>
+            <mat-option value="technical">Technical</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Style Length</mat-label>
+          <mat-select formControlName="styleLength">
+            <mat-option value="short">Short</mat-option>
+            <mat-option value="med">Medium</mat-option>
+            <mat-option value="long">Long</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-tab>
+
+  <mat-tab label="Business & Page Context">
+    <form [formGroup]="globalForm" class="form-container">
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Page Context</mat-label>
-        <textarea matInput formControlName="pageContext" rows="4"></textarea>
+        <mat-label>Industry</mat-label>
+        <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>CRO Guidelines</mat-label>
-        <textarea matInput formControlName="croGuidelines" rows="4"></textarea>
+        <mat-label>Product Summary</mat-label>
+        <textarea matInput formControlName="productSummary" rows="3" placeholder="What is it, who is it for"></textarea>
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Brand Guardrails</mat-label>
-        <textarea matInput formControlName="brandGuardrails" rows="4"></textarea>
+        <mat-label>Page Intent / Goal</mat-label>
+        <textarea matInput formControlName="pageIntent" rows="2" placeholder="What action do you want users to take?"></textarea>
       </mat-form-field>
 
-      <app-chips-input
-        formControlName="forbiddenWords"
-        label="Forbidden Words"
-        placeholder="Add forbidden word">
-      </app-chips-input>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Funnel Stage</mat-label>
+        <mat-select formControlName="funnelStage">
+          <mat-option value="discovery">Discovery</mat-option>
+          <mat-option value="consideration">Consideration</mat-option>
+          <mat-option value="conversion">Conversion</mat-option>
+        </mat-select>
+      </mat-form-field>
 
-      <app-chips-input
-        formControlName="toneAllowed"
-        label="Allowed Tones"
-        placeholder="Add allowed tone">
-      </app-chips-input>
+      <div class="section">
+        <h3>Value Props (2-5 bullets)</h3>
+        <app-chips-input
+          formControlName="valueProps"
+          label=""
+          placeholder="Add value proposition">
+        </app-chips-input>
+      </div>
 
-      <app-chips-input
-        formControlName="toneDisallowed"
-        label="Disallowed Tones"
-        placeholder="Add disallowed tone">
-      </app-chips-input>
+      <div class="section">
+        <h3>Typical Objections (3 bullets)</h3>
+        <app-chips-input
+          formControlName="typicalObjections"
+          label=""
+          placeholder="Add typical objection">
+        </app-chips-input>
+      </div>
 
-      <div class="mandatory-claims">
-        <h4>Mandatory Claims</h4>
-        <div *ngFor="let claim of mandatoryClaims.controls; let i = index" class="claim-row">
-          <mat-form-field appearance="outline" class="claim-input">
-            <mat-label>Claim {{ i + 1 }}</mat-label>
-            <input matInput [formControl]="$any(claim)">
-          </mat-form-field>
-          <button mat-icon-button (click)="removeClaim(i)">
-            <mat-icon>delete</mat-icon>
-          </button>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Market / Locale</mat-label>
+        <input matInput formControlName="marketLocale" placeholder="e.g., ES, MX, US">
+      </mat-form-field>
+    </form>
+  </mat-tab>
+
+  <mat-tab label="Proof & Source of Truth">
+    <form [formGroup]="globalForm" class="form-container">
+      <div class="section">
+        <h3>Allowed Facts / Proof Points</h3>
+        <app-chips-input
+          formControlName="allowedFacts"
+          label=""
+          placeholder="Add allowed fact or proof point">
+        </app-chips-input>
+      </div>
+
+      <div class="section">
+        <h3>What We Must NOT Claim</h3>
+        <app-chips-input
+          formControlName="mustNotClaim"
+          label=""
+          placeholder="Add claim to avoid">
+        </app-chips-input>
+      </div>
+    </form>
+  </mat-tab>
+
+  <mat-tab label="Legal & Brand Guardrails">
+    <form [formGroup]="globalForm" class="form-container">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Risk Level</mat-label>
+        <mat-select formControlName="riskLevel">
+          <mat-option value="Conservative">Conservative</mat-option>
+          <mat-option value="Standard">Standard</mat-option>
+          <mat-option value="Exploratory">Exploratory</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="section">
+        <h3>Forbidden Words</h3>
+        <app-chips-input
+          formControlName="forbiddenWords"
+          label=""
+          placeholder="Add forbidden word">
+        </app-chips-input>
+      </div>
+
+      <div class="section">
+        <h3>Mandatory Claims</h3>
+        <div formArrayName="mandatoryClaims">
+          <div *ngFor="let claim of mandatoryClaims.controls; let i = index" class="claim-row">
+            <mat-form-field appearance="outline" class="claim-input">
+              <mat-label>Claim {{ i + 1 }}</mat-label>
+              <input matInput [formControl]="$any(claim)">
+            </mat-form-field>
+            <button mat-icon-button (click)="removeClaim(i)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
         </div>
         <button mat-button (click)="addClaim()">
           <mat-icon>add</mat-icon>
           Add Claim
         </button>
+      </div>
+
+      <div class="section">
+        <h3>Prohibited / Sensitive Claims</h3>
+        <app-chips-input
+          formControlName="prohibitedClaims"
+          label=""
+          placeholder="Add prohibited claim">
+        </app-chips-input>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Required Disclaimer (optional)</mat-label>
+        <textarea matInput formControlName="requiredDisclaimer" rows="3"></textarea>
+      </mat-form-field>
+
+      <div class="section">
+        <h3>Allowed Tones</h3>
+        <app-chips-input
+          formControlName="toneAllowed"
+          label=""
+          placeholder="Add allowed tone">
+        </app-chips-input>
+      </div>
+
+      <div class="section">
+        <h3>Disallowed Tones</h3>
+        <app-chips-input
+          formControlName="toneDisallowed"
+          label=""
+          placeholder="Add disallowed tone">
+        </app-chips-input>
       </div>
     </form>
   </mat-tab>
@@ -88,4 +221,3 @@
     </form>
   </mat-tab>
 </mat-tab-group>
-

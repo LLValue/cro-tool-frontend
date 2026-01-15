@@ -761,3 +761,106 @@ body.dark-mode {
   }
 }
 
+// Dialog styles for dark mode - overlay container is a child of body
+body.dark-mode .cdk-overlay-container {
+  .mat-mdc-dialog-container .mdc-dialog__surface,
+  .mat-dialog-container .mdc-dialog__surface {
+    background-color: #1e1e1e !important;
+  }
+
+  .mat-mdc-dialog-container,
+  .mat-dialog-container {
+    background: #1e1e1e !important;
+    color: #ffffff !important;
+  }
+
+  .mat-mdc-dialog-title,
+  .mat-dialog-title,
+  h2[mat-dialog-title] {
+    color: #ffffff !important;
+  }
+
+  .mat-mdc-dialog-content,
+  .mat-dialog-content {
+    color: rgba(255, 255, 255, 0.87) !important;
+
+    p {
+      color: rgba(255, 255, 255, 0.87) !important;
+    }
+
+    .help-text {
+      color: rgba(255, 255, 255, 0.87) !important;
+
+      strong {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  .mat-mdc-dialog-actions,
+  .mat-dialog-actions {
+    border-top-color: rgba(255, 255, 255, 0.12) !important;
+
+    button {
+      color: #ffffff !important;
+
+      &.mat-primary,
+      &[color="primary"],
+      &.mat-mdc-raised-button.mat-primary {
+        background-color: var(--theme-primary) !important;
+        color: #ffffff !important;
+      }
+
+      &.mat-warn,
+      &[color="warn"] {
+        background-color: #f44336 !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  .mat-mdc-form-field {
+    .mat-mdc-text-field-wrapper {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .mat-mdc-form-field-label,
+    mat-label {
+      color: rgba(255, 255, 255, 0.87) !important;
+    }
+
+    .mat-mdc-input-element {
+      color: #ffffff !important;
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+    }
+
+    .mat-mdc-form-field-outline {
+      color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    &.mat-focused {
+      .mat-mdc-form-field-outline {
+        color: var(--theme-primary) !important;
+      }
+
+      .mat-mdc-form-field-label,
+      mat-label {
+        color: var(--theme-primary) !important;
+      }
+    }
+  }
+
+  .mat-mdc-form-field-error,
+  mat-error {
+    color: #f44336 !important;
+  }
+
+  .mat-mdc-form-field-hint,
+  mat-hint {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+}
+

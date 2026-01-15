@@ -1,11 +1,5 @@
 $primary-color: var(--theme-primary, #673ab7);
 
-.settings-card {
-  margin-top: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .settings-form {
   display: flex;
   flex-direction: column;
@@ -80,15 +74,38 @@ $primary-color: var(--theme-primary, #673ab7);
   }
 }
 
+.tabs-card {
+  margin-top: 48px;
+  padding: 0;
+  overflow: hidden;
+}
+
 ::ng-deep {
-  .mat-tab-group {
-    margin-top: 48px;
+  .tabs-card {
+    .mat-mdc-tab-header {
+      padding: 0 24px;
+      background: #f5f5f5;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    
+    .mat-mdc-tab-body-wrapper {
+      padding: 0;
+    }
   }
+}
 
-  .mat-tab-body-content {
-    padding: 0;
+:host-context(body.dark-mode) {
+  ::ng-deep {
+    .tabs-card {
+      .mat-mdc-tab-header {
+        background: #2a2a2a;
+        border-bottom-color: rgba(255, 255, 255, 0.12);
+      }
+    }
   }
+}
 
+::ng-deep {
   // Dark mode for Material components in settings
   body.dark-mode {
     .mat-mdc-select-value {

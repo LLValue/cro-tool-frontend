@@ -21,24 +21,28 @@ export const routes: Routes = [
         loadComponent: () => import('./features/project/setup/setup.component').then(m => m.SetupComponent)
       },
       {
-        path: 'points',
-        loadComponent: () => import('./features/project/points/points.component').then(m => m.PointsComponent)
-      },
-      {
-        path: 'context',
+        path: 'brief',
         loadComponent: () => import('./features/project/context/context.component').then(m => m.ContextComponent)
-      },
-      {
-        path: 'variants',
-        loadComponent: () => import('./features/project/variants/variants.component').then(m => m.VariantsComponent)
       },
       {
         path: 'goals',
         loadComponent: () => import('./features/project/goals/goals.component').then(m => m.GoalsComponent)
       },
       {
+        path: 'points',
+        loadComponent: () => import('./features/project/points/points.component').then(m => m.PointsComponent)
+      },
+      {
+        path: 'points/:pointId',
+        loadComponent: () => import('./features/project/points/point-detail/point-detail.component').then(m => m.PointDetailComponent)
+      },
+      {
         path: 'reporting',
         loadComponent: () => import('./features/project/reporting/reporting.component').then(m => m.ReportingComponent)
+      },
+      {
+        path: 'activation',
+        loadComponent: () => import('./features/project/activation/activation.component').then(m => m.ActivationComponent)
       },
       {
         path: 'preview',
@@ -54,6 +58,16 @@ export const routes: Routes = [
   {
     path: 'profile',
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'knowledge-base',
+    loadComponent: () => import('./features/knowledge-base/knowledge-base.component').then(m => m.KnowledgeBaseComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'templates',
+    loadComponent: () => import('./features/templates/templates.component').then(m => m.TemplatesComponent),
     canActivate: [authGuard]
   },
   {

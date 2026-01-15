@@ -50,6 +50,9 @@ import { CommonModule } from '@angular/common';
       width: 100%;
       margin-bottom: 16px;
     }
+    .mdc-dialog__content>:first-child {
+      margin-top: 5px;
+    }
   `]
 })
 export class CreateProjectDialogComponent {

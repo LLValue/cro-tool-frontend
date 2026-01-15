@@ -4,7 +4,7 @@ $primary-color: #673ab7;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 48px;
+  margin-bottom: 24px;
   padding: 24px;
   background: white;
   border-radius: 12px;
@@ -15,7 +15,7 @@ $primary-color: #673ab7;
   flex: 1;
 
   h1 {
-    margin: 0 0 8px 0;
+    margin: 0;
     font-size: 28px;
     font-weight: 600;
     color: #212121;

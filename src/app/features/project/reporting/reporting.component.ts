@@ -8,12 +8,13 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
-import { OptimizationPoint, Variant, ReportingMetrics } from '../../../data/models';
+import { OptimizationPoint, Variant, ReportingMetrics, Goal } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
@@ -29,6 +30,7 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     MatProgressBarModule,
     MatFormFieldModule,
     MatSelectModule,
+    MatCardModule,
     FormsModule,
     CommonModule,
     PageHeaderComponent
@@ -40,9 +42,11 @@ export class ReportingComponent implements OnInit, OnDestroy {
   projectId: string = '';
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
+  goals: Goal[] = [];
   globalMetrics: ReportingMetrics[] = [];
   pointMetrics: ReportingMetrics[] = [];
   selectedPointId: string = '';
+  selectedGoalType: string = 'all';
   simulating = false;
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   displayedColumnsWithActions: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence', 'actions'];
@@ -117,6 +121,16 @@ export class ReportingComponent implements OnInit, OnDestroy {
       }
     });
     this.subscriptions.add(pointsSub);
+
+    const goalsSub = this.store.getGoals(this.projectId).subscribe({
+      next: goals => {
+        this.goals = goals;
+      },
+      error: () => {
+        this.goals = [];
+      }
+    });
+    this.subscriptions.add(goalsSub);
 
     const metricsSub = combineLatest([
       this.store.variants$,
@@ -199,6 +213,56 @@ export class ReportingComponent implements OnInit, OnDestroy {
     });
   }
 
+  getGoalTypeLabel(type: string): string {
+    const labels: { [key: string]: string } = {
+      'all': 'All Goals',
+      'clickSelector': 'Click Selector',
+      'urlReached': 'URL Reached',
+      'dataLayerEvent': 'Data Layer Event'
+    };
+    return labels[type] || type;
+  }
+
+  onGoalTypeChange(): void {
+    this.updateMetrics();
+  }
+
+  exportCSV(): void {
+    const metrics = this.selectedPointId ? this.pointMetrics : this.globalMetrics;
+    if (metrics.length === 0) {
+      this.toast.showError('No data to export');
+      return;
+    }
+
+    const headers = ['Variant', 'Users', 'Conversions', 'Conversion Rate', 'Confidence'];
+    const rows = metrics.map(m => {
+      const variant = this.variants.find(v => v.id === m.variantId);
+      return [
+        variant?.text || 'Unknown',
+        m.users.toString(),
+        m.conversions.toString(),
+        (m.conversionRate * 100).toFixed(2) + '%',
+        m.confidence.toString() + '%'
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `reporting-${this.projectId}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    this.toast.showSuccess('CSV exported successfully');
+  }
+
   simulateTraffic(): void {
     if (this.variants.length === 0) {
       this.toast.showError(`No active variants found for project ${this.projectId}. Please create variants first.`);
@@ -206,7 +270,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
     }
 
     this.simulating = true;
-    const sub = this.store.simulateTraffic(this.projectId, 6000, 200).subscribe({
+    const sub = this.store.simulateTraffic(this.projectId, 7 * 24 * 60 * 60 * 1000, 200).subscribe({
       next: () => {
         setTimeout(() => {
           this.updateMetrics();

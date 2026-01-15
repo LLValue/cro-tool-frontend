@@ -4,31 +4,27 @@
       <mat-nav-list class="project-nav-list">
         <a mat-list-item [routerLink]="['/projects', projectId, 'setup']" routerLinkActive="active">
           <mat-icon class="nav-icon">settings</mat-icon>
-          <span class="nav-text">Setup</span>
+          <span class="nav-text">Project Setup</span>
         </a>
-        <a mat-list-item [routerLink]="['/projects', projectId, 'points']" routerLinkActive="active">
-          <mat-icon class="nav-icon">gps_fixed</mat-icon>
-          <span class="nav-text">Points</span>
-        </a>
-        <a mat-list-item [routerLink]="['/projects', projectId, 'context']" routerLinkActive="active">
+        <a mat-list-item [routerLink]="['/projects', projectId, 'brief']" routerLinkActive="active">
           <mat-icon class="nav-icon">description</mat-icon>
-          <span class="nav-text">Context</span>
-        </a>
-        <a mat-list-item [routerLink]="['/projects', projectId, 'variants']" routerLinkActive="active">
-          <mat-icon class="nav-icon">view_module</mat-icon>
-          <span class="nav-text">Variants</span>
+          <span class="nav-text">Brief & Guardrails</span>
         </a>
         <a mat-list-item [routerLink]="['/projects', projectId, 'goals']" routerLinkActive="active">
           <mat-icon class="nav-icon">flag</mat-icon>
           <span class="nav-text">Goals</span>
         </a>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'points']" routerLinkActive="active">
+          <mat-icon class="nav-icon">gps_fixed</mat-icon>
+          <span class="nav-text">Optimization Points</span>
+        </a>
         <a mat-list-item [routerLink]="['/projects', projectId, 'reporting']" routerLinkActive="active">
           <mat-icon class="nav-icon">analytics</mat-icon>
           <span class="nav-text">Reporting</span>
         </a>
-        <a mat-list-item [routerLink]="['/projects', projectId, 'preview']" routerLinkActive="active">
-          <mat-icon class="nav-icon">preview</mat-icon>
-          <span class="nav-text">Preview</span>
+        <a mat-list-item [routerLink]="['/projects', projectId, 'activation']" routerLinkActive="active">
+          <mat-icon class="nav-icon">rocket_launch</mat-icon>
+          <span class="nav-text">Activation</span>
         </a>
       </mat-nav-list>
     </mat-sidenav>

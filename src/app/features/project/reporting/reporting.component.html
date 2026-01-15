@@ -1,13 +1,31 @@
 <app-page-header title="Reporting">
-  <button mat-raised-button color="primary" (click)="simulateTraffic()" [disabled]="simulating">
-    <mat-icon>play_arrow</mat-icon>
-    {{ simulating ? 'Simulating...' : 'Simulate Traffic' }}
-  </button>
+  <div class="header-actions">
+    <button mat-button (click)="exportCSV()">
+      <mat-icon>download</mat-icon>
+      Export CSV
+    </button>
+    <button mat-raised-button color="primary" (click)="simulateTraffic()" [disabled]="simulating">
+      <mat-icon>play_arrow</mat-icon>
+      {{ simulating ? 'Simulating...' : 'Simulate traffic (7 days)' }}
+    </button>
+  </div>
 </app-page-header>
 
-<mat-tab-group class="reporting-tabs">
-  <mat-tab label="Global Combinations">
+<mat-card class="tabs-card">
+  <mat-tab-group class="reporting-tabs">
+  <mat-tab label="Page Overview">
     <div class="reporting-content">
+      <div class="filters-section">
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Goal Type</mat-label>
+          <mat-select [(ngModel)]="selectedGoalType" (ngModelChange)="onGoalTypeChange()">
+            <mat-option value="all">All Goals</mat-option>
+            <mat-option value="clickSelector">Click Selector</mat-option>
+            <mat-option value="urlReached">URL Reached</mat-option>
+            <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
       <div *ngIf="globalMetrics.length === 0" class="no-data-message">
         <p>No metrics available. Click "Simulate Traffic" to generate metrics for active variants.</p>
         <p *ngIf="variants.length === 0" class="warning">No active variants found. Create variants first in the Variants page.</p>
@@ -52,16 +70,27 @@
     </div>
   </mat-tab>
 
-  <mat-tab label="Per Optimization Point">
+  <mat-tab label="By Optimization Point">
     <div class="reporting-content">
-      <mat-form-field appearance="outline">
-        <mat-label>Select Point</mat-label>
-        <mat-select [(ngModel)]="selectedPointId" (ngModelChange)="loadPointMetrics()">
-          <mat-option *ngFor="let point of points" [value]="point.id">
-            {{ point.name }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="filters-section">
+        <mat-form-field appearance="outline">
+          <mat-label>Select Point</mat-label>
+          <mat-select [(ngModel)]="selectedPointId" (ngModelChange)="loadPointMetrics()">
+            <mat-option *ngFor="let point of points" [value]="point.id">
+              {{ point.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Filter by Goal Type</mat-label>
+          <mat-select [(ngModel)]="selectedGoalType" (ngModelChange)="onGoalTypeChange()">
+            <mat-option value="all">All Goals</mat-option>
+            <mat-option value="clickSelector">Click Selector</mat-option>
+            <mat-option value="urlReached">URL Reached</mat-option>
+            <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
 
       <div *ngIf="pointMetrics.length === 0 && selectedPointId" class="no-data-message">
         <p>No metrics available for this point. Click "Simulate Traffic" to generate metrics.</p>
@@ -96,5 +125,6 @@
       </table>
     </div>
   </mat-tab>
-</mat-tab-group>
+  </mat-tab-group>
+</mat-card>
 

@@ -6,6 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { ProjectsApiService } from '../../../api/services/projects-api.service';
@@ -26,6 +27,7 @@ import { take } from 'rxjs/operators';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
+    MatSelectModule,
     CommonModule,
     PageHeaderComponent
   ],
@@ -54,7 +56,8 @@ export class SetupComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      pageUrl: [''],
+      pageUrl: ['', Validators.required],
+      industry: [''],
       notes: ['']
     });
   }
@@ -115,6 +118,7 @@ export class SetupComponent implements OnInit {
       this.form.patchValue({
         name: this.project.name || '',
         pageUrl: this.project.pageUrl || '',
+        industry: this.project.industry || '',
         notes: this.project.notes || ''
       });
       this.pageUrl = this.project.pageUrl || '';

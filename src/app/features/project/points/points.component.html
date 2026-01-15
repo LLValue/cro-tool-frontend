@@ -1,94 +1,95 @@
 <app-page-header title="Optimization Points">
-  <button mat-button (click)="toggleViewMode()">
-    <mat-icon>{{ viewMode === 'desktop' ? 'phone_android' : 'desktop_windows' }}</mat-icon>
-    {{ viewMode === 'desktop' ? 'Mobile' : 'Desktop' }}
+  <button mat-raised-button color="primary" (click)="openAddPointDialog()">
+    <mat-icon>add</mat-icon>
+    Create Point
   </button>
 </app-page-header>
 
-<div class="points-container">
-  <div class="preview-section" [class.mobile]="viewMode === 'mobile'">
-    <div class="preview-header">
-      <h3>Page Preview</h3>
-      <button mat-icon-button (click)="loadPagePreview()" matTooltip="Reload page">
-        <mat-icon>refresh</mat-icon>
-      </button>
-    </div>
-    <div *ngIf="selectionMode && currentSelector" class="selector-display">
-      <div><strong>Selected Text:</strong> <span>{{ selectedText || 'No text' }}</span></div>
-      <div><strong>CSS Selector:</strong> <code>{{ currentSelector }}</code></div>
-      <div *ngIf="useIframe && !canAccessIframe && selectionMode" class="iframe-warning">
-        <mat-icon>warning</mat-icon>
-        <span>Cross-origin iframe detected. Cannot select elements directly.</span>
-        <div class="iframe-warning-actions">
-          <button mat-button (click)="attemptLoadHtmlDirectly()">
-            <mat-icon>refresh</mat-icon>
-            Try Load HTML
-          </button>
-          <button mat-raised-button color="primary" (click)="openManualSelectorDialog()">
-            <mat-icon>edit</mat-icon>
-            Enter Selector Manually
-          </button>
-        </div>
-      </div>
-    </div>
-    <div #previewContainer class="preview-wrapper" [class.selection-mode]="selectionMode">
-      <iframe 
-        *ngIf="useIframe && safeIframeUrl" 
-        #previewIframe
-        [src]="safeIframeUrl" 
-        class="preview-iframe"
-        frameborder="0"
-        (load)="onIframeLoad()">
-      </iframe>
-      <div 
-        *ngIf="!useIframe" 
-        class="preview-content" 
-        [innerHTML]="safePreviewHtml" 
-        (click)="onPreviewClick($event)"
-        (mouseover)="onPreviewMouseOver($event)"
-        (mouseout)="onPreviewMouseOut($event)">
-      </div>
-    </div>
-    <div *ngIf="selectionMode" class="selection-controls">
-      <button mat-button (click)="selectParent()">
-        <mat-icon>arrow_upward</mat-icon>
-        Parent
-      </button>
-      <button mat-raised-button color="primary" (click)="confirmSelection()">
-        <mat-icon>check</mat-icon>
-        Confirm
-      </button>
-      <button mat-button (click)="cancelSelection()">
-        <mat-icon>close</mat-icon>
-        Cancel
-      </button>
-    </div>
+<div class="points-list-container">
+  <div *ngIf="points.length === 0" class="empty-state">
+    <mat-icon>gps_fixed</mat-icon>
+    <h3>No Optimization Points</h3>
+    <p>Create your first optimization point to start testing variants.</p>
+    <button mat-raised-button color="primary" (click)="openAddPointDialog()">
+      <mat-icon>add</mat-icon>
+      Create Point
+    </button>
   </div>
 
-  <div class="points-list-section">
-    <div class="points-header">
-      <h3>Points</h3>
-      <button mat-raised-button color="primary" (click)="openAddPointDialog()">
-        <mat-icon>add</mat-icon>
-        Add Point
-      </button>
-    </div>
-    <div *ngIf="points.length === 0" class="empty-points">
-      <p>No optimization points yet. Click "Add Point" to create one.</p>
-    </div>
-    <mat-card *ngFor="let point of points" class="point-card" [class.selected]="selectedPointId === point.id">
-      <mat-card-content>
-        <strong>{{ point.name }}</strong>
-        <p *ngIf="point.text">{{ point.text }}</p>
-        <p *ngIf="point.selector"><code>{{ point.selector }}</code></p>
-        <p *ngIf="!point.selector" class="no-selector">No selector set</p>
-        <div class="card-actions">
-          <button mat-icon-button color="warn" (click)="deletePoint(point.id)" matTooltip="Delete point">
-            <mat-icon>delete</mat-icon>
+  <div *ngIf="points.length > 0" class="points-table-container">
+    <table mat-table [dataSource]="pointsDataSource" class="points-table">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Name</th>
+        <td mat-cell *matCellDef="let point">
+          <a [routerLink]="['/projects', projectId, 'points', point.id]" class="point-link">
+            {{ point.name }}
+          </a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef>Type</th>
+        <td mat-cell *matCellDef="let point">
+          <span class="type-badge">{{ point.elementType || 'Other' }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let point">
+          <mat-chip-set>
+            <mat-chip [class.active]="point.status === 'Active'" [class.paused]="point.status === 'Paused'">
+              {{ point.status || 'Active' }}
+            </mat-chip>
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="variantsApproved">
+        <th mat-header-cell *matHeaderCellDef>Variants Approved</th>
+        <td mat-cell *matCellDef="let point">
+          {{ getApprovedVariantsCount(point.id) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="lastUpdated">
+        <th mat-header-cell *matHeaderCellDef>Last Updated</th>
+        <td mat-cell *matCellDef="let point">
+          {{ formatDate(point.updatedAt || point.createdAt) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let point" class="actions-cell">
+          <button 
+            mat-icon-button 
+            [matMenuTriggerFor]="menu" 
+            matTooltip="Actions"
+            (click)="setSelectedPoint(point); $event.stopPropagation()">
+            <mat-icon>more_vert</mat-icon>
           </button>
-        </div>
-      </mat-card-content>
-    </mat-card>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="point-row"></tr>
+    </table>
   </div>
 </div>
 
+<mat-menu #menu="matMenu">
+  <button mat-menu-item (click)="editPoint(selectedPoint?.id || '')" [disabled]="!selectedPoint">
+    <mat-icon>edit</mat-icon>
+    <span>Edit</span>
+  </button>
+  <button mat-menu-item (click)="duplicatePoint(selectedPoint!)" [disabled]="!selectedPoint">
+    <mat-icon>content_copy</mat-icon>
+    <span>Duplicate</span>
+  </button>
+  <mat-divider></mat-divider>
+  <button mat-menu-item (click)="deletePoint(selectedPoint?.id || '')" [disabled]="!selectedPoint" class="delete-action">
+    <mat-icon>delete</mat-icon>
+    <span>Delete</span>
+  </button>
+</mat-menu>
