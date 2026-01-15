@@ -16,7 +16,9 @@ import { PageHeaderComponent } from '../../shared/page-header/page-header.compon
     PageHeaderComponent
   ],
   template: `
-    <app-page-header title="Templates">
+    <app-page-header
+      title="Templates"
+      description="Start faster with reusable experiment templates and prebuilt structures.">
     </app-page-header>
     
     <div class="templates-content">

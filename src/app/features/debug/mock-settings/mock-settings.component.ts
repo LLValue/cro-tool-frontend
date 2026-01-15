@@ -25,7 +25,10 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     PageHeaderComponent
   ],
   template: `
-    <app-page-header title="Mock API Settings"></app-page-header>
+    <app-page-header
+      title="Mock API Settings"
+      description="Control mock API latency, error injection, and deterministic seeding for development.">
+    </app-page-header>
 
     <mat-card>
       <mat-card-content>

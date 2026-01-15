@@ -13,6 +13,6 @@ import { CommonModule } from '@angular/common';
 })
 export class PageHeaderComponent {
   @Input() title = '';
-  @Input() subtitle = '';
+  @Input() description = '';
 }
 

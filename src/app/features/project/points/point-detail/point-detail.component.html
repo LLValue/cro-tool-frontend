@@ -1,4 +1,6 @@
-<app-page-header [title]="point?.name || 'Optimization Point'">
+<app-page-header
+  [title]="point?.name || 'Optimization Point'"
+  description="Configure this point, write its brief, and manage variants (approve/disable/discard).">
   <button mat-button (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
     Back

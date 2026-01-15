@@ -37,6 +37,13 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+// Material tabs underline (active indicator)
+// MDC uses border-color on the underline element; enforce our theme primary.
+.mat-mdc-tab .mdc-tab-indicator__content--underline,
+.mat-mdc-tab-link .mdc-tab-indicator__content--underline {
+  border-color: var(--theme-primary) !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -455,11 +462,25 @@ body.dark-mode {
       }
     }
 
+    // Outlined form-field border (notched outline)
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      border-width: 1px !important;
+    }
+
     .mat-mdc-form-field-outline {
-      color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.12) !important;
     }
 
     &.mat-focused {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: var(--theme-primary) !important;
+      }
+
       .mat-mdc-form-field-outline {
         color: var(--theme-primary);
       }

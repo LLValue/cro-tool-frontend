@@ -16,7 +16,9 @@ import { PageHeaderComponent } from '../../shared/page-header/page-header.compon
     PageHeaderComponent
   ],
   template: `
-    <app-page-header title="Knowledge Base">
+    <app-page-header
+      title="Knowledge Base"
+      description="Browse UX patterns, guidelines, and examples to inform your experiments.">
     </app-page-header>
     
     <div class="knowledge-base-content">

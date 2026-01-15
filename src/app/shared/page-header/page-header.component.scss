@@ -7,8 +7,9 @@ $primary-color: #673ab7;
   margin-bottom: 24px;
   padding: 24px;
   background: white;
-  border-radius: 12px;
+  border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .page-header-content {
@@ -22,11 +23,12 @@ $primary-color: #673ab7;
     line-height: 1.2;
   }
 
-  .subtitle {
-    margin: 0;
-    color: #757575;
+  .description {
+    margin: 6px 0 0 0;
+    color: #616161;
     font-size: 14px;
     line-height: 1.5;
+    max-width: 70ch;
   }
 }
 
@@ -46,8 +48,8 @@ $primary-color: #673ab7;
       color: #ffffff;
     }
 
-    .subtitle {
-      color: #ffffff;
+    .description {
+      color: rgba(255, 255, 255, 0.75);
     }
   }
 }
