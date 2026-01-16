@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatRadioModule } from '@angular/material/radio';
 import { CommonModule } from '@angular/common';
+import { take } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { Goal } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
@@ -44,7 +45,7 @@ export class GoalsComponent implements OnInit {
     private toast: ToastHelperService
   ) {
     this.primaryGoalForm = this.fb.group({
-      name: ['Primary Goal', Validators.required],
+      name: [''], // Optional - will come from backend in the future
       type: ['clickSelector', Validators.required],
       value: ['', Validators.required]
     });
@@ -108,7 +109,7 @@ export class GoalsComponent implements OnInit {
       const primary = goals.find(g => g.isPrimary);
       if (primary) {
         this.primaryGoalForm.patchValue({
-          name: primary.name,
+          name: primary.name || '', // Handle undefined name
           type: primary.type,
           value: primary.value
         });
@@ -118,7 +119,7 @@ export class GoalsComponent implements OnInit {
       this.goalsArray.clear();
       secondary.forEach(goal => {
         this.goalsArray.push(this.fb.group({
-          name: [goal.name, Validators.required],
+          name: [goal.name || ''], // Optional - handle undefined name
           type: [goal.type, Validators.required],
           value: [goal.value, Validators.required]
         }));
@@ -128,7 +129,7 @@ export class GoalsComponent implements OnInit {
 
   addSecondaryGoal(): void {
     this.goalsArray.push(this.fb.group({
-      name: ['', Validators.required],
+      name: [''], // Optional - will come from backend in the future
       type: ['clickSelector', Validators.required],
       value: ['', Validators.required]
     }));
@@ -171,21 +172,113 @@ export class GoalsComponent implements OnInit {
     }
   }
 
-  getPrimaryGoalSummary(): string {
-    const name = this.primaryGoalForm.get('name')?.value;
-    const type = this.primaryGoalForm.get('type')?.value;
-    const value = this.primaryGoalForm.get('value')?.value;
-    if (!name && !type && !value) return 'Not set';
-    return `${name || 'Unnamed'}: ${type} - ${value || 'Not set'}`;
+  getTypeLabel(type: string): string {
+    switch (type) {
+      case 'clickSelector': return 'Click Selector';
+      case 'urlReached': return 'URL Reached';
+      case 'dataLayerEvent': return 'Data Layer Event';
+      default: return 'Unknown';
+    }
   }
 
-  getSecondaryGoalsSummary(): string {
-    const count = this.goalsArray.length;
-    if (count === 0) return 'None';
-    const names = this.goalsArray.controls
-      .map(control => control.get('name')?.value || 'Unnamed')
-      .filter(name => name);
-    return names.length > 0 ? names.join(', ') : `${count} goal(s)`;
+  getTypeIcon(type: string): string {
+    switch (type) {
+      case 'clickSelector': return 'mouse';
+      case 'urlReached': return 'link';
+      case 'dataLayerEvent': return 'analytics';
+      default: return 'help';
+    }
+  }
+
+  getDefaultGoalName(type: string, isPrimary: boolean): string {
+    const typeLabel = this.getTypeLabel(type);
+    return isPrimary ? `Primary ${typeLabel}` : `Secondary ${typeLabel}`;
+  }
+
+  savePrimaryGoal(): void {
+    if (!this.projectId) {
+      this.toast.showError('Project ID is missing');
+      return;
+    }
+
+    if (!this.primaryGoalForm.valid) {
+      this.toast.showError('Please fill in all required fields for the primary goal');
+      return;
+    }
+
+    // Get existing goals
+    this.store.getGoals(this.projectId).pipe(take(1)).subscribe(existingGoals => {
+      const goals: Goal[] = [];
+      
+      // Add primary goal
+      const primaryFormValue = this.primaryGoalForm.value;
+      goals.push({
+        id: existingGoals.find(g => g.isPrimary)?.id || Date.now().toString(),
+        projectId: this.projectId,
+        isPrimary: true,
+        type: primaryFormValue.type,
+        value: primaryFormValue.value,
+        // Only include name if it's provided (not empty)
+        ...(primaryFormValue.name ? { name: primaryFormValue.name } : {})
+      });
+
+      // Keep existing secondary goals
+      const secondaryGoals = existingGoals.filter(g => !g.isPrimary);
+      goals.push(...secondaryGoals);
+
+      this.store.setGoals(this.projectId, goals);
+      this.toast.showSuccess('Primary goal saved');
+    });
+  }
+
+  saveSecondaryGoals(): void {
+    if (!this.projectId) {
+      this.toast.showError('Project ID is missing');
+      return;
+    }
+
+    if (this.goalsArray.length === 0) {
+      this.toast.showError('Please add at least one secondary goal');
+      return;
+    }
+
+    // Validate all secondary goals
+    const invalidGoals = this.goalsArray.controls.filter(control => !control.valid);
+    if (invalidGoals.length > 0) {
+      this.toast.showError('Please fill in all required fields for secondary goals');
+      return;
+    }
+
+    // Get existing goals
+    this.store.getGoals(this.projectId).pipe(take(1)).subscribe(existingGoals => {
+      const goals: Goal[] = [];
+      
+      // Keep existing primary goal
+      const primaryGoal = existingGoals.find(g => g.isPrimary);
+      if (primaryGoal) {
+        goals.push(primaryGoal);
+      }
+
+      // Add secondary goals
+      this.goalsArray.controls.forEach((control, index) => {
+        if (control.valid) {
+          const existingSecondary = existingGoals.filter(g => !g.isPrimary)[index];
+          const goalValue = control.value;
+          goals.push({
+            id: existingSecondary?.id || Date.now().toString() + Math.random(),
+            projectId: this.projectId,
+            isPrimary: false,
+            type: goalValue.type,
+            value: goalValue.value,
+            // Only include name if it's provided (not empty)
+            ...(goalValue.name ? { name: goalValue.name } : {})
+          });
+        }
+      });
+
+      this.store.setGoals(this.projectId, goals);
+      this.toast.showSuccess('Secondary goals saved');
+    });
   }
 
   saveGoals(): void {
@@ -198,28 +291,36 @@ export class GoalsComponent implements OnInit {
     
     // Primary goal
     if (this.primaryGoalForm.valid) {
+      const primaryFormValue = this.primaryGoalForm.value;
       goals.push({
         id: Date.now().toString(),
         projectId: this.projectId,
         isPrimary: true,
-        ...this.primaryGoalForm.value
+        type: primaryFormValue.type,
+        value: primaryFormValue.value,
+        // Only include name if it's provided (not empty)
+        ...(primaryFormValue.name ? { name: primaryFormValue.name } : {})
       });
     }
 
     // Secondary goals
     this.goalsArray.controls.forEach(control => {
       if (control.valid) {
+        const goalValue = control.value;
         goals.push({
           id: Date.now().toString() + Math.random(),
           projectId: this.projectId,
           isPrimary: false,
-          ...control.value
+          type: goalValue.type,
+          value: goalValue.value,
+          // Only include name if it's provided (not empty)
+          ...(goalValue.name ? { name: goalValue.name } : {})
         });
       }
     });
 
     this.store.setGoals(this.projectId, goals);
-    this.toast.showSuccess('Goals saved');
+    this.toast.showSuccess('All goals saved');
   }
 }
 

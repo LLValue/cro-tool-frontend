@@ -28,6 +28,12 @@
         </mat-form-field>
       </form>
     </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary" (click)="savePrimaryGoal()" [disabled]="primaryGoalForm.invalid">
+        <mat-icon>save</mat-icon>
+        Save Primary Goal
+      </button>
+    </mat-card-actions>
   </mat-card>
 
   <mat-card class="secondary-goals-card">
@@ -39,7 +45,7 @@
         <div formArrayName="goals">
           <div *ngFor="let goal of goalsArray.controls; let i = index" [formGroupName]="i" class="goal-row">
             <mat-form-field appearance="outline" class="goal-name">
-              <mat-label>Name</mat-label>
+              <mat-label>Name (Optional)</mat-label>
               <input matInput formControlName="name" placeholder="e.g., Secondary Goal">
             </mat-form-field>
             <mat-form-field appearance="outline" class="goal-type">
@@ -65,22 +71,68 @@
         </button>
       </form>
     </mat-card-content>
-  </mat-card>
-
-  <mat-card class="summary-card">
-    <mat-card-header>
-      <mat-card-title>Summary</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <p><strong>Primary:</strong> {{ getPrimaryGoalSummary() }}</p>
-      <p><strong>Secondary:</strong> {{ getSecondaryGoalsSummary() }}</p>
-    </mat-card-content>
     <mat-card-actions>
-      <button mat-raised-button color="primary" (click)="saveGoals()">
+      <button mat-raised-button color="primary" (click)="saveSecondaryGoals()" [disabled]="secondaryGoalsForm.invalid || goalsArray.length === 0">
         <mat-icon>save</mat-icon>
-        Save Goals
+        Save Secondary Goals
       </button>
     </mat-card-actions>
+  </mat-card>
+
+  <mat-card class="goals-list-card">
+    <mat-card-header>
+      <mat-card-title>All Goals Overview</mat-card-title>
+      <mat-card-subtitle>Complete list of configured goals</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="goals-list">
+        <!-- Primary Goal -->
+        <div class="goal-item primary-goal" *ngIf="primaryGoalForm.get('value')?.value">
+          <div class="goal-header">
+            <div class="goal-badge primary">
+              <mat-icon>flag</mat-icon>
+              <span>Primary</span>
+            </div>
+            <div class="goal-type-badge" [class]="'type-' + primaryGoalForm.get('type')?.value">
+              {{ getTypeLabel(primaryGoalForm.get('type')?.value) }}
+            </div>
+          </div>
+          <div class="goal-content">
+            <h3 class="goal-name">{{ primaryGoalForm.get('name')?.value || getDefaultGoalName(primaryGoalForm.get('type')?.value, true) }}</h3>
+            <div class="goal-value">
+              <mat-icon class="value-icon">{{ getTypeIcon(primaryGoalForm.get('type')?.value) }}</mat-icon>
+              <code>{{ primaryGoalForm.get('value')?.value || 'Not set' }}</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary Goals -->
+        <div class="goal-item secondary-goal" *ngFor="let goal of goalsArray.controls; let i = index">
+          <div class="goal-header">
+            <div class="goal-badge secondary">
+              <mat-icon>label</mat-icon>
+              <span>Secondary {{ i + 1 }}</span>
+            </div>
+            <div class="goal-type-badge" [class]="'type-' + goal.get('type')?.value">
+              {{ getTypeLabel(goal.get('type')?.value) }}
+            </div>
+          </div>
+          <div class="goal-content">
+            <h3 class="goal-name">{{ goal.get('name')?.value || getDefaultGoalName(goal.get('type')?.value, false) }}</h3>
+            <div class="goal-value">
+              <mat-icon class="value-icon">{{ getTypeIcon(goal.get('type')?.value) }}</mat-icon>
+              <code>{{ goal.get('value')?.value || 'Not set' }}</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" *ngIf="!primaryGoalForm.get('value')?.value && goalsArray.length === 0">
+          <mat-icon>info</mat-icon>
+          <p>No goals configured yet. Add a primary goal above to get started.</p>
+        </div>
+      </div>
+    </mat-card-content>
   </mat-card>
 </div>
 

@@ -21,14 +21,20 @@ export class GoalsApiService {
     );
   }
 
-  setGoals(projectId: string, goals: Omit<Goal, 'id' | 'projectId'>[]): Observable<Goal[]> {
+  setGoals(projectId: string, goals: Omit<Goal, 'id' | 'projectId' | 'createdAt'>[]): Observable<Goal[]> {
     const req: SetGoalsRequest = {
-      goals: goals.map(g => ({
-        name: g.name,
-        type: g.type,
-        isPrimary: g.isPrimary,
-        value: g.value
-      }))
+      goals: goals.map(g => {
+        const goal: any = {
+          type: g.type,
+          isPrimary: g.isPrimary,
+          value: g.value
+        };
+        // Only include name if it's provided and not empty
+        if (g.name && g.name.trim()) {
+          goal.name = g.name;
+        }
+        return goal;
+      })
     };
     return this.apiClient.goalsSet(projectId, req).pipe(
       map(dtos => dtos.map(dto => this.dtoToModel(dto)))
@@ -39,10 +45,11 @@ export class GoalsApiService {
     return {
       id: dto.id,
       projectId: dto.projectId,
-      name: dto.name,
+      name: dto.name, // Optional - may be undefined
       type: dto.type,
       isPrimary: dto.isPrimary,
-      value: dto.value
+      value: dto.value,
+      createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined
     };
   }
 }
