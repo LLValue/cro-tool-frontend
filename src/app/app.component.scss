@@ -125,6 +125,23 @@ $warn-color: #f44336;
   }
 }
 
+// Align nav icon + label vertically (MDC list item wraps content in .mdc-list-item__primary-text)
+::ng-deep .nav-list a[mat-list-item] {
+  .mdc-list-item__primary-text {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin-right: 0; // gap handles spacing
+  }
+}
+
 .nav-icon {
   margin-right: 12px;
   color: #757575;

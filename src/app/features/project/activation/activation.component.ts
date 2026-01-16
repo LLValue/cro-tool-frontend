@@ -47,6 +47,7 @@ export class ActivationComponent implements OnInit, OnDestroy {
   activityLogs: ActivityLog[] = [];
   activationConfig: ActivationConfig | null = null;
   safePreviewUrl: SafeResourceUrl | null = null;
+  private lastScrollY = 0;
   private subscriptions = new Subscription();
 
   constructor(
@@ -261,7 +262,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     const previewUrl = this.project.pageUrl;
+    this.lastScrollY = window.scrollY || 0;
     this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
+  }
+
+  onPreviewIframeLoad(): void {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: this.lastScrollY, left: 0, behavior: 'auto' });
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      (document.body as HTMLElement).focus?.();
+    });
   }
 
   get isPreviewMode(): boolean {

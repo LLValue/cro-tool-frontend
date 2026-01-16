@@ -52,6 +52,12 @@ export class AppComponent implements OnInit {
     if (savedDarkMode) {
       document.body.classList.add('dark-mode');
     }
+
+    // Verify authentication on app start
+    const token = this.authService.getToken();
+    if (token) {
+      this.authService.checkAuth().subscribe();
+    }
   }
 
   logout(): void {

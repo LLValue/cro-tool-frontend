@@ -55,12 +55,29 @@ export class LoginComponent implements OnInit {
   onSubmit(): void {
     if (this.loginForm.valid) {
       const { email, password } = this.loginForm.value;
-      if (this.authService.login(email, password)) {
-        this.toast.showSuccess('Login successful');
-        this.router.navigate(['/projects']);
-      } else {
-        this.toast.showError('Login failed');
-      }
+      this.loginForm.disable();
+      
+      this.authService.login(email, password).subscribe({
+        next: (success) => {
+          if (success) {
+            this.toast.showSuccess('Login successful');
+            this.router.navigate(['/projects']);
+          } else {
+            this.toast.showError('Invalid email or password');
+            this.loginForm.enable();
+          }
+        },
+        error: (error) => {
+          if (error.status === 0 || error.message?.includes('ECONNREFUSED')) {
+            this.toast.showError('Cannot connect to server. Please make sure the backend is running on http://localhost:3000');
+          } else if (error.status === 401) {
+            this.toast.showError('Invalid email or password');
+          } else {
+            this.toast.showError('Login failed. Please try again.');
+          }
+          this.loginForm.enable();
+        }
+      });
     }
   }
 }

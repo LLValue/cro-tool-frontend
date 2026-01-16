@@ -106,6 +106,9 @@
               <iframe 
                 [src]="safePreviewUrl" 
                 class="preview-iframe"
+                tabindex="-1"
+                aria-hidden="true"
+                (load)="onPreviewIframeLoad()"
                 frameborder="0"
                 allowfullscreen>
               </iframe>

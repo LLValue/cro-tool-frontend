@@ -13,6 +13,9 @@
       *ngIf="useIframe && safeIframeUrl" 
       [src]="safeIframeUrl" 
       class="preview-iframe"
+      tabindex="-1"
+      aria-hidden="true"
+      (load)="onPreviewIframeLoad()"
       frameborder="0">
     </iframe>
     <div 

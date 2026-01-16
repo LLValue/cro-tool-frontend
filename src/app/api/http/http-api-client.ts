@@ -144,5 +144,16 @@ export class HttpApiClient implements ApiClient {
   simulateStart(projectId: string, req: SimulationStartRequest): Observable<ReportingResponse> {
     return this.http.post<ReportingResponse>(`${this.baseUrl}/projects/${projectId}/reporting/simulate`, req);
   }
+
+  // Proxy
+  proxyFetch(url: string): Observable<{ html: string }> {
+    return this.http.get<{ html: string }>(`${this.baseUrl}/proxy/fetch`, {
+      params: { url }
+    });
+  }
+
+  proxyPreview(projectId: string): Observable<{ previewHtml: string }> {
+    return this.http.get<{ previewHtml: string }>(`${this.baseUrl}/proxy/preview/${projectId}`);
+  }
 }
 

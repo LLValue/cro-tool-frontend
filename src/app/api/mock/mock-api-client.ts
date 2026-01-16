@@ -849,6 +849,28 @@ export class MockApiClient implements ApiClient {
     return templates[index % templates.length];
   }
 
+  // Proxy
+  proxyFetch(url: string): Observable<{ html: string }> {
+    return of({ html: '<html><body>Mock HTML content from proxy</body></html>' }).pipe(
+      this.simulateLatency(),
+      this.simulateFailure()
+    );
+  }
+
+  proxyPreview(projectId: string): Observable<{ previewHtml: string }> {
+    const project = this.db.getProject(projectId);
+    if (project && project.previewHtml) {
+      return of({ previewHtml: project.previewHtml || '' }).pipe(
+        this.simulateLatency(),
+        this.simulateFailure()
+      );
+    }
+    return of({ previewHtml: '<html><body>Mock preview HTML</body></html>' }).pipe(
+      this.simulateLatency(),
+      this.simulateFailure()
+    );
+  }
+
   private generateRationale(type: 'ux' | 'compliance', score: number, seed: number): string {
     if (type === 'ux') {
       if (score >= 8) return 'Excellent clarity and user appeal';

@@ -39,6 +39,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
   useIframe: boolean = false;
   pageUrl: string = '';
   safeIframeUrl: SafeResourceUrl = '';
+  private lastScrollY = 0;
   private subscriptions = new Subscription();
 
   constructor(
@@ -151,6 +152,28 @@ export class PreviewComponent implements OnInit, OnDestroy {
           this.loadVariants();
         } else {
           // Try API as fallback
+          if (this.projectId) {
+            this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
+              next: project => {
+                this.project = project;
+                this.pageUrl = project.pageUrl || 'https://pack.stage.es';
+                this.loadPagePreview();
+                this.loadPoints();
+                this.loadVariants();
+              },
+              error: () => {
+                // Use default project if not found (for development)
+                this.useDefaultProject();
+              }
+            });
+          } else {
+            this.useDefaultProject();
+          }
+        }
+      },
+      error: () => {
+        // Try API directly
+        if (this.projectId) {
           this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
             next: project => {
               this.project = project;
@@ -164,23 +187,9 @@ export class PreviewComponent implements OnInit, OnDestroy {
               this.useDefaultProject();
             }
           });
+        } else {
+          this.useDefaultProject();
         }
-      },
-      error: () => {
-        // Try API directly
-        this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
-          next: project => {
-            this.project = project;
-            this.pageUrl = project.pageUrl || 'https://pack.stage.es';
-            this.loadPagePreview();
-            this.loadPoints();
-            this.loadVariants();
-          },
-          error: () => {
-            // Use default project if not found (for development)
-            this.useDefaultProject();
-          }
-        });
       }
     });
     this.subscriptions.add(sub);
@@ -238,6 +247,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
         } else {
           // Failed to load HTML, fallback to iframe
           this.useIframe = true;
+          this.lastScrollY = window.scrollY || 0;
           this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
           this.updatePreview();
         }
@@ -245,9 +255,18 @@ export class PreviewComponent implements OnInit, OnDestroy {
       error: () => {
         // Failed to load HTML, fallback to iframe
         this.useIframe = true;
+        this.lastScrollY = window.scrollY || 0;
         this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
         this.updatePreview();
       }
+    });
+  }
+
+  onPreviewIframeLoad(): void {
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: this.lastScrollY, left: 0, behavior: 'auto' });
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      (document.body as HTMLElement).focus?.();
     });
   }
 

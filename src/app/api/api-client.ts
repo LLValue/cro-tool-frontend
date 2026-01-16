@@ -64,5 +64,9 @@ export interface ApiClient {
   // Reporting
   reportingGet(projectId: string): Observable<ReportingResponse>;
   simulateStart(projectId: string, req: SimulationStartRequest): Observable<ReportingResponse>;
+
+  // Proxy
+  proxyFetch(url: string): Observable<{ html: string }>;
+  proxyPreview(projectId: string): Observable<{ previewHtml: string }>;
 }
 

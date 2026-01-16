@@ -43,6 +43,7 @@ export class SetupComponent implements OnInit {
   safePreviewHtml: SafeHtml = '';
   useIframe: boolean = false;
   safeIframeUrl: SafeResourceUrl = '';
+  private lastScrollY = 0;
 
   constructor(
     private fb: FormBuilder,
@@ -63,10 +64,44 @@ export class SetupComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.projectId = params['projectId'];
+    // Get projectId from route params (check both current and parent)
+    const getProjectId = (): string | null => {
+      const currentParams = this.route.snapshot.params;
+      if (currentParams['projectId']) {
+        return currentParams['projectId'];
+      }
+      const parentParams = this.route.snapshot.parent?.params;
+      if (parentParams?.['projectId']) {
+        return parentParams['projectId'];
+      }
+      return null;
+    };
+
+    const initialProjectId = getProjectId();
+    if (initialProjectId) {
+      this.projectId = initialProjectId;
       this.loadProject();
+    }
+
+    // Subscribe to params changes
+    this.route.params.subscribe(params => {
+      const newProjectId = params['projectId'];
+      if (newProjectId && newProjectId !== this.projectId) {
+        this.projectId = newProjectId;
+        this.loadProject();
+      }
     });
+
+    // Also subscribe to parent params (for nested routes)
+    if (this.route.parent) {
+      this.route.parent.params.subscribe(params => {
+        const newProjectId = params['projectId'];
+        if (newProjectId && newProjectId !== this.projectId) {
+          this.projectId = newProjectId;
+          this.loadProject();
+        }
+      });
+    }
 
     // Watch for changes in pageUrl to update preview
     this.form.get('pageUrl')?.valueChanges.subscribe(() => {
@@ -80,6 +115,10 @@ export class SetupComponent implements OnInit {
   }
 
   private loadProject(): void {
+    if (!this.projectId) {
+      return;
+    }
+
     // Try to get from store first (synchronous, faster)
     const storeProject = this.store.getProject(this.projectId);
     if (storeProject) {
@@ -94,20 +133,22 @@ export class SetupComponent implements OnInit {
           this.loadProjectData();
         } else {
           // If still not found, try API
-          this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
-            next: project => {
-              this.project = project;
-              this.loadProjectData();
-            },
-            error: err => {
-              // Only show error if it's not a 404 (project might be new)
-              if (err.status !== 404) {
-                console.error('Failed to load project', err);
-                this.toast.showError('Failed to load project');
+          if (this.projectId) {
+            this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
+              next: project => {
+                this.project = project;
+                this.loadProjectData();
+              },
+              error: err => {
+                // Only show error if it's not a 404 (project might be new)
+                if (err.status !== 404) {
+                  console.error('Failed to load project', err);
+                  this.toast.showError('Failed to load project');
+                }
+                // For 404, project might be new, so just initialize empty form
               }
-              // For 404, project might be new, so just initialize empty form
-            }
-          });
+            });
+          }
         }
       });
     }
@@ -150,6 +191,7 @@ export class SetupComponent implements OnInit {
     this.useIframe = this.previewService.shouldUseIframe(this.pageUrl);
 
     if (this.useIframe) {
+      this.lastScrollY = window.scrollY || 0;
       // For external URLs, we'll use iframe in the template
       this.previewHtml = '';
       this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
@@ -164,16 +206,27 @@ export class SetupComponent implements OnInit {
           } else {
             // Fallback to iframe
             this.useIframe = true;
+            this.lastScrollY = window.scrollY || 0;
             this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
           }
         },
         error: () => {
           // Fallback to iframe
           this.useIframe = true;
+          this.lastScrollY = window.scrollY || 0;
           this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
         }
       });
     }
+  }
+
+  onPreviewIframeLoad(): void {
+    // Some browsers focus the iframe on load causing a scroll jump; restore scroll and focus back to app.
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: this.lastScrollY, left: 0, behavior: 'auto' });
+      (document.activeElement as HTMLElement | null)?.blur?.();
+      (document.body as HTMLElement).focus?.();
+    });
   }
 
   goBack(): void {
