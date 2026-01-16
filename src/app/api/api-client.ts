@@ -67,6 +67,6 @@ export interface ApiClient {
 
   // Proxy
   proxyFetch(url: string): Observable<{ html: string }>;
-  proxyPreview(projectId: string): Observable<{ previewHtml: string }>;
+  proxyPreview(projectId: string, variantIds?: string[]): Observable<{ html: string }>;
 }
 

@@ -37,6 +37,19 @@ $primary-color: #673ab7;
   gap: 12px;
   align-items: center;
   flex-shrink: 0;
+
+  button {
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 4px;
+    }
+  }
 }
 
 // Dark mode

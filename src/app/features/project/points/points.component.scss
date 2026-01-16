@@ -24,6 +24,19 @@
     margin: 0 0 24px 0;
     color: #666;
   }
+
+  button {
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      vertical-align: middle;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
 }
 
 .points-table-container {
@@ -83,7 +96,7 @@
 
   .empty-state {
     mat-icon {
-      color: #666;
+      color: #ffffff;
     }
 
     h3 {

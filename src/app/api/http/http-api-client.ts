@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiClient } from '../api-client';
 import {
   LoginRequest,
@@ -147,13 +148,36 @@ export class HttpApiClient implements ApiClient {
 
   // Proxy
   proxyFetch(url: string): Observable<{ html: string }> {
-    return this.http.get<{ html: string }>(`${this.baseUrl}/proxy/fetch`, {
-      params: { url }
-    });
+    // The endpoint returns HTML directly (text/html), not JSON
+    return this.http.get(`${this.baseUrl}/proxy/fetch`, {
+      params: { url },
+      responseType: 'text'
+    }).pipe(
+      map((html: string) => ({ html }))
+    );
   }
 
-  proxyPreview(projectId: string): Observable<{ previewHtml: string }> {
-    return this.http.get<{ previewHtml: string }>(`${this.baseUrl}/proxy/preview/${projectId}`);
+  proxyPreview(projectId: string, variantIds?: string[]): Observable<{ html: string }> {
+    let params: any = {};
+    if (variantIds && variantIds.length > 0) {
+      params.variantIds = variantIds.join(',');
+    }
+    // Try JSON first, fallback to text
+    return this.http.get<{ html: string }>(`${this.baseUrl}/proxy/preview/${projectId}`, {
+      params
+    }).pipe(
+      map((response: any) => {
+        // Handle error responses from backend
+        if (response.message && !response.html) {
+          throw new Error(response.message);
+        }
+        // Handle both JSON { html: "..." } and plain text responses
+        if (typeof response === 'string') {
+          return { html: response };
+        }
+        return { html: response.html || response.previewHtml || '' };
+      })
+    );
   }
 }
 

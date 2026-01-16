@@ -16,6 +16,7 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
 import { Subscription, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SelectorInputDialogComponent } from './selector-input-dialog/selector-input-dialog.component';
+import { PointEditorComponent } from './point-editor/point-editor.component';
 import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
@@ -167,9 +168,15 @@ export class PointsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const dialogRef = this.dialog.open(SelectorInputDialogComponent, {
-      width: '500px',
-      data: { projectId }
+    // Open the editor mode dialog
+    const dialogRef = this.dialog.open(PointEditorComponent, {
+      width: '95vw',
+      maxWidth: '1800px',
+      height: '95vh',
+      maxHeight: '1200px',
+      data: { projectId },
+      disableClose: false,
+      panelClass: 'point-editor-dialog'
     });
 
     const dialogSub = dialogRef.afterClosed().subscribe(result => {
@@ -178,7 +185,7 @@ export class PointsComponent implements OnInit, OnDestroy {
           name: result.name,
           selector: result.selector,
           text: result.text || '',
-          elementType: 'Other',
+          elementType: result.elementType || 'Other',
           status: 'Active'
         }).subscribe({
           next: () => {

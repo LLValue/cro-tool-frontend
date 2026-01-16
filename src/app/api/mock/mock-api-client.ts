@@ -857,15 +857,21 @@ export class MockApiClient implements ApiClient {
     );
   }
 
-  proxyPreview(projectId: string): Observable<{ previewHtml: string }> {
+  proxyPreview(projectId: string, variantIds?: string[]): Observable<{ html: string }> {
     const project = this.db.getProject(projectId);
+    let html = '<html><body>Mock preview HTML</body></html>';
+    
     if (project && project.previewHtml) {
-      return of({ previewHtml: project.previewHtml || '' }).pipe(
-        this.simulateLatency(),
-        this.simulateFailure()
-      );
+      html = project.previewHtml;
     }
-    return of({ previewHtml: '<html><body>Mock preview HTML</body></html>' }).pipe(
+    
+    // If variantIds are provided, apply them (mock implementation)
+    if (variantIds && variantIds.length > 0) {
+      // In a real implementation, this would apply variants to the HTML
+      // For now, just return the HTML as-is
+    }
+    
+    return of({ html }).pipe(
       this.simulateLatency(),
       this.simulateFailure()
     );
