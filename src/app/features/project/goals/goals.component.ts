@@ -59,13 +59,51 @@ export class GoalsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.projectId = params['projectId'];
+    // Get projectId from route params (check both current and parent)
+    const getProjectId = (): string | null => {
+      const currentParams = this.route.snapshot.params;
+      if (currentParams['projectId']) {
+        return currentParams['projectId'];
+      }
+      const parentParams = this.route.snapshot.parent?.params;
+      if (parentParams?.['projectId']) {
+        return parentParams['projectId'];
+      }
+      return null;
+    };
+
+    const initialProjectId = getProjectId();
+    if (initialProjectId) {
+      this.projectId = initialProjectId;
       this.loadGoals();
+    }
+
+    // Subscribe to params changes
+    this.route.params.subscribe(params => {
+      const newProjectId = params['projectId'];
+      if (newProjectId && newProjectId !== this.projectId) {
+        this.projectId = newProjectId;
+        this.loadGoals();
+      }
     });
+
+    // Also subscribe to parent params (for nested routes)
+    if (this.route.parent) {
+      this.route.parent.params.subscribe(params => {
+        const newProjectId = params['projectId'];
+        if (newProjectId && newProjectId !== this.projectId) {
+          this.projectId = newProjectId;
+          this.loadGoals();
+        }
+      });
+    }
   }
 
   loadGoals(): void {
+    if (!this.projectId) {
+      return;
+    }
+    
     this.store.getGoals(this.projectId).subscribe(goals => {
       const primary = goals.find(g => g.isPrimary);
       if (primary) {
@@ -151,6 +189,11 @@ export class GoalsComponent implements OnInit {
   }
 
   saveGoals(): void {
+    if (!this.projectId) {
+      this.toast.showError('Project ID is missing');
+      return;
+    }
+
     const goals: Goal[] = [];
     
     // Primary goal
