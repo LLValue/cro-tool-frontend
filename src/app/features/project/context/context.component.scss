@@ -30,7 +30,6 @@
 
 .form-container {
   padding: 24px;
-  max-width: 1200px;
 }
 
 .form-row {
@@ -71,6 +70,17 @@
 
 .claim-input {
   flex: 1;
+}
+
+.section {
+  button[mat-raised-button] {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
 }
 
 :host-context(body.dark-mode) {

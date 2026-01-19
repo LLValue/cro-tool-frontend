@@ -1,7 +1,7 @@
 <app-page-header
   title="Project Setup"
   description="Define the project basics and load a page preview to validate the target URL.">
-  <button mat-button (click)="goBack()">
+  <button mat-raised-button color="primary" (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
     Back
   </button>
@@ -39,11 +39,11 @@
       <mat-icon>save</mat-icon>
       Save
     </button>
-    <button mat-button type="button" (click)="loadPreview()">
+    <button mat-raised-button color="primary" type="button" (click)="loadPreview()">
       <mat-icon>refresh</mat-icon>
       Load Page Preview
     </button>
-    <button mat-button type="button" (click)="goBack()">
+    <button mat-raised-button color="primary" type="button" (click)="goBack()">
       <mat-icon>arrow_back</mat-icon>
       Back
     </button>

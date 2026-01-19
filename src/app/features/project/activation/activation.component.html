@@ -22,11 +22,11 @@
             </textarea>
           </mat-form-field>
           <div class="script-actions">
-            <button type="button" mat-button (click)="generateScriptSnippet()">
+            <button type="button" mat-raised-button color="primary" (click)="generateScriptSnippet()">
               <mat-icon>refresh</mat-icon>
               Regenerate
             </button>
-            <button type="button" mat-button (click)="copyScript()">
+            <button type="button" mat-raised-button color="primary" (click)="copyScript()">
               <mat-icon>content_copy</mat-icon>
               Copy
             </button>
@@ -85,11 +85,11 @@
               <mat-icon>play_arrow</mat-icon>
               Activate Project
             </button>
-            <button type="button" mat-button (click)="pauseProject()" [disabled]="activationForm.get('status')?.value === 'Paused'">
+            <button type="button" mat-raised-button color="primary" (click)="pauseProject()" [disabled]="activationForm.get('status')?.value === 'Paused'">
               <mat-icon>pause</mat-icon>
               Pause Project
             </button>
-            <button type="button" mat-button (click)="previewProject()" [disabled]="activationForm.get('status')?.value === 'Preview'">
+            <button type="button" mat-raised-button color="primary" (click)="previewProject()" [disabled]="activationForm.get('status')?.value === 'Preview'">
               <mat-icon>preview</mat-icon>
               Preview
             </button>

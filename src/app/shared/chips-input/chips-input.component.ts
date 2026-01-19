@@ -19,25 +19,50 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
     }
   ],
   template: `
-    <mat-form-field appearance="outline" floatLabel="always" class="chips-input">
-      <mat-label>{{ getDisplayLabel() }}</mat-label>
-      <mat-chip-grid #chipGrid [attr.aria-label]="getDisplayLabel()">
-        <mat-chip-row *ngFor="let item of value" (removed)="remove(item)">
-          {{ item }}
-          <button matChipRemove [attr.aria-label]="'remove ' + item">
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </mat-chip-row>
-      </mat-chip-grid>
-      <input
-        [placeholder]="placeholder"
-        [matChipInputFor]="chipGrid"
-        [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-        [matChipInputAddOnBlur]="addOnBlur"
-        (matChipInputTokenEnd)="add($event)"
-      />
-    </mat-form-field>
-  `
+    <div class="chips-input-wrapper full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="chips-input full-width">
+        <mat-label>{{ getDisplayLabel() }}</mat-label>
+        <mat-chip-grid #chipGrid [attr.aria-label]="getDisplayLabel()">
+          <mat-chip-row *ngFor="let item of value" (removed)="remove(item)">
+            {{ item }}
+            <button matChipRemove [attr.aria-label]="'remove ' + item">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip-row>
+        </mat-chip-grid>
+        <input
+          [placeholder]="placeholder"
+          [matChipInputFor]="chipGrid"
+          [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+          [matChipInputAddOnBlur]="addOnBlur"
+          (matChipInputTokenEnd)="add($event)"
+        />
+      </mat-form-field>
+    </div>
+  `,
+  styles: [`
+    :host {
+      display: block;
+      width: 100%;
+    }
+    
+    .chips-input-wrapper {
+      width: 100%;
+      display: block;
+    }
+    
+    .chips-input-wrapper.full-width {
+      width: 100%;
+    }
+    
+    .chips-input-wrapper ::ng-deep .mat-mdc-form-field {
+      width: 100%;
+    }
+    
+    .chips-input-wrapper ::ng-deep .mat-mdc-text-field-wrapper {
+      width: 100%;
+    }
+  `]
 })
 export class ChipsInputComponent implements ControlValueAccessor {
   @Input() label = '';

@@ -473,6 +473,10 @@ body.dark-mode {
     }
   }
 
+  .mdc-card__actions {
+    padding: 16px !important;
+  }
+
 body.dark-mode {
   background: #121212;
   color: #ffffff;
