@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './data/auth.service';
 import { ThemeService } from './core/theme.service';
+import { BcgLogoComponent } from './shared/bcg-logo/bcg-logo.component';
 
 @Component({
   selector: 'app-root',
@@ -28,7 +29,8 @@ import { ThemeService } from './core/theme.service';
     MatBadgeModule,
     MatMenuModule,
     MatTooltipModule,
-    CommonModule
+    CommonModule,
+    BcgLogoComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
@@ -45,7 +47,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     // Initialize theme
-    this.themeService.setTheme(this.themeService.getCurrentTheme());
+    this.themeService.setTheme();
     
     // Initialize dark mode
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';

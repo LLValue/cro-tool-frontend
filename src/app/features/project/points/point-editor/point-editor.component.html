@@ -11,7 +11,7 @@
         <div class="preview-actions">
           <button 
             mat-raised-button 
-            [color]="selectionMode ? 'accent' : 'primary'"
+            color="primary"
             [disabled]="!!error"
             (click)="selectionMode ? disableSelectionMode() : enableSelectionMode()">
             <mat-icon>{{ selectionMode ? 'close' : 'touch_app' }}</mat-icon>

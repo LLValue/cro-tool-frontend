@@ -1,6 +1,4 @@
-$primary-color: var(--theme-primary, #673ab7);
-$accent-color: var(--theme-accent, #9c27b0);
-$warn-color: #f44336;
+$primary-color: var(--theme-primary, #7EF473);
 
 .sidenav-container {
   height: 100vh;
@@ -16,8 +14,8 @@ $warn-color: #f44336;
 
 .sidenav-header {
   padding: 15px 20px;
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-accent) 100%);
-  color: white;
+  background: var(--theme-primary);
+  color: #212427;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   transition: background 0.3s ease;
 }
@@ -49,8 +47,13 @@ $warn-color: #f44336;
   height: 80px;
   border-radius: 50%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  padding: 8px;
   border: 3px solid var(--theme-primary);
-  box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
   transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
@@ -61,6 +64,10 @@ $warn-color: #f44336;
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  app-bcg-logo {
+    color: #212427;
   }
 }
 
@@ -78,7 +85,7 @@ $warn-color: #f44336;
 
 .user-email {
   font-size: 13px;
-  color: #757575;
+  color: #212427;
 }
 
 .user-actions {
@@ -87,7 +94,7 @@ $warn-color: #f44336;
   margin-top: 8px;
 
   button {
-    color: #757575;
+    color: #212427;
     transition: color 0.2s ease;
 
     &:hover {
@@ -103,19 +110,20 @@ $warn-color: #f44336;
   a {
     border-radius: 8px;
     transition: all 0.2s ease;
-    color: #424242;
+    color: #212427;
 
     &:hover {
-      background: rgba(103, 58, 183, 0.08);
-      color: var(--theme-primary);
+      background: rgba(126, 244, 115, 0.15);
+      color: #212427;
     }
 
     &.active {
-      color: var(--theme-primary);
+      background: #F2F2F2;
+      color: #212427;
       font-weight: 600;
 
       .nav-icon {
-        color: var(--theme-primary);
+        color: #212427;
       }
     }
   }
@@ -144,13 +152,13 @@ $warn-color: #f44336;
 
 .nav-icon {
   margin-right: 12px;
-  color: #757575;
+  color: #212427;
   transition: color 0.2s ease;
 }
 
   .nav-label {
     font-size: 14px;
-    color: #424242;
+    color: #212427;
   }
 
 .main-toolbar {
@@ -242,10 +250,23 @@ $warn-color: #f44336;
   overflow: hidden;
   border: 2px solid #e0e0e0;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     border-color: var(--theme-primary);
     transform: scale(1.05);
+  }
+
+  app-bcg-logo {
+    width: 100%;
+    height: 100%;
+    display: block;
+    padding: 4px;
+    background: white;
+    border-radius: 50%;
+    color: #212427;
   }
 }
 
@@ -254,6 +275,16 @@ $warn-color: #f44336;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.user-avatar-button app-bcg-logo {
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 4px;
+  background: white;
+  border-radius: 50%;
+  color: #212427;
 }
 
 .main-content {
@@ -270,6 +301,34 @@ body.dark-mode {
 
   .user-email {
     color: #ffffff;
+  }
+
+  .nav-list {
+    a {
+      color: rgba(255, 255, 255, 0.87);
+
+      &:hover {
+        background: rgba(126, 244, 115, 0.2);
+        color: #ffffff;
+      }
+
+      &.active {
+        background: #2a2a2a !important;
+        color: #ffffff;
+      }
+
+      .nav-icon {
+        color: rgba(255, 255, 255, 0.87);
+      }
+
+      &.active .nav-icon {
+        color: #ffffff;
+      }
+    }
+
+    .nav-label {
+      color: rgba(255, 255, 255, 0.87);
+    }
   }
 }
 

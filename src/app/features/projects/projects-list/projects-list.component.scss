@@ -1,6 +1,4 @@
-$primary-color: #673ab7;
-$accent-color: #ff4081;
-$warn-color: #f44336;
+$primary-color: #7EF473;
 
 .projects-container {
   margin-top: 24px;
@@ -89,7 +87,7 @@ $warn-color: #f44336;
   transition: color 0.2s ease;
 
   &:hover {
-    color: $accent-color;
+    color: $primary-color;
     text-decoration: underline;
   }
 
@@ -104,7 +102,7 @@ $warn-color: #f44336;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #757575;
+  color: #212427;
   font-size: 14px;
 
   mat-icon {
@@ -148,7 +146,7 @@ $warn-color: #f44336;
 .empty-state {
   padding: 80px 24px;
   text-align: center;
-  color: #757575;
+  color: #212427;
 
   .empty-icon {
     font-size: 80px;

@@ -118,7 +118,7 @@ mat-dialog-content {
     height: 48px;
     width: 48px;
     margin-bottom: 16px;
-    color: var(--warn-color);
+    color: var(--theme-primary);
   }
 
   .error-message {
@@ -143,7 +143,7 @@ mat-dialog-content {
 }
 
 .preview-section.preview-error {
-  border-color: rgba(var(--warn-color-rgb, 244, 67, 54), 0.3);
+  border-color: rgba(var(--theme-primary-rgb), 0.3);
 }
 
 .help-text {

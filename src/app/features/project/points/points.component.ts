@@ -248,7 +248,7 @@ export class PointsComponent implements OnInit, OnDestroy {
         message: `Are you sure you want to delete "${point.name}"? This action cannot be undone.`,
         confirmText: 'Delete',
         cancelText: 'Cancel',
-        confirmColor: 'warn'
+        confirmColor: 'primary'
       }
     });
 

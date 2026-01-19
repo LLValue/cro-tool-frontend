@@ -8,7 +8,7 @@
 
     <div class="user-profile-section">
       <div class="user-avatar">
-        <img src="https://cdn.iconscout.com/icon/free/png-256/free-avatar-icon-svg-download-png-456322.png" alt="User Avatar" />
+        <app-bcg-logo></app-bcg-logo>
       </div>
       <div class="user-info">
         <div class="user-name">{{ (authService.isLoggedIn$ | async) ? 'Admin User' : 'Guest' }}</div>
@@ -74,7 +74,7 @@
         </button>
         <div class="user-menu">
           <button mat-icon-button [matMenuTriggerFor]="userMenu" class="user-avatar-button">
-            <img src="https://cdn.iconscout.com/icon/free/png-256/free-avatar-icon-svg-download-png-456322.png" alt="User Avatar" class="toolbar-avatar" />
+            <app-bcg-logo></app-bcg-logo>
           </button>
           <mat-menu #userMenu="matMenu">
             <button mat-menu-item routerLink="/profile">

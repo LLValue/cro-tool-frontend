@@ -10,7 +10,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { CommonModule } from '@angular/common';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { ToastHelperService } from '../../shared/toast-helper.service';
-import { ThemeService, Theme } from '../../core/theme.service';
+import { ThemeService } from '../../core/theme.service';
 
 @Component({
   selector: 'app-settings',
@@ -41,7 +41,6 @@ export class SettingsComponent implements OnInit {
     private themeService: ThemeService
   ) {
     this.appearanceForm = this.fb.group({
-      theme: ['purple'],
       darkMode: [false],
       compactMode: [false]
     });
@@ -63,13 +62,11 @@ export class SettingsComponent implements OnInit {
   }
 
   loadSettings(): void {
-    const currentTheme = this.themeService.getCurrentTheme();
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
     const savedCompact = localStorage.getItem('compactMode') === 'true';
     const savedLanguage = localStorage.getItem('language') || 'en';
 
     this.appearanceForm.patchValue({
-      theme: currentTheme,
       darkMode: savedDarkMode,
       compactMode: savedCompact
     });
@@ -93,15 +90,8 @@ export class SettingsComponent implements OnInit {
     }
   }
 
-  onThemeChange(): void {
-    const theme = this.appearanceForm.get('theme')?.value as Theme;
-    this.themeService.setTheme(theme);
-    this.toast.showSuccess('Theme updated');
-  }
-
   onAppearanceSave(): void {
     const values = this.appearanceForm.value;
-    this.themeService.setTheme(values.theme as Theme);
     localStorage.setItem('darkMode', values.darkMode);
     localStorage.setItem('compactMode', values.compactMode);
     this.toast.showSuccess('Appearance settings saved');

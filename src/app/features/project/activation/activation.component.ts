@@ -293,12 +293,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
 
   getStatusColor(status: string): string {
-    const colors: { [key: string]: string } = {
-      'Live': 'primary',
-      'Paused': 'warn',
-      'Preview': 'accent'
-    };
-    return colors[status] || 'primary';
+    return 'primary';
   }
 
   formatTimestamp(timestamp: Date): string {

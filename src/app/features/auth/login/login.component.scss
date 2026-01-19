@@ -1,5 +1,4 @@
-$primary-color: #673ab7;
-$accent-color: #ff4081;
+$primary-color: #7EF473;
 
 .login-container {
   display: flex;
@@ -8,7 +7,7 @@ $accent-color: #ff4081;
   height: 100vh;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: rgba(0, 0, 0, .2);;
 }
 
 .login-background {
@@ -52,10 +51,9 @@ $accent-color: #ff4081;
 }
 
 .login-header {
-  background: linear-gradient(135deg, $primary-color 0%, #9c27b0 100%);
+  background: var(--theme-primary);
   padding: 40px 32px 32px;
-  text-align: center;
-  color: white;
+  color: #212427;
   margin: 0;
 }
 
@@ -63,12 +61,12 @@ $accent-color: #ff4081;
   font-size: 28px;
   font-weight: 600;
   margin: 16px 0 8px;
-  color: white;
+  color: #212427;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.9);
+  color: #212427;
   margin: 0;
 }
 
@@ -99,7 +97,7 @@ mat-card-content {
 
   .mat-form-field-prefix {
     margin-right: 12px;
-    color: #757575;
+    color: #212427;
   }
 
   .mat-focused .mat-form-field-prefix {
@@ -122,7 +120,7 @@ mat-card-content {
   transition: color 0.2s ease;
 
   &:hover {
-    color: $accent-color;
+    color: $primary-color;
     text-decoration: underline;
   }
 }
@@ -134,7 +132,8 @@ mat-card-content {
   font-weight: 600;
   margin-top: 8px;
   border-radius: 8px;
-  background: linear-gradient(135deg, $primary-color 0%, #9c27b0 100%);
+  background-color: var(--theme-primary) !important;
+  color: #212427 !important;
   box-shadow: 0 4px 12px rgba($primary-color, 0.4);
   transition: all 0.3s ease;
 
@@ -161,7 +160,7 @@ mat-card-content {
 
   p {
     margin: 0;
-    color: #757575;
+    color: #212427;
     font-size: 14px;
   }
 
@@ -172,7 +171,7 @@ mat-card-content {
     transition: color 0.2s ease;
 
     &:hover {
-      color: $accent-color;
+      color: $primary-color;
       text-decoration: underline;
     }
   }

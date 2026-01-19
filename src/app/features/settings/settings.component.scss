@@ -1,4 +1,4 @@
-$primary-color: var(--theme-primary, #673ab7);
+$primary-color: var(--theme-primary, #7EF473);
 
 .settings-form {
   display: flex;
@@ -44,7 +44,7 @@ $primary-color: var(--theme-primary, #673ab7);
   p {
     margin: 0;
     font-size: 14px;
-    color: #757575;
+    color: #212427;
   }
 }
 
@@ -127,7 +127,7 @@ $primary-color: var(--theme-primary, #673ab7);
       }
 
       &.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-        background: rgba(var(--theme-primary-rgb, 103, 58, 183), 0.2) !important;
+        background: rgba(var(--theme-primary-rgb, 126, 244, 115), 0.2) !important;
       }
     }
 

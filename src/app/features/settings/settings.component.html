@@ -12,17 +12,6 @@
       </mat-card-header>
       <mat-card-content>
         <form [formGroup]="appearanceForm" class="settings-form">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Theme Color</mat-label>
-            <mat-select formControlName="theme" (selectionChange)="onThemeChange()">
-              <mat-option value="purple">Purple</mat-option>
-              <mat-option value="blue">Blue</mat-option>
-              <mat-option value="green">Green</mat-option>
-              <mat-option value="orange">Orange</mat-option>
-              <mat-option value="red">Red</mat-option>
-            </mat-select>
-          </mat-form-field>
-
           <div class="toggle-section">
             <div class="toggle-item">
               <div class="toggle-info">

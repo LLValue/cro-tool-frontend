@@ -18,9 +18,8 @@
 
 // CSS Variables for theming
 :root {
-  --theme-primary: #673ab7;
-  --theme-accent: #9c27b0;
-  --theme-primary-rgb: 103, 58, 183;
+  --theme-primary: #7EF473;
+  --theme-primary-rgb: 126, 244, 115;
 }
 
 html, body {
@@ -209,7 +208,7 @@ body.dark-mode {
 }
 
 .mdc-tab--active .mdc-tab__text-label {
-  color: var(--theme-primary) !important;
+  color: #212427 !important;
 }
 
 .project-nav-list,
@@ -219,27 +218,7 @@ body.dark-mode {
       span.nav-text,
       .mdc-list-item__primary-text .nav-text,
       .mdc-list-item__primary-text .nav-label {
-        color: #616161 !important;
-      }
-
-      &.active {
-        .nav-text,
-        .nav-icon,
-        span.nav-text,
-        .mdc-list-item__primary-text .nav-text,
-        .mdc-list-item__primary-text .nav-label {
-          color: var(--theme-primary) !important;
-        }
-      }
-
-      &:hover {
-        .nav-text,
-        .nav-icon,
-        span.nav-text,
-        .mdc-list-item__primary-text .nav-text,
-        .mdc-list-item__primary-text .nav-label {
-          color: var(--theme-primary) !important;
-        }
+        color: #212427 !important;
       }
     }
   }
@@ -260,7 +239,7 @@ body.dark-mode {
   }
 
   .sidenav-header {
-    background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-accent) 100%);
+    background: var(--theme-primary);
   }
 
   .user-profile-section {
@@ -274,6 +253,36 @@ body.dark-mode {
 
   .user-email {
     color: #ffffff;
+  }
+
+  .nav-list {
+    background: #1e1e1e !important;
+
+    a {
+      color: rgba(255, 255, 255, 0.87);
+
+      &:hover {
+        background: rgba(126, 244, 115, 0.2);
+        color: #ffffff;
+      }
+
+      &.active {
+        background: #2a2a2a !important;
+        color: #ffffff;
+      }
+
+      .nav-icon {
+        color: rgba(255, 255, 255, 0.87);
+      }
+
+      &.active .nav-icon {
+        color: #ffffff;
+      }
+    }
+
+    .nav-label {
+      color: rgba(255, 255, 255, 0.87);
+    }
   }
 
   .nav-list {
@@ -602,7 +611,7 @@ body.dark-mode {
 
     &.mat-primary {
       background-color: var(--theme-primary) !important;
-      color: white !important;
+      color: #212427 !important;
     }
   }
 
@@ -790,7 +799,7 @@ body.dark-mode {
     &.selected {
       .mdc-evolution-chip__text-label,
       .mat-mdc-chip-action-label {
-        color: #ffffff !important;
+        color: #212427 !important;
       }
     }
   }
@@ -896,7 +905,7 @@ body.dark-mode .cdk-overlay-container {
 
       &.mat-warn,
       &[color="warn"] {
-        background-color: #f44336 !important;
+        background-color: var(--theme-primary) !important;
         color: #ffffff !important;
       }
     }

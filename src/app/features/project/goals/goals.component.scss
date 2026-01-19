@@ -56,7 +56,7 @@
   }
 
   &.secondary-goal {
-    border-left: 4px solid #757575;
+    border-left: 4px solid #212427;
   }
 }
 
@@ -92,7 +92,7 @@
 
   &.secondary {
     background: rgba(117, 117, 117, 0.1);
-    color: #757575;
+    color: #fff;
   }
 }
 
@@ -146,7 +146,7 @@
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: #757575;
+    color: #212427;
   }
 
   code {
@@ -164,7 +164,7 @@
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #757575;
+  color: #212427;
 
   mat-icon {
     font-size: 48px;

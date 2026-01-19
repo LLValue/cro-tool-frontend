@@ -198,7 +198,7 @@
                 <button *ngIf="variant.status === 'active'" mat-icon-button (click)="unapproveVariant(variant.id)" matTooltip="Disable">
                   <mat-icon>remove_circle</mat-icon>
                 </button>
-                <button mat-icon-button color="warn" (click)="deleteVariant(variant.id)" matTooltip="Delete">
+                <button mat-icon-button color="primary" (click)="deleteVariant(variant.id)" matTooltip="Delete">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
@@ -227,7 +227,7 @@
   </mat-card>
 
   <div class="bottom-actions">
-    <button mat-raised-button [color]="point?.status === 'Paused' ? 'primary' : 'accent'" (click)="toggleStatus()">
+    <button mat-raised-button color="primary" (click)="toggleStatus()">
       <mat-icon>{{ point?.status === 'Paused' ? 'play_arrow' : 'pause' }}</mat-icon>
       {{ point?.status === 'Paused' ? 'Activate Point' : 'Pause Point' }}
     </button>
