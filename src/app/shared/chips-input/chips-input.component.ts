@@ -19,9 +19,9 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
     }
   ],
   template: `
-    <mat-form-field appearance="outline" class="chips-input">
-      <mat-label>{{ label }}</mat-label>
-      <mat-chip-grid #chipGrid [attr.aria-label]="label">
+    <mat-form-field appearance="outline" floatLabel="always" class="chips-input">
+      <mat-label>{{ getDisplayLabel() }}</mat-label>
+      <mat-chip-grid #chipGrid [attr.aria-label]="getDisplayLabel()">
         <mat-chip-row *ngFor="let item of value" (removed)="remove(item)">
           {{ item }}
           <button matChipRemove [attr.aria-label]="'remove ' + item">
@@ -48,6 +48,22 @@ export class ChipsInputComponent implements ControlValueAccessor {
   value: string[] = [];
   onChange = (value: string[]) => {};
   onTouched = () => {};
+
+  getDisplayLabel(): string {
+    // If label is empty, use placeholder text or a default label
+    if (this.label && this.label.trim() !== '') {
+      return this.label;
+    }
+    // Generate a default label from placeholder or use generic text
+    if (this.placeholder && this.placeholder.trim() !== '') {
+      // Capitalize first letter and remove "Add" prefix if present
+      const defaultLabel = this.placeholder
+        .replace(/^Add\s+/i, '')
+        .replace(/^add\s+/i, '');
+      return defaultLabel.charAt(0).toUpperCase() + defaultLabel.slice(1);
+    }
+    return 'Items'; // Fallback default label
+  }
 
   writeValue(value: string[]): void {
     this.value = value || [];
