@@ -8,30 +8,30 @@
 </app-page-header>
 
 <form [formGroup]="form" (ngSubmit)="onSave()">
-  <mat-form-field appearance="outline" class="full-width">
+  <mat-form-field appearance="outline" floatLabel="always" class="full-width">
     <mat-label>Project Name</mat-label>
-    <input matInput formControlName="name" required>
+    <input matInput formControlName="name" required placeholder="Enter project name">
     <mat-error *ngIf="form.get('name')?.hasError('required')">
       Name is required
     </mat-error>
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="full-width">
+  <mat-form-field appearance="outline" floatLabel="always" class="full-width">
     <mat-label>Page URL</mat-label>
-    <input matInput formControlName="pageUrl" type="url" required>
+    <input matInput formControlName="pageUrl" type="url" required placeholder="https://example.com">
     <mat-error *ngIf="form.get('pageUrl')?.hasError('required')">
       Page URL is required
     </mat-error>
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="full-width">
+  <mat-form-field appearance="outline" floatLabel="always" class="full-width">
     <mat-label>Industry</mat-label>
     <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
   </mat-form-field>
 
-  <mat-form-field appearance="outline" class="full-width">
+  <mat-form-field appearance="outline" floatLabel="always" class="full-width">
     <mat-label>Notes</mat-label>
-    <textarea matInput formControlName="notes" rows="4"></textarea>
+    <textarea matInput formControlName="notes" rows="4" placeholder="Add any additional notes about this project"></textarea>
   </mat-form-field>
 
   <div class="actions">

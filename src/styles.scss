@@ -43,6 +43,243 @@ html, body {
   border-color: var(--theme-primary) !important;
 }
 
+// Force labels to always be above input (standard behavior)
+// This ensures all mat-form-field labels are always visible above the input
+// Also force floatLabel="always" behavior globally by forcing the notch to always be open
+.mat-mdc-form-field-appearance-outline {
+  // Force the notch to always be open (this makes Angular Material show the placeholder)
+  .mdc-notched-outline {
+    .mdc-notched-outline__notch {
+      max-width: calc(100% - 32px) !important;
+    }
+  }
+  
+  // Force label to always float (equivalent to floatLabel="always")
+  .mdc-floating-label,
+  .mat-mdc-floating-label {
+    transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+    pointer-events: none;
+  }
+  
+  // Force notch to be "notched" (open) even when empty and not focused
+  &:not(.mat-form-field-has-value):not(.mat-focused) {
+    .mdc-notched-outline {
+      &.mdc-notched-outline--notched {
+        // Already notched, keep it
+      }
+      
+      &:not(.mdc-notched-outline--notched) {
+        // Force it to be notched
+        .mdc-notched-outline__notch {
+          max-width: calc(100% - 32px) !important;
+        }
+      }
+    }
+  }
+  
+  // Override Angular Material's hide-placeholder class
+  &.mat-form-field-hide-placeholder {
+    input,
+    .mat-mdc-input-element,
+    .mdc-text-field__input {
+      &::placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &::-webkit-input-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &::-moz-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &:-ms-input-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+    }
+  }
+  .mdc-floating-label,
+  .mat-mdc-floating-label {
+    // Always keep label in floating position using Angular Material's transform
+    transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+    pointer-events: none;
+  }
+
+  // Ensure the notch is always visible to accommodate the label
+  .mdc-notched-outline__notch {
+    max-width: calc(100% - 32px) !important;
+  }
+
+  // Force label to stay above in all states (empty, focused, with value)
+  &:not(.mat-focused):not(.mat-form-field-should-float):not(.mat-form-field-has-value) {
+    .mdc-floating-label,
+    .mat-mdc-floating-label {
+      transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+    }
+  }
+
+  &.mat-focused {
+    .mdc-floating-label,
+    .mat-mdc-floating-label {
+      transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+    }
+  }
+
+  &.mat-form-field-has-value {
+    .mdc-floating-label,
+    .mat-mdc-floating-label {
+      transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+    }
+  }
+
+  // Force placeholder to always be visible when input is empty
+  // Override Angular Material's default behavior that hides placeholder when not focused
+  input,
+  .mat-mdc-input-element,
+  .mdc-text-field__input {
+    &::placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    &::-webkit-input-placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    &::-moz-placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    &:-ms-input-placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+  }
+
+  // When empty and not focused, ensure placeholder is visible
+  // This is the critical state where Angular Material tries to hide it
+  &:not(.mat-focused):not(.mat-form-field-has-value) {
+    input,
+    .mat-mdc-input-element,
+    .mdc-text-field__input {
+      &::placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &::-webkit-input-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &::-moz-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &:-ms-input-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+    }
+  }
+
+  // When focused, placeholder should still be visible if empty
+  &.mat-focused:not(.mat-form-field-has-value) {
+    input,
+    .mat-mdc-input-element,
+    .mdc-text-field__input {
+      &::placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &::-webkit-input-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &::-moz-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+
+      &:-ms-input-placeholder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        color: rgba(0, 0, 0, 0.6) !important;
+      }
+    }
+  }
+}
+
+// Additional global override to ensure placeholder is always visible
+// This targets the input element directly when it's empty
+.mat-mdc-form-field-appearance-outline {
+  input:placeholder-shown,
+  input:not(:focus):placeholder-shown,
+  .mat-mdc-input-element:placeholder-shown,
+  .mat-mdc-input-element:not(:focus):placeholder-shown,
+  .mdc-text-field__input:placeholder-shown,
+  .mdc-text-field__input:not(:focus):placeholder-shown {
+    &::placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    &::-webkit-input-placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      -webkit-text-fill-color: rgba(0, 0, 0, 0.6) !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    &::-moz-placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+
+    &:-ms-input-placeholder {
+      opacity: 1 !important;
+      visibility: visible !important;
+      color: rgba(0, 0, 0, 0.6) !important;
+    }
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -220,6 +457,19 @@ body.dark-mode {
       .mdc-list-item__primary-text .nav-label {
         color: #212427 !important;
       }
+    }
+  }
+
+  .mat-mdc-button,
+  .mat-mdc-raised-button,
+  .mat-mdc-outlined-button {
+    color: #ffffff;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+
+    &.mat-primary {
+      background-color: var(--theme-primary) !important;
+      color: #212427 !important;
     }
   }
 
@@ -462,9 +712,163 @@ body.dark-mode {
     .mdc-floating-label,
     .mat-mdc-floating-label {
       color: #ffffff !important;
+      // Always keep label in floating position using Angular Material's transform in dark mode
+      transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
 
       mat-label {
         color: #ffffff !important;
+      }
+    }
+
+    // Force labels to always be above input in dark mode
+    &.mat-mdc-form-field-appearance-outline {
+      // Override Angular Material's hide-placeholder class in dark mode
+      &.mat-form-field-hide-placeholder {
+        input,
+        .mat-mdc-input-element,
+        .mdc-text-field__input {
+          &::placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &::-webkit-input-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &::-moz-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &:-ms-input-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+        }
+      }
+      .mdc-floating-label,
+      .mat-mdc-floating-label {
+        transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+      }
+
+      &:not(.mat-focused):not(.mat-form-field-should-float):not(.mat-form-field-has-value) {
+        .mdc-floating-label,
+        .mat-mdc-floating-label {
+          transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+        }
+      }
+
+      &.mat-focused,
+      &.mat-form-field-has-value {
+        .mdc-floating-label,
+        .mat-mdc-floating-label {
+          transform: translateY(calc(calc(6.75px + var(--mat-form-field-container-height) / 2) * -1)) scale(var(--mat-mdc-form-field-floating-label-scale, 0.75)) !important;
+        }
+      }
+
+      // Force placeholder to always be visible when input is empty in dark mode
+      input,
+      .mat-mdc-input-element,
+      .mdc-text-field__input {
+        &::placeholder {
+          opacity: 1 !important;
+          visibility: visible !important;
+          -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+          color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        &::-webkit-input-placeholder {
+          opacity: 1 !important;
+          visibility: visible !important;
+          -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+          color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        &::-moz-placeholder {
+          opacity: 1 !important;
+          visibility: visible !important;
+          color: rgba(255, 255, 255, 0.6) !important;
+        }
+
+        &:-ms-input-placeholder {
+          opacity: 1 !important;
+          visibility: visible !important;
+          color: rgba(255, 255, 255, 0.6) !important;
+        }
+      }
+
+      // When empty and not focused, ensure placeholder is visible
+      &:not(.mat-focused):not(.mat-form-field-has-value) {
+        input,
+        .mat-mdc-input-element,
+        .mdc-text-field__input {
+          &::placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &::-webkit-input-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &::-moz-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &:-ms-input-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+        }
+      }
+
+      // When focused, placeholder should still be visible if empty
+      &.mat-focused:not(.mat-form-field-has-value) {
+        input,
+        .mat-mdc-input-element,
+        .mdc-text-field__input {
+          &::placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &::-webkit-input-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.6) !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &::-moz-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+
+          &:-ms-input-placeholder {
+            opacity: 1 !important;
+            visibility: visible !important;
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+        }
       }
     }
 

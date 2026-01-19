@@ -45,11 +45,6 @@
         <span class="nav-label">Settings</span>
       </a>
       <mat-divider></mat-divider>
-      <a mat-list-item routerLink="/debug/mock-settings" routerLinkActive="active">
-        <mat-icon class="nav-icon">bug_report</mat-icon>
-        <span class="nav-label">Mock Settings</span>
-      </a>
-      <mat-divider></mat-divider>
       <a mat-list-item *ngIf="authService.isLoggedIn$ | async" (click)="logout()">
         <mat-icon class="nav-icon">logout</mat-icon>
         <span class="nav-label">Logout</span>

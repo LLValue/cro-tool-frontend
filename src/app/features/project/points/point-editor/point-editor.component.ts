@@ -67,7 +67,7 @@ export class PointEditorComponent implements OnInit, OnDestroy {
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      elementType: ['Other', Validators.required],
+      elementType: ['Title', Validators.required], // First option as default
       selector: ['', Validators.required],
       text: ['']
     });

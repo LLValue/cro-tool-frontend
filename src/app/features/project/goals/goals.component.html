@@ -10,11 +10,11 @@
     </mat-card-header>
     <mat-card-content>
       <form [formGroup]="primaryGoalForm">
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field appearance="outline" floatLabel="always" class="full-width">
           <mat-label>Goal Name</mat-label>
           <input matInput formControlName="name" placeholder="e.g., Primary Conversion">
         </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field appearance="outline" floatLabel="always" class="full-width">
           <mat-label>Goal Type</mat-label>
           <mat-select formControlName="type">
             <mat-option value="clickSelector">Click Selector</mat-option>
@@ -22,7 +22,7 @@
             <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
           </mat-select>
         </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
+        <mat-form-field appearance="outline" floatLabel="always" class="full-width">
           <mat-label>{{ getValueLabel() }}</mat-label>
           <input matInput formControlName="value" [placeholder]="getValuePlaceholder()">
         </mat-form-field>
@@ -44,11 +44,11 @@
       <form [formGroup]="secondaryGoalsForm">
         <div formArrayName="goals">
           <div *ngFor="let goal of goalsArray.controls; let i = index" [formGroupName]="i" class="goal-row">
-            <mat-form-field appearance="outline" class="goal-name">
+            <mat-form-field appearance="outline" floatLabel="always" class="goal-name">
               <mat-label>Name (Optional)</mat-label>
               <input matInput formControlName="name" placeholder="e.g., Secondary Goal">
             </mat-form-field>
-            <mat-form-field appearance="outline" class="goal-type">
+            <mat-form-field appearance="outline" floatLabel="always" class="goal-type">
               <mat-label>Type</mat-label>
               <mat-select formControlName="type">
                 <mat-option value="clickSelector">Click Selector</mat-option>
@@ -56,7 +56,7 @@
                 <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
               </mat-select>
             </mat-form-field>
-            <mat-form-field appearance="outline" class="goal-value">
+            <mat-form-field appearance="outline" floatLabel="always" class="goal-value">
               <mat-label>Value</mat-label>
               <input matInput formControlName="value" [placeholder]="getValuePlaceholderForGoal($any(goal))">
             </mat-form-field>

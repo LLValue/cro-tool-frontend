@@ -18,7 +18,7 @@
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>New Email</mat-label>
-            <input matInput type="email" formControlName="newEmail" required>
+            <input matInput type="email" formControlName="newEmail" required placeholder="Enter new email address">
             <mat-error *ngIf="emailForm.get('newEmail')?.hasError('required')">
               New email is required
             </mat-error>
@@ -28,7 +28,7 @@
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Confirm New Email</mat-label>
-            <input matInput type="email" formControlName="confirmEmail" required>
+            <input matInput type="email" formControlName="confirmEmail" required placeholder="Confirm new email address">
             <mat-error *ngIf="emailForm.get('confirmEmail')?.hasError('required')">
               Please confirm your email
             </mat-error>
@@ -54,14 +54,14 @@
         <form [formGroup]="passwordForm" (ngSubmit)="onPasswordChange()">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Current Password</mat-label>
-            <input matInput type="password" formControlName="currentPassword" required>
+            <input matInput type="password" formControlName="currentPassword" required placeholder="Enter current password">
             <mat-error *ngIf="passwordForm.get('currentPassword')?.hasError('required')">
               Current password is required
             </mat-error>
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>New Password</mat-label>
-            <input matInput type="password" formControlName="newPassword" required>
+            <input matInput type="password" formControlName="newPassword" required placeholder="Enter new password">
             <mat-error *ngIf="passwordForm.get('newPassword')?.hasError('required')">
               New password is required
             </mat-error>
@@ -71,7 +71,7 @@
           </mat-form-field>
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Confirm New Password</mat-label>
-            <input matInput type="password" formControlName="confirmPassword" required>
+            <input matInput type="password" formControlName="confirmPassword" required placeholder="Confirm new password">
             <mat-error *ngIf="passwordForm.get('confirmPassword')?.hasError('required')">
               Please confirm your password
             </mat-error>

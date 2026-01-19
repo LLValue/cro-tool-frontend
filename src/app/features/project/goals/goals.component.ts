@@ -110,9 +110,14 @@ export class GoalsComponent implements OnInit {
       if (primary) {
         this.primaryGoalForm.patchValue({
           name: primary.name || '', // Handle undefined name
-          type: primary.type,
+          type: primary.type || 'clickSelector', // First option as default
           value: primary.value
         });
+      } else {
+        // No primary goal, ensure default type is set
+        if (!this.primaryGoalForm.get('type')?.value) {
+          this.primaryGoalForm.patchValue({ type: 'clickSelector' });
+        }
       }
 
       const secondary = goals.filter(g => !g.isPrimary);

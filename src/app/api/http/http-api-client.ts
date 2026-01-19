@@ -35,7 +35,7 @@ import {
 
 /**
  * Real HTTP API client implementation.
- * Replace MockApiClient with this when backend is available.
+ * HTTP implementation of the ApiClient interface.
  * 
  * Usage in main.ts:
  * {

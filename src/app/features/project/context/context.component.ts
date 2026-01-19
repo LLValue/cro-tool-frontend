@@ -215,7 +215,28 @@ export class ContextComponent implements OnInit, OnDestroy {
         this.mandatoryClaims.push(this.fb.control(claim), { emitEvent: false });
       });
       this.isUpdatingForm = false;
+      
+      // Set default values for empty select fields
+      this.setDefaultSelectValues();
+    } else {
+      // No project data, set defaults for new project
+      this.setDefaultSelectValues();
     }
+  }
+
+  private setDefaultSelectValues(): void {
+    // Set first option as default for empty select fields
+    if (!this.globalForm.get('language')?.value) {
+      this.globalForm.patchValue({ language: 'en' }, { emitEvent: false });
+    }
+    if (!this.globalForm.get('tone')?.value) {
+      this.globalForm.patchValue({ tone: 'professional' }, { emitEvent: false });
+    }
+    if (!this.globalForm.get('funnelStage')?.value) {
+      this.globalForm.patchValue({ funnelStage: 'discovery' }, { emitEvent: false });
+    }
+    // styleComplexity and styleLength already have defaults in the form initialization
+    // riskLevel already has default 'Standard'
   }
 
   loadPoints(): void {

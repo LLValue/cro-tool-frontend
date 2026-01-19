@@ -70,7 +70,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   ) {
     this.setupForm = this.fb.group({
       name: ['', Validators.required],
-      elementType: ['Other'],
+      elementType: ['Title'], // First option as default
       selector: ['', Validators.required],
       deviceScope: ['All'],
       status: ['Active']
@@ -106,12 +106,11 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       if (this.point) {
         this.setupForm.patchValue({
           name: this.point.name || '',
-          elementType: this.point.elementType || 'Other',
+          elementType: this.point.elementType || 'Title', // First option
           selector: this.point.selector || '',
-          deviceScope: this.point.deviceScope || 'All',
+          deviceScope: this.point.deviceScope || 'All', // First option
           status: this.point.status || 'Active'
         });
-
         this.briefForm.patchValue({
           objective: this.point.objective || '',
           context: (this.point as any).context || ''
@@ -127,6 +126,14 @@ export class PointDetailComponent implements OnInit, OnDestroy {
           maxChars: generationRules.maxChars || 0,
           maxWords: generationRules.maxWords || 0
         });
+      } else {
+        // No point data, ensure defaults are set
+        if (!this.setupForm.get('elementType')?.value) {
+          this.setupForm.patchValue({ elementType: 'Title' });
+        }
+        if (!this.setupForm.get('deviceScope')?.value) {
+          this.setupForm.patchValue({ deviceScope: 'All' });
+        }
       }
     });
     this.subscriptions.add(sub);

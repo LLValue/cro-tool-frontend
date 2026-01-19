@@ -34,7 +34,7 @@ import { CommonModule } from '@angular/common';
       <form [formGroup]="form">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Point Name</mat-label>
-          <input matInput formControlName="name" required>
+          <input matInput formControlName="name" required placeholder="Enter point name">
           <mat-error *ngIf="form.get('name')?.hasError('required')">
             Name is required
           </mat-error>

@@ -52,13 +52,13 @@
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let project">
             <div class="actions-cell">
-              <button mat-icon-button (click)="openProject(project.id)" matTooltip="Open" color="primary">
+              <button mat-icon-button (click)="openProject(project.id)" matTooltip="Open" class="action-open">
                 <mat-icon>open_in_new</mat-icon>
               </button>
-              <button mat-icon-button (click)="duplicateProject(project)" matTooltip="Duplicate" color="primary">
+              <button mat-icon-button (click)="duplicateProject(project)" matTooltip="Duplicate" class="action-copy">
                 <mat-icon>content_copy</mat-icon>
               </button>
-              <button mat-icon-button color="primary" (click)="deleteProject(project)" matTooltip="Delete">
+              <button mat-icon-button (click)="deleteProject(project)" matTooltip="Delete" class="action-delete">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>

@@ -13,15 +13,15 @@
     <mat-tab label="Point Setup">
       <div class="tab-content">
         <form [formGroup]="setupForm" (ngSubmit)="saveSetup()">
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
             <mat-label>Point Name</mat-label>
-            <input matInput formControlName="name" required>
+            <input matInput formControlName="name" required placeholder="Enter point name">
             <mat-error *ngIf="setupForm.get('name')?.hasError('required')">
               Name is required
             </mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
             <mat-label>Element Type</mat-label>
             <mat-select formControlName="elementType">
               <mat-option value="Title">Title</mat-option>
@@ -32,15 +32,15 @@
             </mat-select>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
             <mat-label>CSS Selector</mat-label>
-            <input matInput formControlName="selector" required>
+            <input matInput formControlName="selector" required placeholder="e.g., .hero-title, #cta-button, h1">
             <mat-error *ngIf="setupForm.get('selector')?.hasError('required')">
               CSS Selector is required
             </mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
             <mat-label>Device Scope</mat-label>
             <mat-select formControlName="deviceScope">
               <mat-option value="All">All</mat-option>
@@ -70,14 +70,14 @@
     <mat-tab label="Optimization Brief">
       <div class="tab-content">
         <form [formGroup]="briefForm" (ngSubmit)="saveBrief()">
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
             <mat-label>Qualitative Objective</mat-label>
             <textarea matInput formControlName="objective" rows="2" placeholder="e.g., Increase trust and reduce perceived risk"></textarea>
           </mat-form-field>
 
-          <mat-form-field appearance="outline" class="full-width">
+          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
             <mat-label>Context Specific to This Element</mat-label>
-            <textarea matInput formControlName="context" rows="3"></textarea>
+            <textarea matInput formControlName="context" rows="3" placeholder="Add context about this optimization point"></textarea>
           </mat-form-field>
 
           <div class="section">
@@ -103,17 +103,17 @@
           <div class="section">
             <h3>Hard Constraints</h3>
             <div class="constraints-row">
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" floatLabel="always">
                 <mat-label>Min Characters</mat-label>
-                <input matInput type="number" formControlName="minChars" min="0">
+                <input matInput type="number" formControlName="minChars" min="0" placeholder="0">
               </mat-form-field>
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" floatLabel="always">
                 <mat-label>Max Characters</mat-label>
-                <input matInput type="number" formControlName="maxChars" min="0">
+                <input matInput type="number" formControlName="maxChars" min="0" placeholder="0">
               </mat-form-field>
-              <mat-form-field appearance="outline">
+              <mat-form-field appearance="outline" floatLabel="always">
                 <mat-label>Max Words (optional)</mat-label>
-                <input matInput type="number" formControlName="maxWords" min="0">
+                <input matInput type="number" formControlName="maxWords" min="0" placeholder="0">
               </mat-form-field>
             </div>
 
@@ -151,7 +151,7 @@
     <mat-tab label="Variants">
       <div class="tab-content">
         <div class="variants-header">
-          <mat-form-field appearance="outline" class="filter-field">
+          <mat-form-field appearance="outline" floatLabel="always" class="filter-field">
             <mat-label>Filter by Status</mat-label>
             <mat-select [(ngModel)]="variantFilter" [ngModelOptions]="{standalone: true}" (selectionChange)="filterVariants()">
               <mat-option value="all">All</mat-option>
@@ -203,7 +203,7 @@
                 </button>
               </div>
             </div>
-            <mat-form-field appearance="outline" class="full-width variant-text">
+            <mat-form-field appearance="outline" floatLabel="always" class="full-width variant-text">
               <mat-label>Variant Text</mat-label>
               <textarea 
                 matInput 

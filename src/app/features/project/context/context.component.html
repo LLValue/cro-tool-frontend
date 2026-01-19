@@ -7,7 +7,7 @@
   <mat-tab-group>
   <mat-tab label="Language & Voice">
     <form [formGroup]="globalForm" class="form-container">
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Language</mat-label>
         <mat-select formControlName="language" required>
           <mat-option value="en">English</mat-option>
@@ -22,7 +22,7 @@
         </mat-error>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Tone</mat-label>
         <mat-select formControlName="tone">
           <mat-option value="professional">Professional</mat-option>
@@ -35,7 +35,7 @@
       </mat-form-field>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" floatLabel="always" class="half-width">
           <mat-label>Style Complexity</mat-label>
           <mat-select formControlName="styleComplexity">
             <mat-option value="simple">Simple</mat-option>
@@ -43,7 +43,7 @@
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="half-width">
+        <mat-form-field appearance="outline" floatLabel="always" class="half-width">
           <mat-label>Style Length</mat-label>
           <mat-select formControlName="styleLength">
             <mat-option value="short">Short</mat-option>
@@ -57,22 +57,22 @@
 
   <mat-tab label="Business & Page Context">
     <form [formGroup]="globalForm" class="form-container">
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Industry</mat-label>
         <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Product Summary</mat-label>
         <textarea matInput formControlName="productSummary" rows="3" placeholder="What is it, who is it for"></textarea>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Page Intent / Goal</mat-label>
         <textarea matInput formControlName="pageIntent" rows="2" placeholder="What action do you want users to take?"></textarea>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Funnel Stage</mat-label>
         <mat-select formControlName="funnelStage">
           <mat-option value="discovery">Discovery</mat-option>
@@ -99,7 +99,7 @@
         </app-chips-input>
       </div>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Market / Locale</mat-label>
         <input matInput formControlName="marketLocale" placeholder="e.g., ES, MX, US">
       </mat-form-field>
@@ -130,7 +130,7 @@
 
   <mat-tab label="Legal & Brand Guardrails">
     <form [formGroup]="globalForm" class="form-container">
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Risk Level</mat-label>
         <mat-select formControlName="riskLevel">
           <mat-option value="Conservative">Conservative</mat-option>
@@ -152,7 +152,7 @@
         <h3>Mandatory Claims</h3>
         <div formArrayName="mandatoryClaims">
           <div *ngFor="let claim of mandatoryClaims.controls; let i = index" class="claim-row">
-            <mat-form-field appearance="outline" class="claim-input">
+            <mat-form-field appearance="outline" floatLabel="always" class="claim-input">
               <mat-label>Claim {{ i + 1 }}</mat-label>
               <input matInput [formControl]="$any(claim)">
             </mat-form-field>
@@ -176,9 +176,9 @@
         </app-chips-input>
       </div>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Required Disclaimer (optional)</mat-label>
-        <textarea matInput formControlName="requiredDisclaimer" rows="3"></textarea>
+        <textarea matInput formControlName="requiredDisclaimer" rows="3" placeholder="Add any required disclaimers"></textarea>
       </mat-form-field>
 
       <div class="section">
@@ -203,7 +203,7 @@
 
   <mat-tab label="Per-Point">
     <form [formGroup]="pointForm" class="form-container">
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Select Point</mat-label>
         <mat-select formControlName="pointId">
           <mat-option *ngFor="let point of points" [value]="point.id">
@@ -212,14 +212,14 @@
         </mat-select>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Objective</mat-label>
-        <textarea matInput formControlName="objective" rows="4"></textarea>
+        <textarea matInput formControlName="objective" rows="4" placeholder="Describe the objective for this point"></textarea>
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="full-width">
+      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
         <mat-label>Generation Rules</mat-label>
-        <textarea matInput formControlName="generationRules" rows="4"></textarea>
+        <textarea matInput formControlName="generationRules" rows="4" placeholder="Add generation rules for this point"></textarea>
       </mat-form-field>
     </form>
   </mat-tab>

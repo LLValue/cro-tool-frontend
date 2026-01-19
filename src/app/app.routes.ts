@@ -76,11 +76,6 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'debug/mock-settings',
-    loadComponent: () => import('./features/debug/mock-settings/mock-settings.component').then(m => m.MockSettingsComponent),
-    canActivate: [authGuard]
-  },
-  {
     path: '',
     redirectTo: '/projects',
     pathMatch: 'full'
