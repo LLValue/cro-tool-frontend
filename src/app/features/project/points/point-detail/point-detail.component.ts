@@ -81,6 +81,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   error: string | null = null;
   selectionMode = false;
   selectedElement: SelectedElement | null = null;
+  viewMode: 'mobile' | 'desktop' = 'desktop';
   private highlightStyle: HTMLStyleElement | null = null;
   
   private subscriptions = new Subscription();

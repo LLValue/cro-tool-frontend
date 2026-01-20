@@ -51,6 +51,7 @@ export class PointEditorComponent implements OnInit, OnDestroy {
   error: string | null = null;
   selectionMode = false;
   selectedElement: SelectedElement | null = null;
+  viewMode: 'mobile' | 'desktop' = 'desktop';
   form: FormGroup;
   private subscriptions = new Subscription();
   private highlightStyle: HTMLStyleElement | null = null;

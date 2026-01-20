@@ -271,6 +271,21 @@
     display: flex;
     gap: 8px;
     align-items: center;
+
+    .view-mode-toggle {
+      display: flex;
+      gap: 4px;
+      margin-right: 8px;
+      border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+      padding-right: 8px;
+
+      button {
+        &.active {
+          background-color: rgba(var(--theme-primary-rgb, 126, 244, 115), 0.1);
+          color: var(--theme-primary, #7ef473);
+        }
+      }
+    }
   }
 }
 
@@ -287,6 +302,23 @@
   min-height: 550px;
   border: none;
   display: block;
+  transition: max-width 0.3s ease;
+
+  &.mobile-view {
+    max-width: 375px;
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.preview-wrapper {
+  &.mobile-view {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    background: #f5f5f5;
+  }
 }
 
 .preview-error-state {
@@ -408,6 +440,18 @@
 
     h3 {
       color: #ffffff;
+    }
+
+    .preview-actions {
+      .view-mode-toggle {
+        border-right-color: rgba(255, 255, 255, 0.12);
+      }
+    }
+  }
+
+  .preview-wrapper {
+    &.mobile-view {
+      background: #1e1e1e;
     }
   }
 
