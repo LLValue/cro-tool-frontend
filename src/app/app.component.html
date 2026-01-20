@@ -11,8 +11,8 @@
         <app-bcg-logo></app-bcg-logo>
       </div>
       <div class="user-info">
-        <div class="user-name">{{ (authService.isLoggedIn$ | async) ? 'Admin User' : 'Guest' }}</div>
-        <div class="user-email">{{ (authService.isLoggedIn$ | async) ? 'admin@crotool.com' : 'guest@example.com' }}</div>
+        <div class="user-name">{{ (authService.currentUser$ | async)?.name || 'Guest' }}</div>
+        <div class="user-email">{{ (authService.currentUser$ | async)?.email || 'guest@example.com' }}</div>
       </div>
       <div class="user-actions">
         <button mat-icon-button matTooltip="Settings" routerLink="/settings">

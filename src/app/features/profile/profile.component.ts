@@ -9,6 +9,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { CommonModule } from '@angular/common';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { ToastHelperService } from '../../shared/toast-helper.service';
+import { AuthService } from '../../data/auth.service';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-profile',
@@ -34,10 +36,11 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private toast: ToastHelperService
+    private toast: ToastHelperService,
+    private authService: AuthService
   ) {
     this.emailForm = this.fb.group({
-      currentEmail: [{ value: 'admin@crotool.com', disabled: true }],
+      currentEmail: [{ value: '', disabled: true }],
       newEmail: ['', [Validators.required, Validators.email]],
       confirmEmail: ['', [Validators.required, Validators.email]]
     }, { validators: this.emailMatchValidator });
@@ -49,7 +52,16 @@ export class ProfileComponent implements OnInit {
     }, { validators: this.passwordMatchValidator });
   }
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    // Load current user email
+    this.authService.currentUser$.pipe(take(1)).subscribe(user => {
+      if (user?.email) {
+        this.emailForm.patchValue({
+          currentEmail: user.email
+        });
+      }
+    });
+  }
 
   emailMatchValidator(form: FormGroup) {
     const newEmail = form.get('newEmail')?.value;
