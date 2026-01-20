@@ -163,6 +163,14 @@ mat-dialog-content {
 
   .retry-button {
     margin-bottom: 16px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+      margin-right: 8px;
+    }
   }
 
   .error-hint {

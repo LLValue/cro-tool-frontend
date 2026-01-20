@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { ToastHelperService } from '../../shared/toast-helper.service';
 import { AuthService } from '../../data/auth.service';
+import { BcgLogoComponent } from '../../shared/bcg-logo/bcg-logo.component';
 import { take } from 'rxjs/operators';
 
 @Component({
@@ -24,7 +25,8 @@ import { take } from 'rxjs/operators';
     MatIconModule,
     MatTabsModule,
     CommonModule,
-    PageHeaderComponent
+    PageHeaderComponent,
+    BcgLogoComponent
   ],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
@@ -32,7 +34,7 @@ import { take } from 'rxjs/operators';
 export class ProfileComponent implements OnInit {
   emailForm: FormGroup;
   passwordForm: FormGroup;
-  avatarUrl = 'https://cdn.iconscout.com/icon/free/png-256/free-avatar-icon-svg-download-png-456322.png';
+  avatarUrl: string | null = null; // Will be null to show SVG by default
 
   constructor(
     private fb: FormBuilder,

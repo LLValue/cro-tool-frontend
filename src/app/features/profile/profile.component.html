@@ -96,7 +96,8 @@
       <mat-card-content>
         <div class="avatar-section">
           <div class="avatar-preview">
-            <img [src]="avatarUrl" alt="Avatar Preview" />
+            <img *ngIf="avatarUrl" [src]="avatarUrl" alt="Avatar Preview" />
+            <app-bcg-logo *ngIf="!avatarUrl"></app-bcg-logo>
           </div>
           <input type="file" id="avatar-input" accept="image/*" (change)="onAvatarChange($event)" style="display: none;">
           <button mat-raised-button color="primary" (click)="triggerAvatarInput()">
