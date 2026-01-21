@@ -228,7 +228,6 @@
         <div formArrayName="mandatoryClaims">
           <div *ngFor="let claim of mandatoryClaims.controls; let i = index" class="claim-row">
             <mat-form-field appearance="outline" class="claim-input">
-              <mat-label>Claim {{ i + 1 }}</mat-label>
               <input matInput [formControl]="$any(claim)">
             </mat-form-field>
             <button mat-icon-button (click)="removeClaim(i)">

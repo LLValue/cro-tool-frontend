@@ -14,34 +14,128 @@ export class PreviewService {
     private sanitizer: DomSanitizer
   ) {}
 
-  /**
-   * Load page HTML from URL
-   * Note: Due to CORS restrictions, this will only work for same-origin or CORS-enabled URLs
-   * For external URLs, we'll use a proxy or iframe approach
-   */
   loadPageFromUrl(url: string): Observable<string> {
     if (!url || !url.trim()) {
       return of('');
     }
 
-    // Try to fetch the page
     return this.http.get(url, { responseType: 'text' }).pipe(
-      map(html => html),
+      map(html => this.removeCookiePopups(html)),
       catchError(err => {
-        // CORS errors are expected for cross-origin URLs - silently handle
-        // Only log if it's not a CORS error (status 0 usually means CORS)
         if (err.status !== 0) {
           console.warn('Could not fetch page directly', err);
         }
-        // Return empty HTML - we'll use iframe instead
         return of('');
       })
     );
   }
 
-  /**
-   * Apply variants to HTML content using selectors
-   */
+  private removeCookiePopups(html: string): string {
+    if (!html) return html;
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const cookieSelectors = [
+        '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+        '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+        '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+        '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+        '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+        '[id*="cookie-banner"]', '[class*="cookie-banner"]',
+        '[id*="cookie-notice"]', '[class*="cookie-notice"]',
+        '[id*="cookie-consent"]', '[class*="cookie-consent"]',
+        '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]',
+        '[data-testid*="cookie"]', '[data-testid*="Cookie"]'
+      ];
+
+      cookieSelectors.forEach(selector => {
+        try {
+          const elements = doc.querySelectorAll(selector);
+          elements.forEach(el => {
+            const text = (el.textContent || '').toLowerCase();
+            if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+              el.remove();
+            }
+          });
+        } catch (e) {
+        }
+      });
+
+      const style = doc.createElement('style');
+      style.textContent = `
+        [id*="cookie"], [class*="cookie"], [id*="Cookie"], [class*="Cookie"],
+        [id*="consent"], [class*="consent"], [id*="Consent"], [class*="Consent"],
+        [id*="gdpr"], [class*="gdpr"], [id*="GDPR"], [class*="GDPR"],
+        [id*="onetrust"], [class*="onetrust"], [id*="OneTrust"], [class*="OneTrust"],
+        [id*="cookiebot"], [class*="cookiebot"], [id*="Cookiebot"], [class*="Cookiebot"],
+        [id*="CybotCookiebotDialog"], [class*="CybotCookiebotDialog"],
+        [data-testid*="cookie"], [data-testid*="Cookie"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          height: 0 !important;
+          width: 0 !important;
+          overflow: hidden !important;
+          position: absolute !important;
+          left: -9999px !important;
+          z-index: -9999 !important;
+        }
+      `;
+      doc.head.appendChild(style);
+
+      const script = doc.createElement('script');
+      script.textContent = `
+        (function() {
+          function hideCookieElements() {
+            const selectors = [
+              '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+              '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+              '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+              '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+              '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+              '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]'
+            ];
+            selectors.forEach(selector => {
+              try {
+                document.querySelectorAll(selector).forEach(el => {
+                  const text = (el.textContent || '').toLowerCase();
+                  if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+                    el.style.cssText = 'display:none!important;visibility:hidden!important;opacity:0!important;height:0!important;width:0!important;position:absolute!important;left:-9999px!important;z-index:-9999!important;';
+                  }
+                });
+              } catch(e) {}
+            });
+          }
+          hideCookieElements();
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', hideCookieElements);
+          }
+          setTimeout(hideCookieElements, 500);
+          setTimeout(hideCookieElements, 1000);
+          setTimeout(hideCookieElements, 2000);
+          const observer = new MutationObserver(hideCookieElements);
+          if (document.body) {
+            observer.observe(document.body, { childList: true, subtree: true });
+          }
+        })();
+      `;
+      doc.head.appendChild(script);
+
+      return doc.documentElement.outerHTML;
+    } catch (error) {
+      return this.removeCookiePopupsWithRegex(html);
+    }
+  }
+
+  private removeCookiePopupsWithRegex(html: string): string {
+    html = html.replace(/<script[^>]*>[\s\S]*?(cookie|consent|gdpr|onetrust|cookiebot)[\s\S]*?<\/script>/gi, '');
+    html = html.replace(/<div[^>]*(id|class)=["'][^"']*(cookie|consent|gdpr|onetrust|cookiebot)[^"']*["'][^>]*>[\s\S]*?<\/div>/gi, '');
+    
+    return html;
+  }
+
   applyVariantsToHtml(
     html: string,
     variants: Variant[],
@@ -65,28 +159,21 @@ export class PreviewService {
     return modifiedHtml;
   }
 
-  /**
-   * Apply a single variant to HTML using a CSS selector
-   */
   private applyVariantToHtml(html: string, selector: string, newText: string): string {
     if (!selector || !newText) {
       return html;
     }
 
     try {
-      // Create a temporary DOM to parse and modify
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      // Find elements matching the selector
       const elements = doc.querySelectorAll(selector);
       
       if (elements.length === 0) {
-        // Fallback to regex if querySelector doesn't work
         return this.applyVariantWithRegex(html, selector, newText);
       }
 
-      // Apply variant to all matching elements
       elements.forEach(element => {
         if (element.textContent !== null) {
           element.textContent = newText;
@@ -102,13 +189,9 @@ export class PreviewService {
     }
   }
 
-  /**
-   * Fallback method using regex for selector matching
-   */
   private applyVariantWithRegex(html: string, selector: string, newText: string): string {
     let modifiedHtml = html;
 
-    // Handle ID selector (#id)
     if (selector.startsWith('#')) {
       const id = selector.substring(1);
       const regex = new RegExp(`(<[^>]+id=["']${id}["'][^>]*>)([^<]*)(</[^>]+>)`, 'gi');
@@ -116,7 +199,6 @@ export class PreviewService {
         return openTag + newText + closeTag;
       });
     }
-    // Handle class selector (.class)
     else if (selector.startsWith('.')) {
       const className = selector.substring(1);
       const regex = new RegExp(`(<[^>]+class=["'][^"']*${className}[^"']*["'][^>]*>)([^<]*)(</[^>]+>)`, 'gi');
@@ -124,7 +206,6 @@ export class PreviewService {
         return openTag + newText + closeTag;
       });
     }
-    // Handle tag selector (tag)
     else {
       const regex = new RegExp(`(<${selector}[^>]*>)([^<]*)(</${selector}>)`, 'gi');
       modifiedHtml = modifiedHtml.replace(regex, (match, openTag, oldText, closeTag) => {
@@ -135,28 +216,19 @@ export class PreviewService {
     return modifiedHtml;
   }
 
-  /**
-   * Sanitize HTML for safe display
-   */
   sanitizeHtml(html: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
-  /**
-   * Get iframe URL for external pages (to bypass CORS)
-   * For same-origin, we can use direct HTML injection
-   */
   shouldUseIframe(url: string): boolean {
     if (!url) return false;
     
     try {
       const pageUrl = new URL(url);
       const currentUrl = new URL(window.location.href);
-      
-      // Use iframe if different origin
       return pageUrl.origin !== currentUrl.origin;
     } catch {
-      return true; // Use iframe if URL parsing fails
+      return true;
     }
   }
 }

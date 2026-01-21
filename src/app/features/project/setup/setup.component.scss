@@ -74,6 +74,7 @@
 }
 
 .preview-section {
+  background: #fff;
   margin-top: 32px;
   padding: 16px;
   border: 1px solid #e0e0e0;
@@ -97,12 +98,42 @@
   overflow: hidden;
   background: white;
   min-height: 400px;
+  position: relative;
+
+  &.loading {
+    min-height: 600px;
+  }
 }
 
 .preview-iframe {
   width: 100%;
   height: 600px;
   border: none;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  gap: 16px;
+
+  mat-progress-bar {
+    width: 300px;
+  }
+
+  p {
+    margin: 0;
+    color: #ffffff;
+    font-size: 14px;
+  }
 }
 
 .preview-content {

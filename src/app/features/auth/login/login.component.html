@@ -10,7 +10,6 @@
     <mat-card-content>
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
         <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-          <mat-label>Email</mat-label>
           <mat-icon matPrefix>email</mat-icon>
           <input matInput type="email" formControlName="email" required placeholder="Enter your email">
           <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
@@ -21,7 +20,6 @@
           </mat-error>
         </mat-form-field>
         <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-          <mat-label>Password</mat-label>
           <mat-icon matPrefix>lock</mat-icon>
           <input matInput type="password" formControlName="password" required placeholder="Enter your password">
           <mat-error *ngIf="loginForm.get('password')?.hasError('required')">

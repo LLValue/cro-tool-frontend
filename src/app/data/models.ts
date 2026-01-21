@@ -3,6 +3,7 @@ export interface Project {
   name: string;
   pageUrl: string;
   industry?: string;
+  elementType?: string;
   notes: string;
   status: 'draft' | 'active' | 'archived';
   createdAt: Date;

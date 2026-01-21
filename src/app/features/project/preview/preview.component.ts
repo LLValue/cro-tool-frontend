@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
@@ -13,6 +14,8 @@ import { Variant, OptimizationPoint } from '../../../data/models';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
+import { ApiClient } from '../../../api/api-client';
+import { API_CLIENT } from '../../../api/api-client.token';
 
 @Component({
   selector: 'app-preview',
@@ -22,6 +25,7 @@ import { take } from 'rxjs/operators';
     MatIconModule,
     MatCardModule,
     MatListModule,
+    MatProgressBarModule,
     CommonModule,
     PageHeaderComponent
   ],
@@ -39,6 +43,8 @@ export class PreviewComponent implements OnInit, OnDestroy {
   useIframe: boolean = false;
   pageUrl: string = '';
   safeIframeUrl: SafeResourceUrl = '';
+  safeIframeHtml: SafeHtml = '';
+  loadingPreview = false;
   private lastScrollY = 0;
   private subscriptions = new Subscription();
 
@@ -48,18 +54,16 @@ export class PreviewComponent implements OnInit, OnDestroy {
     private store: ProjectsStoreService,
     private projectsApi: ProjectsApiService,
     private previewService: PreviewService,
+    @Inject(API_CLIENT) private apiClient: ApiClient,
     private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
-    // Get projectId from multiple sources (for nested routes)
     const getProjectId = (): string | null => {
-      // Try current route params first
       const currentParams = this.route.snapshot.params;
       if (currentParams['projectId']) {
         return currentParams['projectId'];
       }
-      // Try parent route params (for nested routes)
       const parentParams = this.route.snapshot.parent?.params;
       if (parentParams?.['projectId']) {
         return parentParams['projectId'];
@@ -73,7 +77,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
       this.loadProject();
     }
 
-    // Subscribe to params changes (both current and parent)
     const paramsSub = this.route.params.subscribe(params => {
       const newProjectId = params['projectId'];
       if (newProjectId && newProjectId !== this.projectId) {
@@ -83,7 +86,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
     });
     this.subscriptions.add(paramsSub);
 
-    // Also subscribe to parent params (for nested routes)
     if (this.route.parent) {
       const parentParamsSub = this.route.parent.params.subscribe(params => {
         const newProjectId = params['projectId'];
@@ -103,17 +105,14 @@ export class PreviewComponent implements OnInit, OnDestroy {
   }
 
   private getProjectId(): string {
-    // Try current route params first
     const currentParams = this.route.snapshot.params;
     if (currentParams['projectId']) {
       return currentParams['projectId'];
     }
-    // Try parent route params (for nested routes)
     const parentParams = this.route.snapshot.parent?.params;
     if (parentParams?.['projectId']) {
       return parentParams['projectId'];
     }
-    // Fallback to instance variable
     return this.projectId || '';
   }
 
@@ -122,14 +121,12 @@ export class PreviewComponent implements OnInit, OnDestroy {
   }
 
   loadProject(): void {
-    // Ensure projectId is set from route
     const projectId = this.getProjectId();
     if (!projectId) {
       return;
     }
-    this.projectId = projectId; // Update instance variable
+    this.projectId = projectId;
 
-    // First try to get from store (synchronous, faster)
     const storeProject = this.store.getProject(this.projectId);
     if (storeProject) {
       this.project = storeProject;
@@ -140,7 +137,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // If not in store, wait for projects to load from API
     const sub = this.store.listProjects().pipe(take(1)).subscribe({
       next: projects => {
         const foundProject = projects.find(p => p.id === this.projectId);
@@ -151,7 +147,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
           this.loadPoints();
           this.loadVariants();
         } else {
-          // Try API as fallback
           if (this.projectId) {
             this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
               next: project => {
@@ -162,7 +157,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
                 this.loadVariants();
               },
               error: () => {
-                // Use default project if not found (for development)
                 this.useDefaultProject();
               }
             });
@@ -172,7 +166,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
-        // Try API directly
         if (this.projectId) {
           this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
             next: project => {
@@ -183,7 +176,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
               this.loadVariants();
             },
             error: () => {
-              // Use default project if not found (for development)
               this.useDefaultProject();
             }
           });
@@ -196,7 +188,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
   }
 
   private useDefaultProject(): void {
-    // For development: use default project data
     this.project = {
       id: this.projectId || '1',
       name: 'Landing Page A',
@@ -222,12 +213,10 @@ export class PreviewComponent implements OnInit, OnDestroy {
   }
 
   loadPagePreview(): void {
-    // Use default URL if not configured (for development)
     if (!this.pageUrl) {
       this.pageUrl = 'https://pack.stage.es';
     }
 
-    // Use saved preview HTML if no URL (fallback only)
     if (!this.pageUrl && this.project?.previewHtml) {
       this.basePreviewHtml = this.project.previewHtml;
       this.useIframe = false;
@@ -235,27 +224,24 @@ export class PreviewComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // ALWAYS try to load HTML directly first (even for cross-origin)
-    // This allows variant application to work
-    this.previewService.loadPageFromUrl(this.pageUrl).subscribe({
-      next: html => {
-        if (html && html.trim().length > 0) {
-          // Successfully loaded HTML directly
-          this.useIframe = false;
-          this.basePreviewHtml = html;
+    this.lastScrollY = window.scrollY || 0;
+
+    this.apiClient.proxyFetch(this.pageUrl).subscribe({
+      next: (response) => {
+        if (response.html && response.html.trim().length > 0) {
+          const processedHtml = this.removeCookiePopupsFromHtml(response.html);
+          this.basePreviewHtml = processedHtml;
+          this.useIframe = true;
+          this.safeIframeHtml = this.sanitizer.bypassSecurityTrustHtml(processedHtml);
           this.updatePreview();
         } else {
-          // Failed to load HTML, fallback to iframe
           this.useIframe = true;
-          this.lastScrollY = window.scrollY || 0;
           this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
           this.updatePreview();
         }
       },
       error: () => {
-        // Failed to load HTML, fallback to iframe
         this.useIframe = true;
-        this.lastScrollY = window.scrollY || 0;
         this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
         this.updatePreview();
       }
@@ -281,7 +267,6 @@ export class PreviewComponent implements OnInit, OnDestroy {
         this.updatePreview();
       },
       error: err => {
-        // Silently handle error - points might not exist yet
         console.warn('No points found for project', this.projectId);
         this.points = [];
       }
@@ -290,9 +275,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
   }
 
   loadVariants(): void {
-    // Listen to variants changes to update preview in real-time
     const sub = this.store.variants$.subscribe(variants => {
-      // Get active variants for this project's points
       const activeVariants = variants.filter(v => 
         v.status === 'active' && 
         this.points.some(p => p.id === v.optimizationPointId)
@@ -319,12 +302,9 @@ export class PreviewComponent implements OnInit, OnDestroy {
     }
 
     if (this.useIframe) {
-      // Iframe will be handled in template
-      // Note: We can't modify iframe content due to CORS, but we can show the original page
       return;
     }
 
-    // Apply variants to HTML
     let html = this.basePreviewHtml;
     if (this.appliedVariants.length > 0 && this.points.length > 0) {
       html = this.previewService.applyVariantsToHtml(html, this.appliedVariants, this.points);
@@ -341,6 +321,193 @@ export class PreviewComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/projects', this.projectId, 'reporting']);
+  }
+
+  private removeCookiePopupsFromHtml(html: string): string {
+    if (!html) return html;
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const cookieSelectors = [
+        '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+        '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+        '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+        '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+        '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+        '[id*="cookie-banner"]', '[class*="cookie-banner"]',
+        '[id*="cookie-notice"]', '[class*="cookie-notice"]',
+        '[id*="cookie-consent"]', '[class*="cookie-consent"]',
+        '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]',
+        '[data-testid*="cookie"]', '[data-testid*="Cookie"]'
+      ];
+
+      cookieSelectors.forEach(selector => {
+        try {
+          const elements = doc.querySelectorAll(selector);
+          elements.forEach(el => {
+            const text = (el.textContent || '').toLowerCase();
+            if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+              el.remove();
+            }
+          });
+        } catch (e) {
+        }
+      });
+
+      const style = doc.createElement('style');
+      style.textContent = `
+        [id*="cookie"], [class*="cookie"], [id*="Cookie"], [class*="Cookie"],
+        [id*="consent"], [class*="consent"], [id*="Consent"], [class*="Consent"],
+        [id*="gdpr"], [class*="gdpr"], [id*="GDPR"], [class*="GDPR"],
+        [id*="onetrust"], [class*="onetrust"], [id*="OneTrust"], [class*="OneTrust"],
+        [id*="cookiebot"], [class*="cookiebot"], [id*="Cookiebot"], [class*="Cookiebot"],
+        [id*="CybotCookiebotDialog"], [class*="CybotCookiebotDialog"],
+        [data-testid*="cookie"], [data-testid*="Cookie"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          height: 0 !important;
+          width: 0 !important;
+          overflow: hidden !important;
+          position: absolute !important;
+          left: -9999px !important;
+          z-index: -9999 !important;
+        }
+      `;
+      doc.head.appendChild(style);
+
+      const script = doc.createElement('script');
+      script.textContent = `
+        (function() {
+          function hideCookieElements() {
+            const selectors = [
+              '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+              '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+              '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+              '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+              '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+              '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]'
+            ];
+            selectors.forEach(selector => {
+              try {
+                document.querySelectorAll(selector).forEach(el => {
+                  const text = (el.textContent || '').toLowerCase();
+                  if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+                    el.style.cssText = 'display:none!important;visibility:hidden!important;opacity:0!important;height:0!important;width:0!important;position:absolute!important;left:-9999px!important;z-index:-9999!important;';
+                  }
+                });
+              } catch(e) {}
+            });
+          }
+          hideCookieElements();
+          
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', hideCookieElements);
+          }
+          
+          setTimeout(hideCookieElements, 500);
+          setTimeout(hideCookieElements, 1000);
+          setTimeout(hideCookieElements, 2000);
+          setTimeout(hideCookieElements, 3000);
+          
+          const observer = new MutationObserver(function(mutations) {
+            hideCookieElements();
+          });
+          
+          if (document.body) {
+            observer.observe(document.body, { 
+              childList: true, 
+              subtree: true,
+              attributes: true,
+              attributeFilter: ['class', 'id', 'style']
+            });
+          }
+          
+          const docObserver = new MutationObserver(function(mutations) {
+            if (document.body) {
+              observer.observe(document.body, { 
+                childList: true, 
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'id', 'style']
+              });
+              docObserver.disconnect();
+            }
+          });
+          docObserver.observe(document.documentElement, { childList: true });
+          
+          const originalPushState = history.pushState;
+          const originalReplaceState = history.replaceState;
+          
+          history.pushState = function() {
+            originalPushState.apply(history, arguments);
+            setTimeout(hideCookieElements, 100);
+            setTimeout(hideCookieElements, 500);
+          };
+          
+          history.replaceState = function() {
+            originalReplaceState.apply(history, arguments);
+            setTimeout(hideCookieElements, 100);
+            setTimeout(hideCookieElements, 500);
+          };
+          
+          window.addEventListener('popstate', function() {
+            setTimeout(hideCookieElements, 100);
+            setTimeout(hideCookieElements, 500);
+          });
+          
+          document.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target && target.tagName === 'A') {
+              setTimeout(hideCookieElements, 500);
+              setTimeout(hideCookieElements, 1000);
+            }
+          }, true);
+        })();
+      `;
+      doc.head.appendChild(script);
+
+      const baseUrl = this.extractBaseUrl(this.pageUrl);
+      if (baseUrl) {
+        const allLinks = doc.querySelectorAll('link[href], script[src], img[src], source[src]');
+        allLinks.forEach((el: Element) => {
+          const href = el.getAttribute('href') || el.getAttribute('src');
+          if (href && href.startsWith(baseUrl)) {
+            const relativeUrl = href.replace(baseUrl, '');
+            if (el.hasAttribute('href')) {
+              el.setAttribute('href', relativeUrl);
+            } else {
+              el.setAttribute('src', relativeUrl);
+            }
+          }
+        });
+        
+        const styleSheets = doc.querySelectorAll('style');
+        styleSheets.forEach(style => {
+          if (style.textContent) {
+            style.textContent = style.textContent.replace(
+              new RegExp(`url\\(['"]?${baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^'")]+)['"]?\\)`, 'gi'),
+              (match, path) => `url('${path}')`
+            );
+          }
+        });
+      }
+
+      return doc.documentElement.outerHTML;
+    } catch (error) {
+      return html;
+    }
+  }
+
+  private extractBaseUrl(url: string): string | null {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.protocol}//${urlObj.host}`;
+    } catch {
+      return null;
+    }
   }
 }
 

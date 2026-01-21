@@ -13,7 +13,6 @@
         </mat-card-header>
         <mat-card-content>
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Script Code</mat-label>
             <textarea 
               matInput 
               formControlName="scriptSnippet" 
@@ -101,16 +100,31 @@
               Preview
             </button>
           </div>
-          <div class="preview-container" *ngIf="isPreviewMode && safePreviewUrl">
+          <div class="preview-container" *ngIf="isPreviewMode && (safePreviewUrl || safePreviewHtml || loadingPreview)">
             <mat-divider></mat-divider>
             <div class="preview-header">
               <h4>Page Preview</h4>
-              <button mat-icon-button (click)="loadPreview()" matTooltip="Reload preview">
+              <button mat-icon-button (click)="loadPreview()" matTooltip="Reload preview" [disabled]="loadingPreview">
                 <mat-icon>refresh</mat-icon>
               </button>
             </div>
-            <div class="preview-wrapper">
+            <div class="preview-wrapper" [class.loading]="loadingPreview">
+              <div class="loading-overlay" *ngIf="loadingPreview">
+                <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                <p>Loading page preview...</p>
+              </div>
               <iframe 
+                *ngIf="safePreviewHtml && !loadingPreview" 
+                [srcdoc]="safePreviewHtml" 
+                class="preview-iframe"
+                tabindex="-1"
+                aria-hidden="true"
+                (load)="onPreviewIframeLoad()"
+                frameborder="0"
+                allowfullscreen>
+              </iframe>
+              <iframe 
+                *ngIf="safePreviewUrl && !safePreviewHtml && !loadingPreview" 
                 [src]="safePreviewUrl" 
                 class="preview-iframe"
                 tabindex="-1"

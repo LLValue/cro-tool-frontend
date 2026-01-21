@@ -22,18 +22,15 @@ import { CommonModule } from '@angular/common';
     <mat-dialog-content>
       <form [formGroup]="form">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Project Name</mat-label>
           <input matInput formControlName="name" required placeholder="Enter project name">
           <mat-error *ngIf="form.get('name')?.hasError('required')">
             Name is required
           </mat-error>
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Page URL</mat-label>
           <input matInput formControlName="pageUrl" type="url" placeholder="https://example.com">
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Notes</mat-label>
           <textarea matInput formControlName="notes" rows="3" placeholder="Add any additional notes about this project"></textarea>
         </mat-form-field>
       </form>

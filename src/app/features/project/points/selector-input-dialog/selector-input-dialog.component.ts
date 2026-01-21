@@ -33,19 +33,16 @@ import { CommonModule } from '@angular/common';
       </p>
       <form [formGroup]="form">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Point Name</mat-label>
           <input matInput formControlName="name" required placeholder="Enter point name">
           <mat-error *ngIf="form.get('name')?.hasError('required')">
             Name is required
           </mat-error>
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Text Content</mat-label>
           <textarea matInput formControlName="text" rows="3" placeholder="The text content of this element"></textarea>
           <mat-hint>Enter the text that will be optimized for this point</mat-hint>
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>CSS Selector</mat-label>
           <input matInput formControlName="selector" required placeholder="e.g., .hero-title, #cta-button, h1">
           <mat-hint>Enter a valid CSS selector (ID, class, or element selector)</mat-hint>
           <mat-error *ngIf="form.get('selector')?.hasError('required')">

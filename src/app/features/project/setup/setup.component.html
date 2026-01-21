@@ -42,8 +42,24 @@
       <div class="form-field-wrapper">
         <label class="field-label">Industry</label>
         <p class="field-helper">Specify the industry or sector this project belongs to.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
+        <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
+          <mat-select formControlName="industry">
+            <mat-option *ngFor="let industry of industries" [value]="industry">
+              {{ industry }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="form-field-wrapper">
+        <label class="field-label">Element type</label>
+        <p class="field-helper">Select the type of element you want to optimize.</p>
+        <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
+          <mat-select formControlName="elementType">
+            <mat-option *ngFor="let elementType of elementTypes" [value]="elementType">
+              {{ elementType }}
+            </mat-option>
+          </mat-select>
         </mat-form-field>
       </div>
 
@@ -80,9 +96,22 @@
       <mat-icon>refresh</mat-icon>
     </button>
   </div>
-  <div class="preview-wrapper">
+  <div class="preview-wrapper" [class.loading]="loadingPreview">
+    <div class="loading-overlay" *ngIf="loadingPreview">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <p>Loading page preview...</p>
+    </div>
     <iframe 
-      *ngIf="useIframe && safeIframeUrl" 
+      *ngIf="useIframe && safeIframeHtml && !loadingPreview" 
+      [srcdoc]="safeIframeHtml" 
+      class="preview-iframe"
+      tabindex="-1"
+      aria-hidden="true"
+      (load)="onPreviewIframeLoad()"
+      frameborder="0">
+    </iframe>
+    <iframe 
+      *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loadingPreview" 
       [src]="safeIframeUrl" 
       class="preview-iframe"
       tabindex="-1"
@@ -91,7 +120,7 @@
       frameborder="0">
     </iframe>
     <div 
-      *ngIf="!useIframe && previewHtml" 
+      *ngIf="!useIframe && previewHtml && !loadingPreview" 
       class="preview-content" 
       [innerHTML]="safePreviewHtml">
     </div>

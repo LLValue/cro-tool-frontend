@@ -70,7 +70,6 @@
       <h3>Point Details</h3>
       <form [formGroup]="form">
         <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-          <mat-label>Point Name</mat-label>
           <input matInput formControlName="name" required placeholder="Enter point name">
           <mat-error *ngIf="form.get('name')?.hasError('required')">
             Name is required
@@ -78,7 +77,6 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-          <mat-label>Element Type</mat-label>
           <mat-select formControlName="elementType" required>
             <mat-option value="Title">Title</mat-option>
             <mat-option value="CTA">CTA</mat-option>
@@ -89,7 +87,6 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-          <mat-label>CSS Selector</mat-label>
           <input matInput formControlName="selector" required [readonly]="!!selectedElement" placeholder="e.g., .hero-title, #cta-button, h1">
           <mat-hint *ngIf="selectedElement">Generated from selected element</mat-hint>
           <mat-hint *ngIf="!selectedElement">Select an element or enter manually</mat-hint>
@@ -99,7 +96,6 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-          <mat-label>Text Content</mat-label>
           <textarea matInput formControlName="text" rows="3" [readonly]="!!selectedElement" placeholder="Enter the text content of this element"></textarea>
           <mat-hint *ngIf="selectedElement">Extracted from selected element</mat-hint>
           <mat-hint *ngIf="!selectedElement">Enter the text content of this element</mat-hint>

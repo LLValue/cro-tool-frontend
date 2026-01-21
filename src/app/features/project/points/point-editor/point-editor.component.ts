@@ -144,7 +144,8 @@ export class PointEditorComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.html = response.html;
+        // Process HTML to remove cookie pop-ups before displaying
+        this.html = this.removeCookiePopupsFromHtml(response.html);
         this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(this.html);
         this.loading = false;
         
@@ -208,9 +209,88 @@ export class PointEditorComponent implements OnInit, OnDestroy {
             outline-offset: 2px !important;
             background-color: rgba(76, 175, 80, 0.2) !important;
           }
+          
+          /* Hide cookie consent pop-ups and banners */
+          [id*="cookie"],
+          [class*="cookie"],
+          [id*="Cookie"],
+          [class*="Cookie"],
+          [id*="consent"],
+          [class*="consent"],
+          [id*="Consent"],
+          [class*="Consent"],
+          [id*="gdpr"],
+          [class*="gdpr"],
+          [id*="GDPR"],
+          [class*="GDPR"],
+          [id*="cookie-banner"],
+          [class*="cookie-banner"],
+          [id*="cookie-notice"],
+          [class*="cookie-notice"],
+          [id*="cookie-consent"],
+          [class*="cookie-consent"],
+          [id*="onetrust"],
+          [class*="onetrust"],
+          [id*="OneTrust"],
+          [class*="OneTrust"],
+          [id*="cookiebot"],
+          [class*="cookiebot"],
+          [id*="Cookiebot"],
+          [class*="Cookiebot"],
+          [id*="CybotCookiebotDialog"],
+          [class*="CybotCookiebotDialog"],
+          [data-testid*="cookie"],
+          [data-testid*="Cookie"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important;
+            left: -9999px !important;
+            z-index: -9999 !important;
+          }
         `;
         iframeDoc.head.appendChild(style);
         this.highlightStyle = style;
+        
+        // Inject script to auto-close cookie pop-ups
+        const cookieScript = iframeDoc.createElement('script');
+        cookieScript.textContent = `
+          (function() {
+            function hideCookieElements() {
+              const selectors = [
+                '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+                '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+                '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+                '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+                '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+                '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]'
+              ];
+              selectors.forEach(selector => {
+                try {
+                  document.querySelectorAll(selector).forEach(el => {
+                    const text = (el.textContent || '').toLowerCase();
+                    if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+                      el.style.cssText = 'display:none!important;visibility:hidden!important;opacity:0!important;height:0!important;width:0!important;position:absolute!important;left:-9999px!important;z-index:-9999!important;';
+                    }
+                  });
+                } catch(e) {}
+              });
+            }
+            hideCookieElements();
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', hideCookieElements);
+            }
+            setTimeout(hideCookieElements, 500);
+            setTimeout(hideCookieElements, 1000);
+            setTimeout(hideCookieElements, 2000);
+            const observer = new MutationObserver(hideCookieElements);
+            observer.observe(document.body, { childList: true, subtree: true });
+          })();
+        `;
+        iframeDoc.head.appendChild(cookieScript);
 
         // Add event listeners for element selection
         iframeDoc.addEventListener('mouseover', this.onElementHover.bind(this), true);
@@ -417,6 +497,51 @@ export class PointEditorComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     this.dialogRef.close();
+  }
+
+  /**
+   * Remove cookie consent pop-ups and banners from HTML
+   */
+  private removeCookiePopupsFromHtml(html: string): string {
+    if (!html) return html;
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // List of common cookie pop-up selectors
+      const cookieSelectors = [
+        '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+        '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+        '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+        '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+        '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+        '[id*="cookie-banner"]', '[class*="cookie-banner"]',
+        '[id*="cookie-notice"]', '[class*="cookie-notice"]',
+        '[id*="cookie-consent"]', '[class*="cookie-consent"]',
+        '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]',
+        '[data-testid*="cookie"]', '[data-testid*="Cookie"]'
+      ];
+
+      cookieSelectors.forEach(selector => {
+        try {
+          const elements = doc.querySelectorAll(selector);
+          elements.forEach(el => {
+            const text = (el.textContent || '').toLowerCase();
+            if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+              el.remove();
+            }
+          });
+        } catch (e) {
+          // Ignore selector errors
+        }
+      });
+
+      return doc.documentElement.outerHTML;
+    } catch (error) {
+      // If parsing fails, return original HTML
+      return html;
+    }
   }
 }
 

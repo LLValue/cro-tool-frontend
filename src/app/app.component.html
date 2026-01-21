@@ -1,5 +1,5 @@
 <mat-sidenav-container class="sidenav-container">
-  <mat-sidenav #sidenav mode="side" [opened]="(authService.isLoggedIn$ | async) || false" class="sidenav" *ngIf="authService.isLoggedIn$ | async">
+  <mat-sidenav #sidenav mode="side" [opened]="(authService.isLoggedIn$ | async) ?? false" class="sidenav" *ngIf="authService.isLoggedIn$ | async">
     <div class="sidenav-header">
       <div class="logo-section">
         <span class="logo-text">CRO Tool</span>

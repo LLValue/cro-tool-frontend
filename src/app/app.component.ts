@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnInit } from '@angular/core';
+import { Component, ViewChild, OnInit, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { RouterOutlet, RouterModule, Router } from '@angular/router';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -12,6 +12,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './data/auth.service';
 import { ThemeService } from './core/theme.service';
+import { SidebarService } from './core/sidebar.service';
 import { BcgLogoComponent } from './shared/bcg-logo/bcg-logo.component';
 
 @Component({
@@ -35,31 +36,42 @@ import { BcgLogoComponent } from './shared/bcg-logo/bcg-logo.component';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, AfterViewInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   notificationCount = 0; // Puedes conectar esto con un servicio de notificaciones
 
   constructor(
     public authService: AuthService,
     private router: Router,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private sidebarService: SidebarService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    // Initialize theme
     this.themeService.setTheme();
     
-    // Initialize dark mode
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
     if (savedDarkMode) {
       document.body.classList.add('dark-mode');
     }
 
-    // Verify authentication on app start
     const token = this.authService.getToken();
     if (token) {
       this.authService.checkAuth().subscribe();
     }
+
+    this.sidebarService.closeSidebar$.subscribe(() => {
+      setTimeout(() => {
+        if (this.sidenav && this.sidenav.opened) {
+          this.sidenav.close();
+        }
+      }, 0);
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.cdr.detectChanges();
   }
 
   logout(): void {

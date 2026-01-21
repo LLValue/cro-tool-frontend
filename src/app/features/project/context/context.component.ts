@@ -59,15 +59,15 @@ export class ContextComponent implements OnInit, OnDestroy {
   ) {
     this.globalForm = this.fb.group({
       // Language & Voice
-      language: ['', Validators.required],
-      tone: [''],
+      language: ['en', Validators.required],
+      tone: ['professional'],
       styleComplexity: ['simple'],
-      styleLength: ['med'],
+      styleLength: ['short'],
       // Business & Page Context
       industry: [''],
       productSummary: [''],
       pageIntent: [''],
-      funnelStage: [''],
+      funnelStage: ['discovery'],
       valueProps: [[]],
       typicalObjections: [[]],
       marketLocale: [''],
@@ -75,7 +75,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       allowedFacts: [[]],
       mustNotClaim: [[]],
       // Legal & Brand Guardrails
-      riskLevel: ['Standard'],
+      riskLevel: ['Conservative'],
       forbiddenWords: [[]],
       mandatoryClaims: [[]],
       prohibitedClaims: [[]],
@@ -190,20 +190,20 @@ export class ContextComponent implements OnInit, OnDestroy {
     if (project) {
       this.isUpdatingForm = true;
       this.globalForm.patchValue({
-        language: project.language || '',
-        tone: project.tone || '',
+        language: project.language || 'en',
+        tone: project.tone || 'professional',
         styleComplexity: project.styleComplexity || 'simple',
-        styleLength: project.styleLength || 'med',
+        styleLength: project.styleLength || 'short',
         industry: project.industry || '',
         productSummary: project.productSummary || '',
         pageIntent: project.pageIntent || '',
-        funnelStage: project.funnelStage || '',
+        funnelStage: project.funnelStage || 'discovery',
         valueProps: project.valueProps || [],
         typicalObjections: project.typicalObjections || [],
         marketLocale: project.marketLocale || '',
         allowedFacts: project.allowedFacts || [],
         mustNotClaim: project.mustNotClaim || [],
-        riskLevel: project.riskLevel || 'Standard',
+        riskLevel: project.riskLevel || 'Conservative',
         forbiddenWords: project.forbiddenWords || [],
         prohibitedClaims: project.prohibitedClaims || [],
         requiredDisclaimer: project.requiredDisclaimer || '',
@@ -231,18 +231,21 @@ export class ContextComponent implements OnInit, OnDestroy {
   }
 
   private setDefaultSelectValues(): void {
-    // Set first option as default for empty select fields
     if (!this.globalForm.get('language')?.value) {
       this.globalForm.patchValue({ language: 'en' }, { emitEvent: false });
     }
     if (!this.globalForm.get('tone')?.value) {
       this.globalForm.patchValue({ tone: 'professional' }, { emitEvent: false });
     }
+    if (!this.globalForm.get('styleLength')?.value) {
+      this.globalForm.patchValue({ styleLength: 'short' }, { emitEvent: false });
+    }
     if (!this.globalForm.get('funnelStage')?.value) {
       this.globalForm.patchValue({ funnelStage: 'discovery' }, { emitEvent: false });
     }
-    // styleComplexity and styleLength already have defaults in the form initialization
-    // riskLevel already has default 'Standard'
+    if (!this.globalForm.get('riskLevel')?.value) {
+      this.globalForm.patchValue({ riskLevel: 'Conservative' }, { emitEvent: false });
+    }
   }
 
   loadPoints(): void {

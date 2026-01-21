@@ -21,7 +21,6 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
   template: `
     <div class="chips-input-wrapper full-width">
       <mat-form-field appearance="outline" floatLabel="always" class="chips-input full-width">
-        <mat-label>{{ getDisplayLabel() }}</mat-label>
         <mat-chip-grid #chipGrid [attr.aria-label]="getDisplayLabel()">
           <mat-chip-row *ngFor="let item of value" (removed)="remove(item)">
             {{ item }}

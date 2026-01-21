@@ -49,7 +49,6 @@
       <mat-card-content>
         <form [formGroup]="generalForm" class="settings-form">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Language</mat-label>
             <mat-select formControlName="language">
               <mat-option value="en">English</mat-option>
               <mat-option value="es">Spanish</mat-option>
@@ -59,7 +58,6 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Timezone</mat-label>
             <mat-select formControlName="timezone">
               <mat-option value="UTC">UTC</mat-option>
               <mat-option value="America/New_York">Eastern Time</mat-option>
@@ -72,7 +70,6 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Date Format</mat-label>
             <mat-select formControlName="dateFormat">
               <mat-option value="MM/DD/YYYY">MM/DD/YYYY</mat-option>
               <mat-option value="DD/MM/YYYY">DD/MM/YYYY</mat-option>

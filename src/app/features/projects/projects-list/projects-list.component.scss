@@ -87,7 +87,7 @@ $primary-color: #7EF473;
   transition: color 0.2s ease;
 
   &:hover {
-    color: $primary-color;
+    color: #212121;
     text-decoration: underline;
   }
 
@@ -273,6 +273,10 @@ $primary-color: #7EF473;
 
   .url-link {
     color: #fff;
+
+    &:hover {
+      color: #fff;
+    }
   }
 
   .empty-state {

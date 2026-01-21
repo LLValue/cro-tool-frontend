@@ -19,7 +19,6 @@
     <div class="reporting-content">
       <div class="filters-section">
         <mat-form-field appearance="outline">
-          <mat-label>Filter by Goal Type</mat-label>
           <mat-select [(ngModel)]="selectedGoalType" (ngModelChange)="onGoalTypeChange()">
             <mat-option value="all">All Goals</mat-option>
             <mat-option value="clickSelector">Click Selector</mat-option>
@@ -28,7 +27,6 @@
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline" *ngIf="selectedGoalType !== 'all'">
-          <mat-label>Select Goal</mat-label>
           <mat-select [(ngModel)]="selectedGoalId" (ngModelChange)="onGoalChange()">
             <mat-option value="all">All {{ getGoalTypeLabel(selectedGoalType) }} Goals</mat-option>
             <mat-option *ngFor="let goal of getGoalsForType(selectedGoalType)" [value]="goal.id">
@@ -161,7 +159,6 @@
     <div class="reporting-content">
       <div class="filters-section">
         <mat-form-field appearance="outline">
-          <mat-label>Select Point</mat-label>
           <mat-select [(ngModel)]="selectedPointId" (ngModelChange)="loadPointMetrics()">
             <mat-option *ngFor="let point of points" [value]="point.id">
               {{ point.name }}
@@ -169,7 +166,6 @@
           </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>Filter by Goal Type</mat-label>
           <mat-select [(ngModel)]="selectedGoalType" (ngModelChange)="onGoalTypeChange()">
             <mat-option value="all">All Goals</mat-option>
             <mat-option value="clickSelector">Click Selector</mat-option>

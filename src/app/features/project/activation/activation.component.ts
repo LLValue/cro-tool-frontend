@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -12,12 +12,15 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Subscription } from 'rxjs';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, SafeHtml } from '@angular/platform-browser';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { Project, ActivationConfig, ActivityLog } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { ApiClient } from '../../../api/api-client';
+import { API_CLIENT } from '../../../api/api-client.token';
 
 @Component({
   selector: 'app-activation',
@@ -35,6 +38,7 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     MatChipsModule,
     MatDividerModule,
     MatTooltipModule,
+    MatProgressBarModule,
     PageHeaderComponent
   ],
   templateUrl: './activation.component.html',
@@ -47,6 +51,8 @@ export class ActivationComponent implements OnInit, OnDestroy {
   activityLogs: ActivityLog[] = [];
   activationConfig: ActivationConfig | null = null;
   safePreviewUrl: SafeResourceUrl | null = null;
+  safePreviewHtml: SafeHtml = '';
+  loadingPreview = false;
   private lastScrollY = 0;
   private subscriptions = new Subscription();
 
@@ -55,7 +61,8 @@ export class ActivationComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private store: ProjectsStoreService,
     private toast: ToastHelperService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    @Inject(API_CLIENT) private apiClient: ApiClient
   ) {
     this.activationForm = this.fb.group({
       scriptSnippet: ['', Validators.required],
@@ -263,7 +270,216 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     const previewUrl = this.project.pageUrl;
     this.lastScrollY = window.scrollY || 0;
-    this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
+    this.loadingPreview = true;
+    this.safePreviewUrl = null;
+    this.safePreviewHtml = '';
+
+    this.apiClient.proxyFetch(previewUrl).subscribe({
+      next: (response) => {
+        this.loadingPreview = false;
+        if (response.html && response.html.trim().length > 0) {
+          const processedHtml = this.removeCookiePopupsFromHtml(response.html);
+          this.safePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(processedHtml);
+          this.safePreviewUrl = null;
+        } else {
+          this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
+          this.safePreviewHtml = '';
+        }
+      },
+      error: () => {
+        this.loadingPreview = false;
+        this.safePreviewUrl = this.sanitizer.bypassSecurityTrustResourceUrl(previewUrl);
+        this.safePreviewHtml = '';
+      }
+    });
+  }
+
+  private removeCookiePopupsFromHtml(html: string): string {
+    if (!html) return html;
+
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const cookieSelectors = [
+        '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+        '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+        '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+        '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+        '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+        '[id*="cookie-banner"]', '[class*="cookie-banner"]',
+        '[id*="cookie-notice"]', '[class*="cookie-notice"]',
+        '[id*="cookie-consent"]', '[class*="cookie-consent"]',
+        '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]',
+        '[data-testid*="cookie"]', '[data-testid*="Cookie"]'
+      ];
+
+      cookieSelectors.forEach(selector => {
+        try {
+          const elements = doc.querySelectorAll(selector);
+          elements.forEach(el => {
+            const text = (el.textContent || '').toLowerCase();
+            if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+              el.remove();
+            }
+          });
+        } catch (e) {
+        }
+      });
+
+      const style = doc.createElement('style');
+      style.textContent = `
+        [id*="cookie"], [class*="cookie"], [id*="Cookie"], [class*="Cookie"],
+        [id*="consent"], [class*="consent"], [id*="Consent"], [class*="Consent"],
+        [id*="gdpr"], [class*="gdpr"], [id*="GDPR"], [class*="GDPR"],
+        [id*="onetrust"], [class*="onetrust"], [id*="OneTrust"], [class*="OneTrust"],
+        [id*="cookiebot"], [class*="cookiebot"], [id*="Cookiebot"], [class*="Cookiebot"],
+        [id*="CybotCookiebotDialog"], [class*="CybotCookiebotDialog"],
+        [data-testid*="cookie"], [data-testid*="Cookie"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          height: 0 !important;
+          width: 0 !important;
+          overflow: hidden !important;
+          position: absolute !important;
+          left: -9999px !important;
+          z-index: -9999 !important;
+        }
+      `;
+      doc.head.appendChild(style);
+
+      const script = doc.createElement('script');
+      script.textContent = `
+        (function() {
+          function hideCookieElements() {
+            const selectors = [
+              '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+              '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+              '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+              '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+              '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+              '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]'
+            ];
+            selectors.forEach(selector => {
+              try {
+                document.querySelectorAll(selector).forEach(el => {
+                  const text = (el.textContent || '').toLowerCase();
+                  if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+                    el.style.cssText = 'display:none!important;visibility:hidden!important;opacity:0!important;height:0!important;width:0!important;position:absolute!important;left:-9999px!important;z-index:-9999!important;';
+                  }
+                });
+              } catch(e) {}
+            });
+          }
+          
+          hideCookieElements();
+          
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', hideCookieElements);
+          }
+          
+          setTimeout(hideCookieElements, 500);
+          setTimeout(hideCookieElements, 1000);
+          setTimeout(hideCookieElements, 2000);
+          setTimeout(hideCookieElements, 3000);
+          
+          const observer = new MutationObserver(function(mutations) {
+            hideCookieElements();
+          });
+          
+          if (document.body) {
+            observer.observe(document.body, { 
+              childList: true, 
+              subtree: true,
+              attributes: true,
+              attributeFilter: ['class', 'id', 'style']
+            });
+          }
+          
+          const docObserver = new MutationObserver(function(mutations) {
+            if (document.body) {
+              observer.observe(document.body, { 
+                childList: true, 
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'id', 'style']
+              });
+              docObserver.disconnect();
+            }
+          });
+          docObserver.observe(document.documentElement, { childList: true });
+          
+          const originalPushState = history.pushState;
+          const originalReplaceState = history.replaceState;
+          
+          history.pushState = function() {
+            originalPushState.apply(history, arguments);
+            setTimeout(hideCookieElements, 100);
+            setTimeout(hideCookieElements, 500);
+          };
+          
+          history.replaceState = function() {
+            originalReplaceState.apply(history, arguments);
+            setTimeout(hideCookieElements, 100);
+            setTimeout(hideCookieElements, 500);
+          };
+          
+          window.addEventListener('popstate', function() {
+            setTimeout(hideCookieElements, 100);
+            setTimeout(hideCookieElements, 500);
+          });
+          
+          document.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target && target.tagName === 'A') {
+              setTimeout(hideCookieElements, 500);
+              setTimeout(hideCookieElements, 1000);
+            }
+          }, true);
+        })();
+      `;
+      doc.head.appendChild(script);
+
+      const baseUrl = this.extractBaseUrl(this.project?.pageUrl || '');
+      if (baseUrl) {
+        const allLinks = doc.querySelectorAll('link[href], script[src], img[src], source[src]');
+        allLinks.forEach((el: Element) => {
+          const href = el.getAttribute('href') || el.getAttribute('src');
+          if (href && href.startsWith(baseUrl)) {
+            const relativeUrl = href.replace(baseUrl, '');
+            if (el.hasAttribute('href')) {
+              el.setAttribute('href', relativeUrl);
+            } else {
+              el.setAttribute('src', relativeUrl);
+            }
+          }
+        });
+        
+        const styleSheets = doc.querySelectorAll('style');
+        styleSheets.forEach(style => {
+          if (style.textContent) {
+            style.textContent = style.textContent.replace(
+              new RegExp(`url\\(['"]?${baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^'")]+)['"]?\\)`, 'gi'),
+              (match, path) => `url('${path}')`
+            );
+          }
+        });
+      }
+
+      return doc.documentElement.outerHTML;
+    } catch (error) {
+      return html;
+    }
+  }
+
+  private extractBaseUrl(url: string): string | null {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.protocol}//${urlObj.host}`;
+    } catch {
+      return null;
+    }
   }
 
   onPreviewIframeLoad(): void {

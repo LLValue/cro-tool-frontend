@@ -8,9 +8,22 @@
 </app-page-header>
 
 <div class="preview-container">
-  <div class="preview-content">
+  <div class="preview-content" [class.loading]="loadingPreview">
+    <div class="loading-overlay" *ngIf="loadingPreview">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <p>Loading page preview...</p>
+    </div>
     <iframe 
-      *ngIf="useIframe && safeIframeUrl" 
+      *ngIf="useIframe && safeIframeHtml && !loadingPreview" 
+      [srcdoc]="safeIframeHtml" 
+      class="preview-iframe"
+      tabindex="-1"
+      aria-hidden="true"
+      (load)="onPreviewIframeLoad()"
+      frameborder="0">
+    </iframe>
+    <iframe 
+      *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loadingPreview" 
       [src]="safeIframeUrl" 
       class="preview-iframe"
       tabindex="-1"
@@ -19,7 +32,7 @@
       frameborder="0">
     </iframe>
     <div 
-      *ngIf="!useIframe" 
+      *ngIf="!useIframe && !loadingPreview" 
       class="preview-wrapper" 
       [innerHTML]="safePreviewHtml">
     </div>
