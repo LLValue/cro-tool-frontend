@@ -14,8 +14,11 @@ import { debounceTime, map } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { ChipsInputComponent } from '../../../shared/chips-input/chips-input.component';
+import { InfoModalComponent } from '../../../shared/info-modal/info-modal.component';
 
 @Component({
   selector: 'app-context',
@@ -31,7 +34,9 @@ import { ChipsInputComponent } from '../../../shared/chips-input/chips-input.com
     MatCardModule,
     CommonModule,
     PageHeaderComponent,
-    ChipsInputComponent
+    ChipsInputComponent,
+    MatDialogModule,
+    MatTooltipModule
   ],
   templateUrl: './context.component.html',
   styleUrls: ['./context.component.scss']
@@ -49,7 +54,8 @@ export class ContextComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private store: ProjectsStoreService,
-    private toast: ToastHelperService
+    private toast: ToastHelperService,
+    private dialog: MatDialog
   ) {
     this.globalForm = this.fb.group({
       // Language & Voice
@@ -344,6 +350,73 @@ export class ContextComponent implements OnInit, OnDestroy {
   removeClaim(index: number): void {
     this.mandatoryClaims.removeAt(index);
     this.saveGlobal();
+  }
+
+  // Character counter helpers
+  getCharacterCount(controlName: string): number {
+    const form = controlName === 'objective' || controlName === 'generationRules' 
+      ? this.pointForm 
+      : this.globalForm;
+    const value = form.get(controlName)?.value || '';
+    return typeof value === 'string' ? value.length : 0;
+  }
+
+  // Info modal content
+  getInfoModalContent(field: string): string {
+    const contents: { [key: string]: string } = {
+      language: `
+        <p><strong>Select the primary language</strong> for all generated variants.</p>
+        <p>This ensures all copy is written in the correct language and follows language-specific conventions.</p>
+      `,
+      tone: `
+        <p><strong>Define the overall tone</strong> that should be used across all variants.</p>
+        <p><strong>Options:</strong></p>
+        <ul>
+          <li>Professional: Formal, business-appropriate</li>
+          <li>Friendly: Warm, approachable</li>
+          <li>Casual: Relaxed, informal</li>
+          <li>Formal: Very structured, traditional</li>
+          <li>Conversational: Natural, like speaking to a friend</li>
+          <li>Authoritative: Confident, expert voice</li>
+        </ul>
+      `,
+      productSummary: `
+        <p><strong>Describe what the product/service is and who it's for.</strong></p>
+        <p>This helps the AI understand the core offering and target audience, ensuring all variants align with the product's value proposition.</p>
+        <p><strong>Example:</strong> "A SaaS platform for small businesses to manage their inventory and sales. Target audience: retail store owners with 1-10 employees."</p>
+      `,
+      pageIntent: `
+        <p><strong>Define what action you want users to take on this page.</strong></p>
+        <p>This guides the AI to write copy that drives toward the desired conversion goal.</p>
+        <p><strong>Examples:</strong></p>
+        <ul>
+          <li>Sign up for a free trial</li>
+          <li>Request a demo</li>
+          <li>Download a resource</li>
+          <li>Make a purchase</li>
+        </ul>
+      `,
+      forbiddenWords: `
+        <p><strong>List words that must never appear</strong> in any generated variant.</p>
+        <p>These are global constraints that apply across all optimization points. Use for compliance-sensitive terms, competitor names, or brand-inappropriate language.</p>
+      `,
+      mandatoryClaims: `
+        <p><strong>List claims that must appear</strong> in all variants.</p>
+        <p>These are required statements for legal or compliance reasons. Use sparingly to maintain copy quality.</p>
+      `
+    };
+    return contents[field] || '';
+  }
+
+  // Info modal
+  openInfoModal(title: string, field: string): void {
+    const content = this.getInfoModalContent(field);
+    if (content) {
+      this.dialog.open(InfoModalComponent, {
+        width: '600px',
+        data: { title, content }
+      });
+    }
   }
 }
 

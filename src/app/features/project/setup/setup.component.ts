@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSelectModule } from '@angular/material/select';
+import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { ProjectsApiService } from '../../../api/services/projects-api.service';
@@ -28,6 +29,7 @@ import { take } from 'rxjs/operators';
     MatIconModule,
     MatChipsModule,
     MatSelectModule,
+    MatCardModule,
     CommonModule,
     PageHeaderComponent
   ],

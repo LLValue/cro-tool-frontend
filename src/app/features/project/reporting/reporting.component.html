@@ -27,12 +27,97 @@
             <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
           </mat-select>
         </mat-form-field>
+        <mat-form-field appearance="outline" *ngIf="selectedGoalType !== 'all'">
+          <mat-label>Select Goal</mat-label>
+          <mat-select [(ngModel)]="selectedGoalId" (ngModelChange)="onGoalChange()">
+            <mat-option value="all">All {{ getGoalTypeLabel(selectedGoalType) }} Goals</mat-option>
+            <mat-option *ngFor="let goal of getGoalsForType(selectedGoalType)" [value]="goal.id">
+              {{ goal.name || goal.value || (goal.type + ' - ' + goal.value) }}
+              <span *ngIf="goal.isPrimary"> (Primary)</span>
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
       </div>
       <div *ngIf="globalMetrics.length === 0" class="no-data-message">
         <p>No metrics available. Click "Simulate Traffic" to generate metrics for active variants.</p>
         <p *ngIf="variants.length === 0" class="warning">No active variants found. Create variants first in the Variants page.</p>
       </div>
-      <table *ngIf="globalMetrics.length > 0" mat-table [dataSource]="globalMetrics" class="metrics-table">
+      <div *ngIf="globalMetrics.length > 0" class="charts-section">
+        <div class="charts-grid">
+          <mat-card class="chart-card">
+            <mat-card-content>
+              <canvas baseChart
+                [data]="conversionRateChartData"
+                [options]="conversionRateChartOptions"
+                type="line">
+              </canvas>
+            </mat-card-content>
+          </mat-card>
+          <mat-card class="chart-card">
+            <mat-card-content>
+              <canvas baseChart
+                [data]="distributionChartData"
+                [options]="distributionChartOptions"
+                type="pie">
+              </canvas>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+      
+      <!-- Show metrics grouped by goal when viewing all goals -->
+      <div *ngIf="selectedGoalType === 'all' && metricsByGoal.size > 1" class="goals-section">
+        <mat-card *ngFor="let goalEntry of getMetricsByGoalEntries()" class="goal-card" [class.primary-goal]="goalEntry.value.goal.isPrimary">
+          <mat-card-header>
+            <mat-card-title>
+              {{ goalEntry.value.goal.name || goalEntry.value.goal.value || getGoalTypeLabel(goalEntry.value.goal.type) }}
+              <span *ngIf="goalEntry.value.goal.isPrimary" class="primary-badge">Primary</span>
+            </mat-card-title>
+            <mat-card-subtitle>{{ getGoalTypeLabel(goalEntry.value.goal.type) }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <table mat-table [dataSource]="goalEntry.value.metrics" class="metrics-table">
+              <ng-container matColumnDef="variant">
+                <th mat-header-cell *matHeaderCellDef>Variant</th>
+                <td mat-cell *matCellDef="let item">{{ getVariantText(item.variantId) }}</td>
+              </ng-container>
+              <ng-container matColumnDef="users">
+                <th mat-header-cell *matHeaderCellDef>Users</th>
+                <td mat-cell *matCellDef="let item">{{ item.users }}</td>
+              </ng-container>
+              <ng-container matColumnDef="conversions">
+                <th mat-header-cell *matHeaderCellDef>Conversions</th>
+                <td mat-cell *matCellDef="let item">{{ item.conversions }}</td>
+              </ng-container>
+              <ng-container matColumnDef="conversionRate">
+                <th mat-header-cell *matHeaderCellDef>CR</th>
+                <td mat-cell *matCellDef="let item">{{ (item.conversionRate * 100).toFixed(2) }}%</td>
+              </ng-container>
+              <ng-container matColumnDef="confidence">
+                <th mat-header-cell *matHeaderCellDef>Confidence</th>
+                <td mat-cell *matCellDef="let item">{{ item.confidence }}%</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let item">
+                  <button mat-raised-button color="primary" (click)="previewVariant(item.variantId)">
+                    <mat-icon>preview</mat-icon>
+                    Preview
+                  </button>
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumnsWithActions"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumnsWithActions;" 
+                  [class.winner]="isWinner(row)"
+                  [class.loser]="isLoser(row)">
+              </tr>
+            </table>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Show single table when a specific goal is selected -->
+      <table *ngIf="globalMetrics.length > 0 && (selectedGoalType !== 'all' || metricsByGoal.size <= 1)" mat-table [dataSource]="globalMetrics" class="metrics-table">
         <ng-container matColumnDef="variant">
           <th mat-header-cell *matHeaderCellDef>Variant</th>
           <td mat-cell *matCellDef="let item">{{ getVariantText(item.variantId) }}</td>
@@ -94,8 +179,47 @@
         </mat-form-field>
       </div>
 
-      <div *ngIf="pointMetrics.length === 0 && selectedPointId" class="no-data-message">
+      <div *ngIf="!selectedPointId" class="no-data-message">
+        <p>Please select an optimization point to view its variant metrics.</p>
+      </div>
+
+      <div *ngIf="selectedPointId && pointMetrics.length === 0" class="no-data-message">
         <p>No metrics available for this point. Click "Simulate Traffic" to generate metrics.</p>
+      </div>
+
+      <div *ngIf="selectedPointId" class="point-info-section">
+        <mat-card class="point-info-card">
+          <mat-card-header>
+            <mat-card-title>
+              {{ getSelectedPoint()?.name || 'Selected Point' }}
+            </mat-card-title>
+            <mat-card-subtitle>
+              Variants: {{ getPointVariantsCount() }} active
+            </mat-card-subtitle>
+          </mat-card-header>
+        </mat-card>
+      </div>
+      <div *ngIf="pointMetrics.length > 0" class="charts-section">
+        <div class="charts-grid">
+          <mat-card class="chart-card">
+            <mat-card-content>
+              <canvas baseChart
+                [data]="conversionRateChartData"
+                [options]="conversionRateChartOptions"
+                type="line">
+              </canvas>
+            </mat-card-content>
+          </mat-card>
+          <mat-card class="chart-card">
+            <mat-card-content>
+              <canvas baseChart
+                [data]="distributionChartData"
+                [options]="distributionChartOptions"
+                type="pie">
+              </canvas>
+            </mat-card-content>
+          </mat-card>
+        </div>
       </div>
       <table *ngIf="pointMetrics.length > 0" mat-table [dataSource]="pointMetrics" class="metrics-table">
         <ng-container matColumnDef="variant">

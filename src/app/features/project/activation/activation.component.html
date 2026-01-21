@@ -39,19 +39,24 @@
           <mat-card-title>Configuration</mat-card-title>
         </mat-card-header>
         <mat-card-content class="config-card-content">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Scope Type</mat-label>
-            <mat-select formControlName="scopeType" (selectionChange)="onScopeTypeChange()">
-              <mat-option value="exact">Exact URL</mat-option>
-              <mat-option value="pattern">Pattern</mat-option>
-            </mat-select>
-          </mat-form-field>
+          <div class="form-field-wrapper">
+            <label class="field-label">Scope type</label>
+            <p class="field-helper">Select how the script should match URLs.</p>
+            <mat-form-field appearance="outline" class="brief-input">
+              <mat-select formControlName="scopeType" (selectionChange)="onScopeTypeChange()">
+                <mat-option value="exact">Exact URL</mat-option>
+                <mat-option value="pattern">Pattern</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
 
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>{{ activationForm.get('scopeType')?.value === 'exact' ? 'Exact URL' : 'URL Pattern' }}</mat-label>
-            <input matInput formControlName="scopeValue" placeholder="https://example.com/page">
-            <mat-hint>{{ activationForm.get('scopeType')?.value === 'pattern' ? 'Use * for wildcards, e.g., https://example.com/*' : '' }}</mat-hint>
-          </mat-form-field>
+          <div class="form-field-wrapper">
+            <label class="field-label">{{ activationForm.get('scopeType')?.value === 'exact' ? 'Exact URL' : 'URL pattern' }}</label>
+            <p class="field-helper">{{ activationForm.get('scopeType')?.value === 'pattern' ? 'Use * for wildcards, e.g., https://example.com/*' : 'Enter the exact URL where the script should run.' }}</p>
+            <mat-form-field appearance="outline" class="brief-input">
+              <input matInput formControlName="scopeValue" placeholder="https://example.com/page">
+            </mat-form-field>
+          </div>
 
           <div class="form-row">
             <mat-slide-toggle formControlName="antiFlicker" (change)="onAntiFlickerChange()">
@@ -60,11 +65,13 @@
             <mat-icon matTooltip="Prevents content flash before variants load" class="info-icon">info</mat-icon>
           </div>
 
-          <mat-form-field appearance="outline" class="full-width" *ngIf="activationForm.get('antiFlicker')?.value">
-            <mat-label>Max Wait (ms)</mat-label>
-            <input matInput type="number" formControlName="maxWait" (change)="onMaxWaitChange()" placeholder="0">
-            <mat-hint>Maximum time to wait for script to load (0-10000ms)</mat-hint>
-          </mat-form-field>
+          <div class="form-field-wrapper" *ngIf="activationForm.get('antiFlicker')?.value">
+            <label class="field-label">Max wait (ms)</label>
+            <p class="field-helper">Maximum time to wait for script to load (0-10000ms).</p>
+            <mat-form-field appearance="outline" class="brief-input-number">
+              <input matInput type="number" formControlName="maxWait" (change)="onMaxWaitChange()" placeholder="0">
+            </mat-form-field>
+          </div>
         </mat-card-content>
       </mat-card>
 

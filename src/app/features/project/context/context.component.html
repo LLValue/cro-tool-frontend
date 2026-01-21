@@ -7,82 +7,136 @@
   <mat-tab-group>
   <mat-tab label="Language & Voice">
     <form [formGroup]="globalForm" class="form-container">
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Language</mat-label>
-        <mat-select formControlName="language" required>
-          <mat-option value="en">English</mat-option>
-          <mat-option value="es">Spanish</mat-option>
-          <mat-option value="fr">French</mat-option>
-          <mat-option value="de">German</mat-option>
-          <mat-option value="it">Italian</mat-option>
-          <mat-option value="pt">Portuguese</mat-option>
-        </mat-select>
-        <mat-error *ngIf="globalForm.get('language')?.hasError('required')">
-          Language is required
-        </mat-error>
-      </mat-form-field>
+      <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
+      
+      <div class="form-field-wrapper">
+        <label class="field-label">
+          Language
+          <span class="required-asterisk">*</span>
+          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Language', 'language')" matTooltip="More information">
+            <mat-icon>info</mat-icon>
+          </button>
+        </label>
+        <p class="field-helper">Select the primary language for all generated variants.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <mat-select formControlName="language" required>
+            <mat-option value="en">English</mat-option>
+            <mat-option value="es">Spanish</mat-option>
+            <mat-option value="fr">French</mat-option>
+            <mat-option value="de">German</mat-option>
+            <mat-option value="it">Italian</mat-option>
+            <mat-option value="pt">Portuguese</mat-option>
+          </mat-select>
+          <mat-error *ngIf="globalForm.get('language')?.hasError('required')">
+            Language is required
+          </mat-error>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Tone</mat-label>
-        <mat-select formControlName="tone">
-          <mat-option value="professional">Professional</mat-option>
-          <mat-option value="friendly">Friendly</mat-option>
-          <mat-option value="casual">Casual</mat-option>
-          <mat-option value="formal">Formal</mat-option>
-          <mat-option value="conversational">Conversational</mat-option>
-          <mat-option value="authoritative">Authoritative</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">
+          Tone
+          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Tone', 'tone')" matTooltip="More information">
+            <mat-icon>info</mat-icon>
+          </button>
+        </label>
+        <p class="field-helper">Define the overall tone that should be used across all variants.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <mat-select formControlName="tone">
+            <mat-option value="professional">Professional</mat-option>
+            <mat-option value="friendly">Friendly</mat-option>
+            <mat-option value="casual">Casual</mat-option>
+            <mat-option value="formal">Formal</mat-option>
+            <mat-option value="conversational">Conversational</mat-option>
+            <mat-option value="authoritative">Authoritative</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" floatLabel="always" class="half-width">
-          <mat-label>Style Complexity</mat-label>
-          <mat-select formControlName="styleComplexity">
-            <mat-option value="simple">Simple</mat-option>
-            <mat-option value="technical">Technical</mat-option>
-          </mat-select>
-        </mat-form-field>
+        <div class="form-field-wrapper half-width">
+          <label class="field-label">Style complexity</label>
+          <p class="field-helper">Choose the complexity level of the writing style.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <mat-select formControlName="styleComplexity">
+              <mat-option value="simple">Simple</mat-option>
+              <mat-option value="technical">Technical</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline" floatLabel="always" class="half-width">
-          <mat-label>Style Length</mat-label>
-          <mat-select formControlName="styleLength">
-            <mat-option value="short">Short</mat-option>
-            <mat-option value="med">Medium</mat-option>
-            <mat-option value="long">Long</mat-option>
-          </mat-select>
-        </mat-form-field>
+        <div class="form-field-wrapper half-width">
+          <label class="field-label">Style length</label>
+          <p class="field-helper">Choose the preferred length of the writing style.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <mat-select formControlName="styleLength">
+              <mat-option value="short">Short</mat-option>
+              <mat-option value="med">Medium</mat-option>
+              <mat-option value="long">Long</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
       </div>
     </form>
   </mat-tab>
 
   <mat-tab label="Business & Page Context">
     <form [formGroup]="globalForm" class="form-container">
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Industry</mat-label>
-        <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Industry</label>
+        <p class="field-helper">Specify the industry or sector this project belongs to.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
+        </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Product Summary</mat-label>
-        <textarea matInput formControlName="productSummary" rows="3" placeholder="What is it, who is it for"></textarea>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">
+          Product summary
+          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Product summary', 'productSummary')" matTooltip="More information">
+            <mat-icon>info</mat-icon>
+          </button>
+        </label>
+        <p class="field-helper">Describe what the product/service is and who it's for.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <textarea matInput formControlName="productSummary" rows="2" placeholder="What is it, who is it for"></textarea>
+          <mat-hint align="end">
+            <span>{{ getCharacterCount('productSummary') }} characters</span>
+          </mat-hint>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Page Intent / Goal</mat-label>
-        <textarea matInput formControlName="pageIntent" rows="2" placeholder="What action do you want users to take?"></textarea>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">
+          Page intent / goal
+          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Page intent / goal', 'pageIntent')" matTooltip="More information">
+            <mat-icon>info</mat-icon>
+          </button>
+        </label>
+        <p class="field-helper">Define what action you want users to take on this page.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <textarea matInput formControlName="pageIntent" rows="2" placeholder="What action do you want users to take?"></textarea>
+          <mat-hint align="end">
+            <span>{{ getCharacterCount('pageIntent') }} characters</span>
+          </mat-hint>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Funnel Stage</mat-label>
-        <mat-select formControlName="funnelStage">
-          <mat-option value="discovery">Discovery</mat-option>
-          <mat-option value="consideration">Consideration</mat-option>
-          <mat-option value="conversion">Conversion</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Funnel stage</label>
+        <p class="field-helper">Select the stage of the customer journey this page targets.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <mat-select formControlName="funnelStage">
+            <mat-option value="discovery">Discovery</mat-option>
+            <mat-option value="consideration">Consideration</mat-option>
+            <mat-option value="conversion">Conversion</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
 
       <div class="section">
-        <h3>Value Props (2-5 bullets)</h3>
+        <label class="field-label">Value props (2-5 bullets)</label>
+        <p class="field-helper">List the key value propositions that should be emphasized (2-5 items).</p>
         <app-chips-input
           formControlName="valueProps"
           label=""
@@ -91,7 +145,8 @@
       </div>
 
       <div class="section">
-        <h3>Typical Objections (3 bullets)</h3>
+        <label class="field-label">Typical objections (3 bullets)</label>
+        <p class="field-helper">List common objections that users might have (3 items).</p>
         <app-chips-input
           formControlName="typicalObjections"
           label=""
@@ -99,17 +154,21 @@
         </app-chips-input>
       </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Market / Locale</mat-label>
-        <input matInput formControlName="marketLocale" placeholder="e.g., ES, MX, US">
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Market / locale</label>
+        <p class="field-helper">Specify the target market or locale (e.g., country codes).</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <input matInput formControlName="marketLocale" placeholder="e.g., ES, MX, US">
+        </mat-form-field>
+      </div>
     </form>
   </mat-tab>
 
   <mat-tab label="Proof & Source of Truth">
     <form [formGroup]="globalForm" class="form-container">
       <div class="section">
-        <h3>Allowed Facts / Proof Points</h3>
+        <label class="field-label">Allowed facts / proof points</label>
+        <p class="field-helper">List facts and proof points that can be used in generated variants.</p>
         <app-chips-input
           formControlName="allowedFacts"
           label=""
@@ -118,7 +177,8 @@
       </div>
 
       <div class="section">
-        <h3>What We Must NOT Claim</h3>
+        <label class="field-label">What we must NOT claim</label>
+        <p class="field-helper">List claims that must never appear in any generated variant.</p>
         <app-chips-input
           formControlName="mustNotClaim"
           label=""
@@ -130,17 +190,26 @@
 
   <mat-tab label="Legal & Brand Guardrails">
     <form [formGroup]="globalForm" class="form-container">
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Risk Level</mat-label>
-        <mat-select formControlName="riskLevel">
-          <mat-option value="Conservative">Conservative</mat-option>
-          <mat-option value="Standard">Standard</mat-option>
-          <mat-option value="Exploratory">Exploratory</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Risk level</label>
+        <p class="field-helper">Select the risk tolerance level for content generation.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <mat-select formControlName="riskLevel">
+            <mat-option value="Conservative">Conservative</mat-option>
+            <mat-option value="Standard">Standard</mat-option>
+            <mat-option value="Exploratory">Exploratory</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
 
       <div class="section">
-        <h3>Forbidden Words</h3>
+        <label class="field-label">
+          Forbidden words
+          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Forbidden words', 'forbiddenWords')" matTooltip="More information">
+            <mat-icon>info</mat-icon>
+          </button>
+        </label>
+        <p class="field-helper">List words that must never appear in any generated variant.</p>
         <app-chips-input
           formControlName="forbiddenWords"
           label=""
@@ -149,10 +218,16 @@
       </div>
 
       <div class="section">
-        <h3>Mandatory Claims</h3>
+        <label class="field-label">
+          Mandatory claims
+          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Mandatory claims', 'mandatoryClaims')" matTooltip="More information">
+            <mat-icon>info</mat-icon>
+          </button>
+        </label>
+        <p class="field-helper">List claims that must appear in all variants.</p>
         <div formArrayName="mandatoryClaims">
           <div *ngFor="let claim of mandatoryClaims.controls; let i = index" class="claim-row">
-            <mat-form-field appearance="outline" floatLabel="always" class="claim-input">
+            <mat-form-field appearance="outline" class="claim-input">
               <mat-label>Claim {{ i + 1 }}</mat-label>
               <input matInput [formControl]="$any(claim)">
             </mat-form-field>
@@ -168,7 +243,8 @@
       </div>
 
       <div class="section">
-        <h3>Prohibited / Sensitive Claims</h3>
+        <label class="field-label">Prohibited / sensitive claims</label>
+        <p class="field-helper">List claims that are prohibited or sensitive and must be avoided.</p>
         <app-chips-input
           formControlName="prohibitedClaims"
           label=""
@@ -176,13 +252,20 @@
         </app-chips-input>
       </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Required Disclaimer (optional)</mat-label>
-        <textarea matInput formControlName="requiredDisclaimer" rows="3" placeholder="Add any required disclaimers"></textarea>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Required disclaimer (optional)</label>
+        <p class="field-helper">Add any required disclaimers that must appear with the content.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <textarea matInput formControlName="requiredDisclaimer" rows="2" placeholder="Add any required disclaimers"></textarea>
+          <mat-hint align="end">
+            <span>{{ getCharacterCount('requiredDisclaimer') }} characters</span>
+          </mat-hint>
+        </mat-form-field>
+      </div>
 
       <div class="section">
-        <h3>Allowed Tones</h3>
+        <label class="field-label">Allowed tones</label>
+        <p class="field-helper">List tones that are allowed for this project.</p>
         <app-chips-input
           formControlName="toneAllowed"
           label=""
@@ -191,7 +274,8 @@
       </div>
 
       <div class="section">
-        <h3>Disallowed Tones</h3>
+        <label class="field-label">Disallowed tones</label>
+        <p class="field-helper">List tones that must be avoided for this project.</p>
         <app-chips-input
           formControlName="toneDisallowed"
           label=""
@@ -203,24 +287,39 @@
 
   <mat-tab label="Per-Point">
     <form [formGroup]="pointForm" class="form-container">
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Select Point</mat-label>
-        <mat-select formControlName="pointId">
-          <mat-option *ngFor="let point of points" [value]="point.id">
-            {{ point.name }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Select point</label>
+        <p class="field-helper">Choose an optimization point to configure its specific settings.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <mat-select formControlName="pointId">
+            <mat-option *ngFor="let point of points" [value]="point.id">
+              {{ point.name }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Objective</mat-label>
-        <textarea matInput formControlName="objective" rows="4" placeholder="Describe the objective for this point"></textarea>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Objective</label>
+        <p class="field-helper">Describe the objective for this specific optimization point.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <textarea matInput formControlName="objective" rows="2" placeholder="Describe the objective for this point"></textarea>
+          <mat-hint align="end">
+            <span>{{ getCharacterCount('objective') }} characters</span>
+          </mat-hint>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-        <mat-label>Generation Rules</mat-label>
-        <textarea matInput formControlName="generationRules" rows="4" placeholder="Add generation rules for this point"></textarea>
-      </mat-form-field>
+      <div class="form-field-wrapper">
+        <label class="field-label">Generation rules</label>
+        <p class="field-helper">Add specific generation rules for this optimization point.</p>
+        <mat-form-field appearance="outline" class="brief-input">
+          <textarea matInput formControlName="generationRules" rows="2" placeholder="Add generation rules for this point"></textarea>
+          <mat-hint align="end">
+            <span>{{ getCharacterCount('generationRules') }} characters</span>
+          </mat-hint>
+        </mat-form-field>
+      </div>
     </form>
   </mat-tab>
 </mat-tab-group>

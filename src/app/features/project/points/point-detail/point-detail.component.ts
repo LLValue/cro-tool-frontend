@@ -14,8 +14,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { PageHeaderComponent } from '../../../../shared/page-header/page-header.component';
 import { ChipsInputComponent } from '../../../../shared/chips-input/chips-input.component';
+import { InfoModalComponent } from '../../../../shared/info-modal/info-modal.component';
 import { ProjectsStoreService } from '../../../../data/projects-store.service';
 import { ProjectsApiService } from '../../../../api/services/projects-api.service';
 import { OptimizationPoint, Variant } from '../../../../data/models';
@@ -50,6 +52,7 @@ interface SelectedElement {
     MatSlideToggleModule,
     MatTooltipModule,
     MatProgressBarModule,
+    MatDialogModule,
     PageHeaderComponent,
     ChipsInputComponent
   ],
@@ -94,7 +97,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     private toast: ToastHelperService,
     @Inject(API_CLIENT) private apiClient: ApiClient,
     private sanitizer: DomSanitizer,
-    private projectsApi: ProjectsApiService
+    private projectsApi: ProjectsApiService,
+    private dialog: MatDialog
   ) {
     this.setupForm = this.fb.group({
       name: ['', Validators.required],
@@ -105,11 +109,11 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     });
 
     this.briefForm = this.fb.group({
-      objective: [''],
-      context: [''],
-      minChars: [0],
-      maxChars: [0],
-      maxWords: [0]
+      objective: ['', Validators.required],
+      context: ['', Validators.required],
+      minChars: [0, [Validators.min(0), Validators.pattern(/^\d+$/)]],
+      maxChars: [0, [Validators.min(0), Validators.pattern(/^\d+$/)]],
+      maxWords: [0, [Validators.min(0), Validators.pattern(/^\d+$/)]]
     });
   }
 
@@ -617,5 +621,113 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       this.highlightStyle.parentNode.removeChild(this.highlightStyle);
       this.highlightStyle = null;
     }
+  }
+
+  // Character counter helpers
+  getCharacterCount(controlName: string): number {
+    const value = this.briefForm.get(controlName)?.value || '';
+    return value.length;
+  }
+
+  getMaxChars(): number {
+    return this.briefForm.get('maxChars')?.value || 0;
+  }
+
+  // Info modal content
+  getInfoModalContent(field: string): string {
+    const contents: { [key: string]: string } = {
+      objective: `
+        <p><strong>Explain the element's goal:</strong> What "success" looks like, and the user friction it should address.</p>
+        <p><strong>Example objectives:</strong></p>
+        <ul>
+          <li>Improve clarity and reduce confusion about the pricing structure</li>
+          <li>Increase trust and reduce perceived risk in the signup process</li>
+          <li>Drive clicks to the pricing page with a clear value proposition</li>
+        </ul>
+        <p><strong>Common mistakes:</strong></p>
+        <ul>
+          <li>Too solution-led (focusing on features instead of outcomes)</li>
+          <li>Too broad (not specific enough to guide the AI)</li>
+          <li>Not measurable (no clear success criteria)</li>
+        </ul>
+      `,
+      context: `
+        <p><strong>Capture what's around the element:</strong> Nearby text/visuals, what the user likely knows at this point, key constraints.</p>
+        <p><strong>Good context example:</strong></p>
+        <p>"User has just seen the pricing table. They know the product costs $99/month. They're comparing plans. The CTA appears right after the feature comparison table."</p>
+        <p><strong>Bad context example:</strong></p>
+        <p>"User is on the pricing page." (Too vague - doesn't capture the user's mindset or surrounding content)</p>
+      `,
+      goodIdeas: `
+        <p><strong>Suggested angles and structures:</strong> Patterns that fit this element type (H1/CTA/microcopy).</p>
+        <p><strong>Example patterns:</strong></p>
+        <ul>
+          <li>Reassurance-first: "Start your free trial - no credit card required"</li>
+          <li>Benefit-first: "Get 3x more conversions with AI-powered copy"</li>
+          <li>Process clarity: "See how it works in 2 minutes"</li>
+          <li>Social proof: "Join 10,000+ marketers already using this"</li>
+        </ul>
+        <p><strong>When to use each:</strong> Match the pattern to the user's stage in the funnel and the element's purpose.</p>
+      `,
+      thingsToAvoid: `
+        <p><strong>Known pitfalls and compliance-sensitive language:</strong> "No-go" styles for this client/market.</p>
+        <p><strong>Risky phrasing examples:</strong></p>
+        <ul>
+          <li>Overpromising: "Guaranteed to double your revenue"</li>
+          <li>Jargon: "Leverage our synergistic solution"</li>
+          <li>Aggressive urgency: "Only 2 hours left! Buy now!"</li>
+          <li>Sensitive claims: "FDA approved" (without verification)</li>
+        </ul>
+        <p><strong>Safer alternatives:</strong> Focus on benefits you can prove, use clear language, create urgency through value, not scarcity.</p>
+      `,
+      minChars: `
+        <p><strong>Why limits matter:</strong> Layout constraints, readability, mobile experience.</p>
+        <p><strong>Suggested ranges by element type:</strong></p>
+        <ul>
+          <li>CTA: 6-18 characters</li>
+          <li>H1: 25-60 characters</li>
+          <li>Subheadline: 40-80 characters</li>
+          <li>Microcopy: 10-50 characters</li>
+        </ul>
+        <p><strong>What happens if variants exceed limits:</strong> They can be auto-rejected or rewritten to fit the constraints.</p>
+      `,
+      maxChars: `
+        <p><strong>Why limits matter:</strong> Layout constraints, readability, mobile experience.</p>
+        <p><strong>Suggested ranges by element type:</strong></p>
+        <ul>
+          <li>CTA: 6-18 characters</li>
+          <li>H1: 25-60 characters</li>
+          <li>Subheadline: 40-80 characters</li>
+          <li>Microcopy: 10-50 characters</li>
+        </ul>
+        <p><strong>What happens if variants exceed limits:</strong> They can be auto-rejected or rewritten to fit the constraints.</p>
+      `,
+      mustIncludeKeywords: `
+        <p><strong>Use for required terms:</strong> Product name, "APR", "quote", etc.</p>
+        <p><strong>Recommendation:</strong> 0-3 items max. Too many requirements reduces creativity and can harm UX.</p>
+        <p><strong>Matching rules:</strong></p>
+        <ul>
+          <li>Exact match: The keyword must appear exactly as specified</li>
+          <li>Contains: The keyword can appear as part of a larger phrase</li>
+        </ul>
+        <p><strong>Warning:</strong> Over-constraining can lead to awkward or forced copy that doesn't feel natural.</p>
+      `,
+      mustAvoidTerms: `
+        <p><strong>Use for local constraints:</strong> Avoid "free" on CTA, avoid urgency on regulated pages, etc.</p>
+        <p><strong>How this interacts with global guardrails:</strong> This is additive - local constraints are in addition to global forbidden terms.</p>
+        <p><strong>How violations are handled:</strong> Variants with forbidden terms can be auto-filtered or rewritten to remove the problematic language.</p>
+        <p><strong>Example:</strong> If "free" is globally forbidden but you also want to avoid "trial" on this specific CTA, both will be checked.</p>
+      `
+    };
+    return contents[field] || '';
+  }
+
+  // Info modal
+  openInfoModal(title: string, field: string): void {
+    const content = this.getInfoModalContent(field);
+    this.dialog.open(InfoModalComponent, {
+      width: '600px',
+      data: { title, content }
+    });
   }
 }

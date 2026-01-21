@@ -38,6 +38,33 @@
   padding: 24px;
 }
 
+.charts-section {
+  margin-bottom: 32px;
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.chart-card {
+  height: 400px;
+  
+  mat-card-content {
+    height: 100%;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  canvas {
+    max-height: 360px;
+  }
+}
+
 .filters-section {
   display: flex;
   gap: 16px;
@@ -98,6 +125,66 @@
   }
 }
 
+.goals-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.goal-card {
+  margin-bottom: 24px;
+
+  &.primary-goal {
+    border-left: 4px solid var(--theme-primary, #7EF473);
+  }
+
+  .primary-badge {
+    display: inline-block;
+    background: var(--theme-primary, #7EF473);
+    color: #212427;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+
+  mat-card-header {
+    margin-bottom: 16px;
+  }
+
+  mat-card-title {
+    display: flex;
+    align-items: center;
+    font-size: 18px;
+  }
+
+  mat-card-subtitle {
+    color: #666;
+    font-size: 14px;
+  }
+}
+
+.point-info-section {
+  margin-bottom: 24px;
+}
+
+.point-info-card {
+  background: #f5f5f5;
+  border-left: 4px solid var(--theme-primary, #7EF473);
+
+  mat-card-title {
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  mat-card-subtitle {
+    color: #666;
+    font-size: 14px;
+  }
+}
+
 :host-context(body.dark-mode) {
   .winner {
     background-color: rgba(76, 175, 80, 0.2);
@@ -113,6 +200,18 @@
     .warning {
       color: #ff9800;
     }
+  }
+
+  .chart-card {
+    background: #2a2a2a;
+    color: #ffffff;
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
   }
 }
 

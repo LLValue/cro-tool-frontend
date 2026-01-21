@@ -50,7 +50,7 @@ $primary-color: #7EF473;
 }
 
 .login-header {
-  background: var(--theme-primary);
+  background: #fff;
   padding: 40px 32px 32px;
   color: #212427;
   margin: 0;
@@ -106,22 +106,9 @@ mat-card-content {
 
 .login-options {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-top: 8px;
   margin-bottom: 8px;
-}
-
-.forgot-password {
-  color: $primary-color;
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: $primary-color;
-    text-decoration: underline;
-  }
 }
 
 .login-button {

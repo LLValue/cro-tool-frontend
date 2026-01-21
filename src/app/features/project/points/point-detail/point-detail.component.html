@@ -61,7 +61,7 @@
             <div class="preview-error-state" *ngIf="error">
               <mat-icon>error_outline</mat-icon>
               <p class="error-message">{{ error }}</p>
-              <button mat-stroked-button (click)="loadPreview()" class="retry-button">
+              <button mat-raised-button color="primary" (click)="loadPreview()" class="retry-button">
                 <mat-icon>refresh</mat-icon>
                 Retry
               </button>
@@ -147,19 +147,61 @@
 
     <mat-tab label="Optimization Brief">
       <div class="tab-content">
+        <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
         <form [formGroup]="briefForm" (ngSubmit)="saveBrief()">
-          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-            <mat-label>Qualitative Objective</mat-label>
-            <textarea matInput formControlName="objective" rows="2" placeholder="e.g., Increase trust and reduce perceived risk"></textarea>
-          </mat-form-field>
+          <!-- Qualitative objective (mandatory) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Qualitative objective
+              <span class="required-asterisk">*</span>
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Qualitative objective', 'objective')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">State the outcome you want this element to drive (e.g., improve clarity, increase trust, drive clicks) in 1–2 sentences.</p>
+            <mat-form-field appearance="outline" class="brief-input">
+              <textarea matInput formControlName="objective" rows="2" placeholder="e.g., Increase trust and reduce perceived risk"></textarea>
+              <mat-error *ngIf="briefForm.get('objective')?.hasError('required')">
+                Qualitative objective is required
+              </mat-error>
+              <mat-hint align="end">
+                <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('objective') }} / {{ getMaxChars() }} characters</span>
+                <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('objective') }} characters</span>
+              </mat-hint>
+            </mat-form-field>
+          </div>
 
-          <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-            <mat-label>Context Specific to This Element</mat-label>
-            <textarea matInput formControlName="context" rows="3" placeholder="Add context about this optimization point"></textarea>
-          </mat-form-field>
+          <!-- Element context (mandatory) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Element context
+              <span class="required-asterisk">*</span>
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Element context', 'context')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">Describe the user mindset and surrounding content so the AI can write copy that fits this exact spot on the page.</p>
+            <mat-form-field appearance="outline" class="brief-input">
+              <textarea matInput formControlName="context" rows="2" placeholder="Add context about this optimization point" (input)="briefForm.get('context')?.updateValueAndValidity()"></textarea>
+              <mat-error *ngIf="briefForm.get('context')?.hasError('required')">
+                Element context is required
+              </mat-error>
+              <mat-hint align="end">
+                <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('context') }} / {{ getMaxChars() }} characters</span>
+                <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('context') }} characters</span>
+              </mat-hint>
+            </mat-form-field>
+          </div>
 
-          <div class="section">
-            <h3>Good Ideas / Patterns to Try</h3>
+          <!-- Good ideas (optional) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Good ideas
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Good ideas', 'goodIdeas')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">List angles or copy patterns you want to explore (e.g., reassurance-first, benefit-first, process clarity, social proof).</p>
             <app-chips-input
               [(ngModel)]="goodIdeas"
               [ngModelOptions]="{standalone: true}"
@@ -168,8 +210,15 @@
             </app-chips-input>
           </div>
 
-          <div class="section">
-            <h3>Things to Avoid</h3>
+          <!-- Things to avoid (optional) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Things to avoid
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Things to avoid', 'thingsToAvoid')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">List words, tones, or claims to avoid (e.g., overpromising, jargon, sensitive claims, aggressive urgency).</p>
             <app-chips-input
               [(ngModel)]="thingsToAvoid"
               [ngModelOptions]="{standalone: true}"
@@ -178,46 +227,76 @@
             </app-chips-input>
           </div>
 
-          <div class="section">
-            <h3>Hard Constraints</h3>
-            <div class="constraints-row">
-              <mat-form-field appearance="outline" floatLabel="always">
-                <mat-label>Min Characters</mat-label>
-                <input matInput type="number" formControlName="minChars" min="0" placeholder="0">
-              </mat-form-field>
-              <mat-form-field appearance="outline" floatLabel="always">
-                <mat-label>Max Characters</mat-label>
-                <input matInput type="number" formControlName="maxChars" min="0" placeholder="0">
-              </mat-form-field>
-              <mat-form-field appearance="outline" floatLabel="always">
-                <mat-label>Max Words (optional)</mat-label>
-                <input matInput type="number" formControlName="maxWords" min="0" placeholder="0">
-              </mat-form-field>
-            </div>
+          <!-- Must include keywords (optional) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Must include keywords
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must include keywords', 'mustIncludeKeywords')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">Add any words or phrases that must appear in the variant (use sparingly).</p>
+            <app-chips-input
+              [(ngModel)]="mustIncludeKeywords"
+              [ngModelOptions]="{standalone: true}"
+              label=""
+              placeholder="Add keyword">
+            </app-chips-input>
+          </div>
 
-            <div class="section">
-              <h4>Must Include Keywords</h4>
-              <app-chips-input
-                [(ngModel)]="mustIncludeKeywords"
-                [ngModelOptions]="{standalone: true}"
-                label=""
-                placeholder="Add keyword">
-              </app-chips-input>
-            </div>
+          <!-- Must avoid terms (optional) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Must avoid terms
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must avoid terms', 'mustAvoidTerms')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">Add words or phrases to avoid for this specific element (in addition to global forbidden terms).</p>
+            <app-chips-input
+              [(ngModel)]="mustAvoidTerms"
+              [ngModelOptions]="{standalone: true}"
+              label=""
+              placeholder="Add term to avoid">
+            </app-chips-input>
+          </div>
 
-            <div class="section">
-              <h4>Must Avoid Terms</h4>
-              <app-chips-input
-                [(ngModel)]="mustAvoidTerms"
-                [ngModelOptions]="{standalone: true}"
-                label=""
-                placeholder="Add term to avoid">
-              </app-chips-input>
-            </div>
+          <!-- Min chars (optional) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Min chars
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Min chars', 'minChars')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">Set the minimum character length for this element to fit the layout and UX.</p>
+            <mat-form-field appearance="outline" class="brief-input-number">
+              <input matInput type="number" formControlName="minChars" min="0" placeholder="0">
+              <mat-error *ngIf="briefForm.get('minChars')?.hasError('pattern')">
+                Only numeric values are allowed
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Max chars (optional) -->
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Max chars
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Max chars', 'maxChars')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <p class="field-helper">Set the maximum character length for this element to fit the layout and UX.</p>
+            <mat-form-field appearance="outline" class="brief-input-number">
+              <input matInput type="number" formControlName="maxChars" min="0" placeholder="0">
+              <mat-error *ngIf="briefForm.get('maxChars')?.hasError('pattern')">
+                Only numeric values are allowed
+              </mat-error>
+            </mat-form-field>
           </div>
 
           <div class="actions">
-            <button mat-raised-button color="primary" type="submit">
+            <button mat-raised-button color="primary" type="submit" [disabled]="briefForm.invalid">
               <mat-icon>save</mat-icon>
               Save
             </button>

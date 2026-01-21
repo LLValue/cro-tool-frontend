@@ -449,33 +449,56 @@ body.dark-mode {
 }
 
 .project-nav-list,
-  .nav-list {
-    a[mat-list-item] {
-      .nav-text,
-      span.nav-text,
-      .mdc-list-item__primary-text .nav-text,
-      .mdc-list-item__primary-text .nav-label {
-        color: #212427 !important;
-      }
-    }
-  }
-
-  .mat-mdc-button,
-  .mat-mdc-raised-button,
-  .mat-mdc-outlined-button {
-    color: #ffffff;
-    border-radius: 6px !important;
-    font-weight: 500 !important;
-
-    &.mat-primary {
-      background-color: var(--theme-primary) !important;
+.nav-list {
+  a[mat-list-item] {
+    .nav-text,
+    span.nav-text,
+    .mdc-list-item__primary-text .nav-text,
+    .mdc-list-item__primary-text .nav-label {
       color: #212427 !important;
     }
   }
+}
 
-  .mdc-card__actions {
-    padding: 16px !important;
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button {
+  color: #ffffff;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+
+  &.mat-primary {
+    background-color: var(--theme-primary) !important;
+    color: #212427 !important;
+    
+    .mat-icon,
+    mat-icon,
+    .mdc-button__label {
+      color: #212427 !important;
+    }
   }
+}
+
+.mdc-card__actions {
+  padding: 16px !important;
+}
+
+.mat-mdc-icon-button .mat-mdc-button-touch-target {
+  height: 28px !important;
+  width: 28px !important;
+}
+
+.mat-mdc-form-field-hint-wrapper, .mat-mdc-form-field-error-wrapper {
+  padding: 0 !important;
+}
+
+.mat-mdc-form-field-input-control.mat-mdc-form-field-input-control {
+  font-size: 14px !important;
+}
+
+.mat-mdc-select-value-text {
+  font-size: 14px !important;
+}
 
 body.dark-mode {
   background: #121212;
@@ -1020,6 +1043,12 @@ body.dark-mode {
     &.mat-primary {
       background-color: var(--theme-primary) !important;
       color: #212427 !important;
+      
+      .mat-icon,
+      mat-icon,
+      .mdc-button__label {
+        color: #212427 !important;
+      }
     }
   }
 
@@ -1112,19 +1141,6 @@ body.dark-mode {
       button {
         color: #ffffff !important;
 
-        .mat-icon,
-        mat-icon {
-          color: #ffffff !important;
-        }
-
-        &:hover {
-          color: var(--theme-primary) !important;
-
-          .mat-icon,
-          mat-icon {
-            color: var(--theme-primary) !important;
-          }
-        }
       }
     }
 

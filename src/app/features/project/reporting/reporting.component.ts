@@ -13,6 +13,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription, combineLatest } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint, Variant, ReportingMetrics, Goal } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
@@ -33,8 +35,10 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     MatCardModule,
     FormsModule,
     CommonModule,
-    PageHeaderComponent
+    PageHeaderComponent,
+    BaseChartDirective
   ],
+  providers: [provideCharts(withDefaultRegisterables())],
   templateUrl: './reporting.component.html',
   styleUrls: ['./reporting.component.scss']
 })
@@ -48,10 +52,71 @@ export class ReportingComponent implements OnInit, OnDestroy {
   private latestMetrics: ReportingMetrics[] = [];
   selectedPointId: string = '';
   selectedGoalType: string = 'all';
+  selectedGoalId: string = 'all';
   simulating = false;
+  
+  // Grouped metrics by goal for Page Overview
+  metricsByGoal: Map<string, {
+    goal: Goal;
+    metrics: ReportingMetrics[];
+  }> = new Map();
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   displayedColumnsWithActions: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence', 'actions'];
   private subscriptions = new Subscription();
+
+  // Chart configurations
+  public lineChartType: ChartType = 'line' as const;
+  public pieChartType: ChartType = 'pie' as const;
+  public conversionRateChartData: ChartConfiguration<'line'>['data'] = {
+    labels: [],
+    datasets: []
+  };
+  public conversionRateChartOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top'
+      },
+      title: {
+        display: true,
+        text: 'Conversion Rate Over Time'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return (Number(value) * 100).toFixed(1) + '%';
+          }
+        }
+      }
+    }
+  };
+
+  public distributionChartData: ChartConfiguration<'pie'>['data'] = {
+    labels: [],
+    datasets: [{
+      data: [],
+      backgroundColor: []
+    }]
+  };
+  public distributionChartOptions: ChartConfiguration<'pie'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'right'
+      },
+      title: {
+        display: true,
+        text: 'Conversions Distribution by Variant'
+      }
+    }
+  };
 
   constructor(
     private route: ActivatedRoute,
@@ -203,6 +268,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   onGoalTypeChange(): void {
+    // Reset selected goal when goal type changes
+    this.selectedGoalId = 'all';
     // Filter should be instant; no need to refetch
     this.recomputeMetrics();
   }
@@ -211,8 +278,18 @@ export class ReportingComponent implements OnInit, OnDestroy {
     const projectVariants = this.variants;
     const filtered = this.applyGoalTypeFilter(this.latestMetrics, this.selectedGoalType);
 
-    this.globalMetrics = this.sortMetrics(filtered);
+    // Group metrics by goal for Page Overview
+    this.groupMetricsByGoal(filtered);
 
+    // For Page Overview: filter by selected goal if not 'all'
+    if (this.selectedGoalId === 'all') {
+      this.globalMetrics = this.sortMetrics(filtered);
+    } else {
+      const goalMetrics = this.metricsByGoal.get(this.selectedGoalId);
+      this.globalMetrics = goalMetrics ? this.sortMetrics(goalMetrics.metrics) : [];
+    }
+
+    // For By Optimization Point: filter by point
     if (this.selectedPointId) {
       this.pointMetrics = this.sortMetrics(
         filtered.filter(m => {
@@ -223,6 +300,141 @@ export class ReportingComponent implements OnInit, OnDestroy {
     } else {
       this.pointMetrics = [];
     }
+
+    // Update charts
+    this.updateCharts();
+  }
+
+  private groupMetricsByGoal(metrics: ReportingMetrics[]): void {
+    this.metricsByGoal.clear();
+    
+    // Group by goal type and goal ID (when available from backend)
+    const goalsByType = new Map<string, Goal[]>();
+    this.goals.forEach(goal => {
+      if (!goalsByType.has(goal.type)) {
+        goalsByType.set(goal.type, []);
+      }
+      goalsByType.get(goal.type)!.push(goal);
+    });
+
+    // For each goal, find its metrics
+    goalsByType.forEach((goals, goalType) => {
+      goals.forEach(goal => {
+        const goalMetrics = metrics.filter(m => m.goalType === goalType);
+        if (goalMetrics.length > 0) {
+          this.metricsByGoal.set(goal.id, {
+            goal: goal,
+            metrics: goalMetrics
+          });
+        }
+      });
+    });
+
+    // Also add aggregated "all" metrics
+    if (metrics.length > 0) {
+      this.metricsByGoal.set('all', {
+        goal: {
+          id: 'all',
+          projectId: this.projectId,
+          type: 'clickSelector',
+          isPrimary: false,
+          value: '',
+          name: 'All Goals'
+        } as Goal,
+        metrics: metrics
+      });
+    }
+  }
+
+  getGoalsForType(goalType: string): Goal[] {
+    if (goalType === 'all') {
+      return Array.from(this.metricsByGoal.values())
+        .map(g => g.goal)
+        .filter(g => g.id !== 'all');
+    }
+    return this.goals.filter(g => g.type === goalType);
+  }
+
+  onGoalChange(): void {
+    this.recomputeMetrics();
+  }
+
+  private updateCharts(): void {
+    const metrics = this.selectedPointId ? this.pointMetrics : this.globalMetrics;
+    
+    if (metrics.length === 0) {
+      this.conversionRateChartData = {
+        labels: [],
+        datasets: []
+      };
+      this.distributionChartData = {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: []
+        }]
+      };
+      return;
+    }
+
+    // Line chart: Conversion rates over time (simulated with days)
+    const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
+    const datasets = metrics.slice(0, 5).map((metric, index) => {
+      const variant = this.variants.find(v => v.id === metric.variantId);
+      const baseRate = metric.conversionRate;
+      // Simulate daily variation
+      const data = days.map((_, dayIndex) => {
+        const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
+        return Math.max(0, Math.min(1, baseRate + variation));
+      });
+      
+      const colors = [
+        'rgba(126, 244, 115, 0.8)',
+        'rgba(33, 150, 243, 0.8)',
+        'rgba(156, 39, 176, 0.8)',
+        'rgba(255, 152, 0, 0.8)',
+        'rgba(244, 67, 54, 0.8)'
+      ];
+      
+      return {
+        label: variant?.text || `Variant ${index + 1}`,
+        data: data,
+        borderColor: colors[index % colors.length],
+        backgroundColor: colors[index % colors.length].replace('0.8', '0.2'),
+        tension: 0.4,
+        fill: false
+      };
+    });
+
+    this.conversionRateChartData = {
+      labels: days,
+      datasets: datasets
+    };
+
+    // Pie chart: Distribution of conversions
+    const pieLabels = metrics.map(m => {
+      const variant = this.variants.find(v => v.id === m.variantId);
+      return variant?.text || 'Unknown';
+    });
+    const pieData = metrics.map(m => m.conversions);
+    const pieColors = [
+      'rgba(126, 244, 115, 0.8)',
+      'rgba(33, 150, 243, 0.8)',
+      'rgba(156, 39, 176, 0.8)',
+      'rgba(255, 152, 0, 0.8)',
+      'rgba(244, 67, 54, 0.8)',
+      'rgba(76, 175, 80, 0.8)',
+      'rgba(233, 30, 99, 0.8)',
+      'rgba(63, 81, 181, 0.8)'
+    ];
+
+    this.distributionChartData = {
+      labels: pieLabels,
+      datasets: [{
+        data: pieData,
+        backgroundColor: pieColors.slice(0, pieData.length)
+      }]
+    };
   }
 
   private applyGoalTypeFilter(metrics: ReportingMetrics[], goalType: string): ReportingMetrics[] {
@@ -367,6 +579,18 @@ export class ReportingComponent implements OnInit, OnDestroy {
     this.router.navigate(['/projects', this.projectId, 'preview'], {
       queryParams: { variant: variantId }
     });
+  }
+
+  getSelectedPoint(): OptimizationPoint | undefined {
+    return this.points.find(p => p.id === this.selectedPointId);
+  }
+
+  getPointVariantsCount(): number {
+    return this.variants.filter(v => v.optimizationPointId === this.selectedPointId).length;
+  }
+
+  getMetricsByGoalEntries(): Array<{key: string, value: {goal: Goal, metrics: ReportingMetrics[]}}> {
+    return Array.from(this.metricsByGoal.entries()).map(([key, value]) => ({ key, value }));
   }
 }
 

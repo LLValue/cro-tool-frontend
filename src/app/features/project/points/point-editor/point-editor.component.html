@@ -53,7 +53,7 @@
       <div class="preview-error-state" *ngIf="error">
         <mat-icon>error_outline</mat-icon>
         <p class="error-message">{{ error }}</p>
-        <button mat-stroked-button (click)="loadPreview()" class="retry-button">
+        <button mat-raised-button color="primary" (click)="loadPreview()" class="retry-button">
           <mat-icon>refresh</mat-icon>
           Retry
         </button>

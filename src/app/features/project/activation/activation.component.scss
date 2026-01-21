@@ -23,6 +23,58 @@
     gap: 16px;
 }
 
+.form-field-wrapper {
+  margin-bottom: 24px;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #000000;
+  margin-bottom: 8px;
+  pointer-events: none;
+  
+  .required-asterisk {
+    color: #f44336;
+    font-size: 13px;
+    line-height: 1;
+  }
+}
+
+.field-helper {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.brief-input {
+  width: 100%;
+  
+  textarea {
+    min-height: 60px;
+  }
+  
+  ::ng-deep {
+    .mat-mdc-form-field-subscript-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .mat-mdc-form-field-hint-wrapper {
+      flex: 1;
+    }
+  }
+}
+
+.brief-input-number {
+  width: 200px;
+}
+
 .activity-card {
   grid-column: 1 / -1;
 }
@@ -35,6 +87,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 24px;
 
   .info-icon {
     font-size: 18px;
@@ -191,6 +244,14 @@
 }
 
 :host-context(body.dark-mode) {
+  .field-label {
+    color: #ffffff;
+  }
+  
+  .field-helper {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
   .form-row .info-icon {
     color: rgba(255, 255, 255, 0.7);
   }

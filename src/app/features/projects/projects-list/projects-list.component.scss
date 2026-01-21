@@ -82,7 +82,7 @@ $primary-color: #7EF473;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: $primary-color;
+  color: #212121;
   text-decoration: none;
   transition: color 0.2s ease;
 
@@ -269,6 +269,10 @@ $primary-color: #7EF473;
         background-color: rgba(244, 67, 54, 0.2);
       }
     }
+  }
+
+  .url-link {
+    color: #fff;
   }
 
   .empty-state {
