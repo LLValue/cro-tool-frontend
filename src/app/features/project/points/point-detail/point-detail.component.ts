@@ -270,6 +270,19 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     this.store.updateVariant(variant.id, { text: variant.text });
   }
 
+  onStatusToggleChange(checked: boolean): void {
+    if (!this.point) return;
+
+    const newStatus = checked ? 'Active' : 'Paused';
+    this.setupForm.patchValue({ status: newStatus });
+    
+    this.store.updatePoint(this.pointId, {
+      status: newStatus,
+      updatedAt: new Date()
+    });
+    this.toast.showSuccess(`Point ${newStatus === 'Active' ? 'activated' : 'paused'}`);
+  }
+
   toggleStatus(): void {
     if (!this.point) return;
 

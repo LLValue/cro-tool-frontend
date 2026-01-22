@@ -45,10 +45,14 @@ export interface OptimizationPoint {
   selector: string;
   text: string;
   objective: string;
+  context?: string;
   generationRules: string;
   elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
   deviceScope?: 'All' | 'Mobile' | 'Desktop';
   status?: 'Active' | 'Paused';
+  minChars?: number;
+  maxChars?: number;
+  maxWords?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }

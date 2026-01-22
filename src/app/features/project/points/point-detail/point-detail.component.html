@@ -114,7 +114,7 @@
               <div class="form-row">
                 <mat-slide-toggle 
                   [checked]="setupForm.get('status')?.value === 'Active'"
-                  (change)="setupForm.patchValue({ status: $event.checked ? 'Active' : 'Paused' })">
+                  (change)="onStatusToggleChange($event.checked)">
                   {{ setupForm.get('status')?.value === 'Active' ? 'Active' : 'Paused' }}
                 </mat-slide-toggle>
               </div>

@@ -238,7 +238,14 @@ export class ProjectsStoreService {
     if (updates.selector !== undefined) req.selector = updates.selector;
     if (updates.text !== undefined) req.text = updates.text;
     if (updates.objective !== undefined) req.objective = updates.objective;
+    if (updates.context !== undefined) req.context = updates.context;
     if (updates.generationRules !== undefined) req.generationRules = updates.generationRules;
+    if (updates.elementType !== undefined) req.elementType = updates.elementType;
+    if (updates.deviceScope !== undefined) req.deviceScope = updates.deviceScope;
+    if (updates.status !== undefined) req.status = updates.status;
+    if (updates.minChars !== undefined) req.minChars = updates.minChars;
+    if (updates.maxChars !== undefined) req.maxChars = updates.maxChars;
+    if (updates.maxWords !== undefined) req.maxWords = updates.maxWords;
 
     this.pointsApi.updatePoint(point.projectId, id, req).subscribe({
       next: () => this.listPoints(point.projectId),
