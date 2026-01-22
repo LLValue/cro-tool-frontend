@@ -99,6 +99,7 @@
 
 .brief-input {
   width: 100%;
+  max-width: 60%;
   
   textarea {
     min-height: 60px;
@@ -113,6 +114,10 @@
     
     .mat-mdc-form-field-hint-wrapper {
       flex: 1;
+    }
+    
+    .mat-mdc-form-field-hint {
+      text-align: right;
     }
   }
 }

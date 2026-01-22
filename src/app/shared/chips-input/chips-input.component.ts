@@ -51,7 +51,7 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
     }
     
     .chips-input-wrapper.full-width {
-      width: 100%;
+      width: 60%;
     }
     
     .chips-input-wrapper ::ng-deep .mat-mdc-form-field {

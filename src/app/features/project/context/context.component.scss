@@ -49,8 +49,6 @@
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
 }
 
 .half-width {
@@ -97,7 +95,7 @@
 }
 
 .claim-input {
-  flex: 1;
+  width: 60%;
 }
 
 .section {
@@ -160,6 +158,7 @@
 
 .brief-input {
   width: 100%;
+  max-width: 60%;
   
   textarea {
     min-height: 60px;
@@ -174,6 +173,10 @@
     
     .mat-mdc-form-field-hint-wrapper {
       flex: 1;
+    }
+    
+    .mat-mdc-form-field-hint {
+      text-align: right;
     }
   }
 }

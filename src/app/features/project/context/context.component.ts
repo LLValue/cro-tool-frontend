@@ -65,8 +65,8 @@ export class ContextComponent implements OnInit, OnDestroy {
       styleLength: ['short'],
       // Business & Page Context
       industry: [''],
-      productSummary: [''],
-      pageIntent: [''],
+      productSummary: ['', [Validators.maxLength(200)]],
+      pageIntent: ['', [Validators.maxLength(200)]],
       funnelStage: ['discovery'],
       valueProps: [[]],
       typicalObjections: [[]],
@@ -79,7 +79,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       forbiddenWords: [[]],
       mandatoryClaims: [[]],
       prohibitedClaims: [[]],
-      requiredDisclaimer: [''],
+      requiredDisclaimer: ['', [Validators.maxLength(200)]],
       toneAllowed: [[]],
       toneDisallowed: [[]],
       // Legacy fields
@@ -90,8 +90,8 @@ export class ContextComponent implements OnInit, OnDestroy {
 
     this.pointForm = this.fb.group({
       pointId: [''],
-      objective: [''],
-      generationRules: ['']
+      objective: ['', [Validators.maxLength(200)]],
+      generationRules: ['', [Validators.maxLength(200)]]
     });
 
     this.mandatoryClaims = this.fb.array([]);
@@ -413,6 +413,14 @@ export class ContextComponent implements OnInit, OnDestroy {
       : this.globalForm;
     const value = form.get(controlName)?.value || '';
     return typeof value === 'string' ? value.length : 0;
+  }
+
+  getMaxLength(controlName: string): number {
+    const fieldsWithMaxLength = ['productSummary', 'pageIntent', 'requiredDisclaimer', 'objective', 'generationRules'];
+    if (fieldsWithMaxLength.includes(controlName)) {
+      return 200;
+    }
+    return 0;
   }
 
   // Info modal content

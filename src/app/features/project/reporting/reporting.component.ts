@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
@@ -39,6 +40,18 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     BaseChartDirective
   ],
   providers: [provideCharts(withDefaultRegisterables())],
+  animations: [
+    trigger('slideInOut', [
+      transition('* => *', [
+        query('tr.mat-mdc-row', [
+          style({ opacity: 0, transform: 'translateX(-20px)' }),
+          stagger(100, [
+            animate('400ms ease-out', style({ opacity: 1, transform: 'translateX(0)' }))
+          ])
+        ], { optional: true })
+      ])
+    ])
+  ],
   templateUrl: './reporting.component.html',
   styleUrls: ['./reporting.component.scss']
 })
@@ -54,6 +67,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
   selectedGoalType: string = 'all';
   selectedGoalId: string = 'all';
   simulating = false;
+  animatingMetrics = false;
+  previousMetrics: ReportingMetrics[] = [];
   
   // Grouped metrics by goal for Page Overview
   metricsByGoal: Map<string, {
@@ -122,7 +137,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private store: ProjectsStoreService,
-    private toast: ToastHelperService
+    private toast: ToastHelperService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -202,7 +218,9 @@ export class ReportingComponent implements OnInit, OnDestroy {
       this.store.variants$,
       this.store.metrics$
     ]).subscribe(([variants, metricsMap]) => {
-      const projectVariants = variants.filter(v => v.projectId === this.projectId && v.status === 'active');
+      const projectVariants = variants.filter(v => 
+        v.projectId === this.projectId && (v.status === 'active' || v.status === 'discarded')
+      );
       this.variants = projectVariants;
       
       const allMetrics: ReportingMetrics[] = Array.from(metricsMap.values())
@@ -508,34 +526,54 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   simulateTraffic(): void {
-    if (this.variants.length === 0) {
+    const activeVariants = this.variants.filter(v => v.status === 'active');
+    if (activeVariants.length === 0) {
       this.toast.showError(`No active variants found for project ${this.projectId}. Please create variants first.`);
       return;
     }
 
     this.simulating = true;
+    this.animatingMetrics = true;
+    this.previousMetrics = [...this.globalMetrics];
+    
     const sub = this.store.simulateTraffic(this.projectId, 7 * 24 * 60 * 60 * 1000, 200).subscribe({
       next: () => {
         setTimeout(() => {
-          this.updateMetrics();
-          this.markLosers();
+          this.animateMetricsUpdate();
         }, 100);
       },
       complete: () => {
         setTimeout(() => {
-          this.simulating = false;
-          this.updateMetrics();
-          this.markLosers();
-          this.toast.showSuccess('Simulation complete');
+          this.animateMetricsUpdate();
+          setTimeout(() => {
+            this.markLosers();
+            setTimeout(() => {
+              this.simulating = false;
+              this.animatingMetrics = false;
+              this.toast.showSuccess('Simulation complete');
+            }, 500);
+          }, 300);
         }, 100);
       },
       error: () => {
         this.simulating = false;
+        this.animatingMetrics = false;
         this.updateMetrics();
         this.toast.showError('Simulation failed. Please try again.');
       }
     });
     this.subscriptions.add(sub);
+  }
+
+  private animateMetricsUpdate(): void {
+    this.updateMetrics();
+    this.animatingMetrics = true;
+    this.cdr.detectChanges();
+    
+    setTimeout(() => {
+      this.animatingMetrics = false;
+      this.cdr.detectChanges();
+    }, 1500);
   }
 
   markLosers(): void {

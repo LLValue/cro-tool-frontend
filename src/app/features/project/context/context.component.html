@@ -106,9 +106,10 @@
         </label>
         <p class="field-helper">Describe what the product/service is and who it's for.</p>
         <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="productSummary" rows="2" placeholder="What is it, who is it for"></textarea>
+          <textarea matInput formControlName="productSummary" rows="2" placeholder="What is it, who is it for" maxlength="200"></textarea>
           <mat-hint align="end">
-            <span>{{ getCharacterCount('productSummary') }} characters</span>
+            <span *ngIf="getMaxLength('productSummary') > 0">{{ getCharacterCount('productSummary') }} / {{ getMaxLength('productSummary') }}</span>
+            <span *ngIf="getMaxLength('productSummary') === 0">{{ getCharacterCount('productSummary') }} characters</span>
           </mat-hint>
         </mat-form-field>
       </div>
@@ -122,9 +123,10 @@
         </label>
         <p class="field-helper">Define what action you want users to take on this page.</p>
         <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="pageIntent" rows="2" placeholder="What action do you want users to take?"></textarea>
+          <textarea matInput formControlName="pageIntent" rows="2" placeholder="What action do you want users to take?" maxlength="200"></textarea>
           <mat-hint align="end">
-            <span>{{ getCharacterCount('pageIntent') }} characters</span>
+            <span *ngIf="getMaxLength('pageIntent') > 0">{{ getCharacterCount('pageIntent') }} / {{ getMaxLength('pageIntent') }}</span>
+            <span *ngIf="getMaxLength('pageIntent') === 0">{{ getCharacterCount('pageIntent') }} characters</span>
           </mat-hint>
         </mat-form-field>
       </div>
@@ -276,9 +278,10 @@
         <label class="field-label">Required disclaimer (optional)</label>
         <p class="field-helper">Add any required disclaimers that must appear with the content.</p>
         <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="requiredDisclaimer" rows="2" placeholder="Add any required disclaimers"></textarea>
+          <textarea matInput formControlName="requiredDisclaimer" rows="2" placeholder="Add any required disclaimers" maxlength="200"></textarea>
           <mat-hint align="end">
-            <span>{{ getCharacterCount('requiredDisclaimer') }} characters</span>
+            <span *ngIf="getMaxLength('requiredDisclaimer') > 0">{{ getCharacterCount('requiredDisclaimer') }} / {{ getMaxLength('requiredDisclaimer') }}</span>
+            <span *ngIf="getMaxLength('requiredDisclaimer') === 0">{{ getCharacterCount('requiredDisclaimer') }} characters</span>
           </mat-hint>
         </mat-form-field>
       </div>
@@ -330,9 +333,10 @@
         <label class="field-label">Objective</label>
         <p class="field-helper">Describe the objective for this specific optimization point.</p>
         <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="objective" rows="2" placeholder="Describe the objective for this point"></textarea>
+          <textarea matInput formControlName="objective" rows="2" placeholder="Describe the objective for this point" maxlength="200"></textarea>
           <mat-hint align="end">
-            <span>{{ getCharacterCount('objective') }} characters</span>
+            <span *ngIf="getMaxLength('objective') > 0">{{ getCharacterCount('objective') }} / {{ getMaxLength('objective') }}</span>
+            <span *ngIf="getMaxLength('objective') === 0">{{ getCharacterCount('objective') }} characters</span>
           </mat-hint>
         </mat-form-field>
       </div>
@@ -341,9 +345,10 @@
         <label class="field-label">Generation rules</label>
         <p class="field-helper">Add specific generation rules for this optimization point.</p>
         <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="generationRules" rows="2" placeholder="Add generation rules for this point"></textarea>
+          <textarea matInput formControlName="generationRules" rows="2" placeholder="Add generation rules for this point" maxlength="200"></textarea>
           <mat-hint align="end">
-            <span>{{ getCharacterCount('generationRules') }} characters</span>
+            <span *ngIf="getMaxLength('generationRules') > 0">{{ getCharacterCount('generationRules') }} / {{ getMaxLength('generationRules') }}</span>
+            <span *ngIf="getMaxLength('generationRules') === 0">{{ getCharacterCount('generationRules') }} characters</span>
           </mat-hint>
         </mat-form-field>
       </div>
