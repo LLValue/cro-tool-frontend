@@ -42,7 +42,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
   points: OptimizationPoint[] = [];
   useIframe: boolean = false;
   pageUrl: string = '';
-  safeIframeUrl: SafeResourceUrl = '';
+  safeIframeUrl: SafeResourceUrl | null = null;
   safeIframeHtml: SafeHtml = '';
   loadingPreview = false;
   private lastScrollY = 0;
@@ -225,9 +225,14 @@ export class PreviewComponent implements OnInit, OnDestroy {
     }
 
     this.lastScrollY = window.scrollY || 0;
+    this.loadingPreview = true;
+    this.useIframe = false;
+    this.safeIframeUrl = null;
+    this.safeIframeHtml = '';
 
     this.apiClient.proxyFetch(this.pageUrl).subscribe({
       next: (response) => {
+        this.loadingPreview = false;
         if (response.html && response.html.trim().length > 0) {
           const processedHtml = this.removeCookiePopupsFromHtml(response.html);
           this.basePreviewHtml = processedHtml;
@@ -241,6 +246,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
+        this.loadingPreview = false;
         this.useIframe = true;
         this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
         this.updatePreview();

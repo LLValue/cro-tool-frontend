@@ -3,8 +3,12 @@
     <h1>{{ title }}</h1>
     <p *ngIf="description" class="description">{{ description }}</p>
   </div>
-  <div class="page-header-actions">
+  <div class="page-header-actions" #actionsContent>
     <ng-content></ng-content>
+    <button *ngIf="shouldShowBack" mat-raised-button color="primary" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Back
+    </button>
   </div>
 </div>
 

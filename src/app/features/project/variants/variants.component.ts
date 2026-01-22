@@ -42,7 +42,7 @@ export class VariantsComponent implements OnInit, OnDestroy {
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
   selectedPointId: string | null = null;
-  filter: 'all' | 'active' | 'pending' | 'discarded' = 'all';
+  filter: 'all' | 'active' | 'discarded' = 'all';
   projectId: string = '';
   private subscriptions = new Subscription();
 
@@ -164,8 +164,13 @@ export class VariantsComponent implements OnInit, OnDestroy {
   }
 
   get filteredVariants(): Variant[] {
-    if (this.filter === 'all') return this.variants;
-    return this.variants.filter(v => v.status === this.filter);
+    let filtered: Variant[];
+    if (this.filter === 'all') {
+      filtered = this.variants;
+    } else {
+      filtered = this.variants.filter(v => v.status === this.filter);
+    }
+    return filtered.sort((a, b) => b.uxScore - a.uxScore);
   }
 
   generateVariants(): void {
@@ -187,7 +192,7 @@ export class VariantsComponent implements OnInit, OnDestroy {
   }
 
   unapproveVariant(id: string): void {
-    this.store.updateVariant(id, { status: 'pending' });
+    this.store.updateVariant(id, { status: 'discarded' });
     this.toast.showSuccess('Variant disabled');
     this.loadVariants();
   }

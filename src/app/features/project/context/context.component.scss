@@ -67,6 +67,19 @@
   }
 }
 
+.tab-actions {
+  display: flex;
+  
+  button {
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
 .full-width {
   width: 100%;
   margin-bottom: 16px;

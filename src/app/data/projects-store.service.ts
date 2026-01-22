@@ -301,9 +301,17 @@ export class ProjectsStoreService {
     const variant = this.variantsSubject.value.find(v => v.id === id);
     if (!variant) return;
 
+    const currentVariants = this.variantsSubject.value;
+    const updatedVariants = currentVariants.map(v => 
+      v.id === id ? { ...v, status: 'active' as const } : v
+    );
+    this.variantsSubject.next(updatedVariants);
+
     this.variantsApi.approveVariant(variant.projectId, id).subscribe({
       next: () => this.listVariants(variant.optimizationPointId),
-      error: () => {} // Error handling done in components
+      error: () => {
+        this.variantsSubject.next(currentVariants);
+      }
     });
   }
 
@@ -333,6 +341,12 @@ export class ProjectsStoreService {
     const variant = this.variantsSubject.value.find(v => v.id === id);
     if (!variant) return;
 
+    const currentVariants = this.variantsSubject.value;
+    const updatedVariants = currentVariants.map(v => 
+      v.id === id ? { ...v, ...updates } : v
+    );
+    this.variantsSubject.next(updatedVariants);
+
     const req: any = {};
     if (updates.text !== undefined) req.text = updates.text;
     if (updates.uxScore !== undefined) req.uxScore = updates.uxScore;
@@ -343,7 +357,9 @@ export class ProjectsStoreService {
 
     this.variantsApi.updateVariant(variant.projectId, id, req).subscribe({
       next: () => this.listVariants(variant.optimizationPointId),
-      error: () => {} // Error handling done in components
+      error: () => {
+        this.variantsSubject.next(currentVariants);
+      }
     });
   }
 

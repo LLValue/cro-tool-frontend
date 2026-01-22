@@ -32,7 +32,7 @@
       frameborder="0">
     </iframe>
     <div 
-      *ngIf="!useIframe && !loadingPreview" 
+      *ngIf="!useIframe && safePreviewHtml && !loadingPreview" 
       class="preview-wrapper" 
       [innerHTML]="safePreviewHtml">
     </div>

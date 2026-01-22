@@ -335,6 +335,55 @@ export class ContextComponent implements OnInit, OnDestroy {
     this.toast.showInfo('Saved');
   }
 
+  saveLanguageAndVoice(): void {
+    const values = this.globalForm.value;
+    this.store.updateProject(this.projectId, {
+      language: values.language,
+      tone: values.tone,
+      styleComplexity: values.styleComplexity,
+      styleLength: values.styleLength
+    });
+    this.toast.showSuccess('Language & Voice saved');
+  }
+
+  saveBusinessContext(): void {
+    const values = this.globalForm.value;
+    this.store.updateProject(this.projectId, {
+      industry: values.industry,
+      productSummary: values.productSummary,
+      pageIntent: values.pageIntent,
+      funnelStage: values.funnelStage,
+      valueProps: values.valueProps,
+      typicalObjections: values.typicalObjections,
+      marketLocale: values.marketLocale
+    });
+    this.toast.showSuccess('Business & Page Context saved');
+  }
+
+  saveProofAndTruth(): void {
+    const values = this.globalForm.value;
+    this.store.updateProject(this.projectId, {
+      allowedFacts: values.allowedFacts,
+      mustNotClaim: values.mustNotClaim
+    });
+    this.toast.showSuccess('Proof & Source of Truth saved');
+  }
+
+  saveGuardrails(): void {
+    const values = this.globalForm.value;
+    const mandatoryClaims = this.mandatoryClaims.controls.map((c: any) => c.value);
+    this.store.updateProject(this.projectId, {
+      riskLevel: values.riskLevel,
+      forbiddenWords: values.forbiddenWords,
+      mandatoryClaims: mandatoryClaims,
+      prohibitedClaims: values.prohibitedClaims,
+      requiredDisclaimer: values.requiredDisclaimer,
+      toneAllowed: values.toneAllowed,
+      toneDisallowed: values.toneDisallowed
+    });
+    this.toast.showSuccess('Legal & Brand Guardrails saved');
+  }
+
   savePoint(): void {
     const values = this.pointForm.value;
     if (values.pointId) {
@@ -342,7 +391,9 @@ export class ContextComponent implements OnInit, OnDestroy {
         objective: values.objective,
         generationRules: values.generationRules
       });
-      this.toast.showInfo('Saved');
+      this.toast.showSuccess('Per-Point settings saved');
+    } else {
+      this.toast.showError('Please select a point first');
     }
   }
 

@@ -179,7 +179,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     const sub = this.store.variants$.subscribe(variants => {
       this.variants = variants
         .filter(v => v.optimizationPointId === this.pointId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        .sort((a, b) => b.uxScore - a.uxScore);
       this.filterVariants();
     });
     this.subscriptions.add(sub);
@@ -188,16 +188,17 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   filterVariants(): void {
+    let filtered: Variant[];
     if (this.variantFilter === 'all') {
-      this.filteredVariants = this.variants;
+      filtered = this.variants;
     } else {
-      this.filteredVariants = this.variants.filter(v => {
+      filtered = this.variants.filter(v => {
         if (this.variantFilter === 'active') return v.status === 'active';
-        if (this.variantFilter === 'pending') return v.status === 'pending';
         if (this.variantFilter === 'discarded') return v.status === 'discarded';
         return true;
       });
     }
+    this.filteredVariants = filtered.sort((a, b) => b.uxScore - a.uxScore);
   }
 
   saveSetup(): void {
@@ -252,7 +253,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   unapproveVariant(variantId: string): void {
-    this.store.updateVariant(variantId, { status: 'pending' });
+    this.store.updateVariant(variantId, { status: 'discarded' });
     this.toast.showSuccess('Variant disabled');
   }
 
