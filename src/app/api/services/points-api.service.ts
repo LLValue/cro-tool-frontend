@@ -46,7 +46,12 @@ export class PointsApiService {
       selector: dto.selector,
       text: dto.text || '',
       objective: dto.objective,
-      generationRules: dto.generationRules
+      generationRules: dto.generationRules || '',
+      elementType: dto.elementType,
+      deviceScope: dto.deviceScope,
+      status: dto.status,
+      createdAt: dto.createdAt ? new Date(dto.createdAt) : undefined,
+      updatedAt: dto.updatedAt ? new Date(dto.updatedAt) : undefined
     };
   }
 }

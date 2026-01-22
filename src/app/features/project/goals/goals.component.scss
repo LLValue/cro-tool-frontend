@@ -288,6 +288,11 @@
   }
 
   .goal-badge {
+
+    &.primary {
+      color: #fff !important;
+    }
+
     &.secondary {
       color: #fff !important;
     }

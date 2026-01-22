@@ -15,22 +15,8 @@ import { PageHeaderComponent } from '../../shared/page-header/page-header.compon
     MatIconModule,
     PageHeaderComponent
   ],
-  template: `
-    <app-page-header
-      title="Knowledge Base"
-      description="Browse UX patterns, guidelines, and examples to inform your experiments.">
-    </app-page-header>
-    
-    <div class="knowledge-base-content">
-      <mat-card>
-        <mat-card-content>
-          <p>Knowledge Base content coming soon...</p>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-  `]
+  templateUrl: './knowledge-base.component.html',
+  styleUrls: ['./knowledge-base.component.scss']
 })
 export class KnowledgeBaseComponent {
 }

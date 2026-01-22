@@ -22,6 +22,6 @@ export interface UpdateVariantRequest {
   uxRationale?: string;
   complianceScore?: number;
   complianceRationale?: string;
-  status?: 'active' | 'pending' | 'discarded';
+  status?: 'active' | 'discarded';
 }
 

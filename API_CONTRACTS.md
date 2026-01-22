@@ -111,19 +111,35 @@ Authorization: Bearer <token>
       "id": "string",
       "name": "string",
       "pageUrl": "string",
+      "industry": "string (optional)",
+      "elementType": "string (optional)",
       "notes": "string",
       "status": "draft" | "active" | "archived",
       "createdAt": "string (ISO 8601)",
       "updatedAt": "string (ISO 8601)",
       "previewHtml": "string (HTML content)",
       "language": "string",
-      "pageContext": "string",
-      "croGuidelines": "string",
-      "brandGuardrails": "string",
+      "tone": "string (optional)",
+      "styleComplexity": "simple" | "technical (optional)",
+      "styleLength": "short" | "med" | "long (optional)",
+      "productSummary": "string (optional, max 200 characters)",
+      "pageIntent": "string (optional, max 200 characters)",
+      "funnelStage": "discovery" | "consideration" | "conversion (optional)",
+      "valueProps": ["string"] (optional),
+      "typicalObjections": ["string"] (optional),
+      "marketLocale": "string (optional)",
+      "allowedFacts": ["string"] (optional),
+      "mustNotClaim": ["string"] (optional),
+      "riskLevel": "Conservative" | "Standard" | "Exploratory (optional)",
       "forbiddenWords": ["string"],
       "mandatoryClaims": ["string"],
+      "prohibitedClaims": ["string"] (optional),
+      "requiredDisclaimer": "string (optional, max 200 characters)",
       "toneAllowed": ["string"],
-      "toneDisallowed": ["string"]
+      "toneDisallowed": ["string"],
+      "pageContext": "string (legacy field)",
+      "croGuidelines": "string (legacy field)",
+      "brandGuardrails": "string (legacy field)"
     }
   ],
   "total": "number"
@@ -157,19 +173,35 @@ Content-Type: application/json
   "id": "string",
   "name": "string",
   "pageUrl": "string",
+  "industry": "string (optional)",
+  "elementType": "string (optional)",
   "notes": "string",
   "status": "draft",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)",
   "previewHtml": "string",
   "language": "en",
-  "pageContext": "",
-  "croGuidelines": "",
-  "brandGuardrails": "",
+  "tone": "professional (optional)",
+  "styleComplexity": "simple (optional)",
+  "styleLength": "short (optional)",
+  "productSummary": "string (optional)",
+  "pageIntent": "string (optional)",
+  "funnelStage": "discovery (optional)",
+  "valueProps": [] (optional),
+  "typicalObjections": [] (optional),
+  "marketLocale": "string (optional)",
+  "allowedFacts": [] (optional),
+  "mustNotClaim": [] (optional),
+  "riskLevel": "Conservative (optional)",
   "forbiddenWords": [],
   "mandatoryClaims": [],
+  "prohibitedClaims": [] (optional),
+  "requiredDisclaimer": "string (optional)",
   "toneAllowed": [],
-  "toneDisallowed": []
+  "toneDisallowed": [],
+  "pageContext": "string (legacy field)",
+  "croGuidelines": "string (legacy field)",
+  "brandGuardrails": "string (legacy field)"
 }
 ```
 
@@ -241,17 +273,33 @@ Content-Type: application/json
 {
   "name": "string (optional)",
   "pageUrl": "string (optional)",
+  "industry": "string (optional)",
+  "elementType": "string (optional)",
   "notes": "string (optional)",
   "status": "draft" | "active" | "archived" (optional),
   "previewHtml": "string (optional)",
   "language": "string (optional)",
-  "pageContext": "string (optional)",
-  "croGuidelines": "string (optional)",
-  "brandGuardrails": "string (optional)",
+  "tone": "string (optional)",
+  "styleComplexity": "simple" | "technical (optional)",
+  "styleLength": "short" | "med" | "long (optional)",
+  "productSummary": "string (optional, max 200 characters)",
+  "pageIntent": "string (optional, max 200 characters)",
+  "funnelStage": "discovery" | "consideration" | "conversion (optional)",
+  "valueProps": ["string"] (optional),
+  "typicalObjections": ["string"] (optional),
+  "marketLocale": "string (optional)",
+  "allowedFacts": ["string"] (optional),
+  "mustNotClaim": ["string"] (optional),
+  "riskLevel": "Conservative" | "Standard" | "Exploratory (optional)",
   "forbiddenWords": ["string"] (optional),
   "mandatoryClaims": ["string"] (optional),
+  "prohibitedClaims": ["string"] (optional),
+  "requiredDisclaimer": "string (optional, max 200 characters)",
   "toneAllowed": ["string"] (optional),
-  "toneDisallowed": ["string"] (optional)
+  "toneDisallowed": ["string"] (optional),
+  "pageContext": "string (optional, legacy field)",
+  "croGuidelines": "string (optional, legacy field)",
+  "brandGuardrails": "string (optional, legacy field)"
 }
 ```
 
@@ -341,19 +389,35 @@ Authorization: Bearer <token>
   "id": "string (nuevo ID)",
   "name": "string (nombre original + ' (Copy)')",
   "pageUrl": "string",
+  "industry": "string (optional)",
+  "elementType": "string (optional)",
   "notes": "string",
   "status": "draft",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)",
   "previewHtml": "string",
   "language": "string",
-  "pageContext": "string",
-  "croGuidelines": "string",
-  "brandGuardrails": "string",
+  "tone": "string (optional)",
+  "styleComplexity": "simple" | "technical (optional)",
+  "styleLength": "short" | "med" | "long (optional)",
+  "productSummary": "string (optional)",
+  "pageIntent": "string (optional)",
+  "funnelStage": "discovery" | "consideration" | "conversion (optional)",
+  "valueProps": [] (optional),
+  "typicalObjections": [] (optional),
+  "marketLocale": "string (optional)",
+  "allowedFacts": [] (optional),
+  "mustNotClaim": [] (optional),
+  "riskLevel": "Conservative" | "Standard" | "Exploratory (optional)",
   "forbiddenWords": ["string"],
   "mandatoryClaims": ["string"],
+  "prohibitedClaims": [] (optional),
+  "requiredDisclaimer": "string (optional)",
   "toneAllowed": ["string"],
-  "toneDisallowed": ["string"]
+  "toneDisallowed": ["string"],
+  "pageContext": "string (legacy field)",
+  "croGuidelines": "string (legacy field)",
+  "brandGuardrails": "string (legacy field)"
 }
 ```
 
@@ -410,8 +474,16 @@ Authorization: Bearer <token>
     "projectId": "string",
     "name": "string",
     "selector": "string (CSS selector)",
+    "text": "string",
     "objective": "string",
-    "generationRules": "string",
+    "context": "string (optional)",
+    "generationRules": "string (optional)",
+    "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
+    "deviceScope": "All" | "Mobile" | "Desktop" (optional),
+    "status": "Active" | "Paused" (optional),
+    "minChars": "number (optional)",
+    "maxChars": "number (optional)",
+    "maxWords": "number (optional)",
     "createdAt": "string (ISO 8601)",
     "updatedAt": "string (ISO 8601)"
   }
@@ -442,8 +514,16 @@ Content-Type: application/json
 {
   "name": "string (required, min 1 character)",
   "selector": "string (optional, CSS selector)",
+  "text": "string (optional)",
   "objective": "string (optional)",
-  "generationRules": "string (optional)"
+  "context": "string (optional)",
+  "generationRules": "string (optional)",
+  "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
+  "deviceScope": "All" | "Mobile" | "Desktop" (optional),
+  "status": "Active" | "Paused" (optional),
+  "minChars": "number (optional, min 0)",
+  "maxChars": "number (optional, min 0)",
+  "maxWords": "number (optional, min 0)"
 }
 ```
 
@@ -454,8 +534,16 @@ Content-Type: application/json
   "projectId": "string",
   "name": "string",
   "selector": "string",
+  "text": "string",
   "objective": "string",
-  "generationRules": "string",
+  "context": "string (optional)",
+  "generationRules": "string (optional)",
+  "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
+  "deviceScope": "All" | "Mobile" | "Desktop" (optional),
+  "status": "Active" | "Paused" (optional),
+  "minChars": "number (optional)",
+  "maxChars": "number (optional)",
+  "maxWords": "number (optional)",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)"
 }
@@ -495,8 +583,16 @@ Content-Type: application/json
 {
   "name": "string (optional)",
   "selector": "string (optional)",
+  "text": "string (optional)",
   "objective": "string (optional)",
-  "generationRules": "string (optional)"
+  "context": "string (optional)",
+  "generationRules": "string (optional)",
+  "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
+  "deviceScope": "All" | "Mobile" | "Desktop" (optional),
+  "status": "Active" | "Paused" (optional),
+  "minChars": "number (optional, min 0)",
+  "maxChars": "number (optional, min 0)",
+  "maxWords": "number (optional, min 0)"
 }
 ```
 
@@ -507,8 +603,16 @@ Content-Type: application/json
   "projectId": "string",
   "name": "string",
   "selector": "string",
+  "text": "string",
   "objective": "string",
-  "generationRules": "string",
+  "context": "string (optional)",
+  "generationRules": "string (optional)",
+  "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
+  "deviceScope": "All" | "Mobile" | "Desktop" (optional),
+  "status": "Active" | "Paused" (optional),
+  "minChars": "number (optional)",
+  "maxChars": "number (optional)",
+  "maxWords": "number (optional)",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)"
 }
@@ -858,7 +962,7 @@ Content-Type: application/json
 {
   "goals": [
     {
-      "name": "string (required)",
+      "name": "string (optional)",
       "type": "clickSelector" | "urlReached" | "dataLayerEvent",
       "isPrimary": "boolean",
       "value": "string (required)"
@@ -926,6 +1030,7 @@ Authorization: Bearer <token>
     {
       "variantId": "string",
       "pointId": "string",
+      "goalType": "clickSelector" | "urlReached" | "dataLayerEvent",
       "users": "number",
       "conversions": "number",
       "conversionRate": "number (0-1)",
@@ -943,7 +1048,7 @@ Authorization: Bearer <token>
 }
 ```
 
-**Nota:** Solo debe incluir métricas de variantes con `status: "active"`
+**Nota:** Debe incluir métricas de variantes con `status: "active"` o `status: "discarded"` para mostrar métricas históricas
 
 ---
 
@@ -972,6 +1077,7 @@ Content-Type: application/json
     {
       "variantId": "string",
       "pointId": "string",
+      "goalType": "clickSelector" | "urlReached" | "dataLayerEvent",
       "users": "number",
       "conversions": "number",
       "conversionRate": "number (0-1)",
@@ -992,7 +1098,7 @@ Content-Type: application/json
 **Reglas de Negocio:**
 - La simulación debe ser determinística (usar seed basado en projectId)
 - Los valores deben actualizarse progresivamente durante `durationMs`
-- Solo simular para variantes con `status: "active"`
+- Solo simular para variantes con `status: "active"` o `status: "discarded"` (para mostrar métricas históricas)
 - `conversionRate = conversions / users` (si users > 0, sino 0)
 - `confidence` debe estar entre 0 y 99
 
@@ -1019,7 +1125,7 @@ type GoalType = "clickSelector" | "urlReached" | "dataLayerEvent";
 
 ---
 
-## 8. Manejo de Errores
+## 9. Manejo de Errores
 
 Todos los errores deben seguir este formato:
 
@@ -1062,7 +1168,7 @@ Todos los errores deben seguir este formato:
 
 ---
 
-## 9. Paginación (Futuro)
+## 10. Paginación (Futuro)
 
 Para endpoints que puedan retornar muchos resultados, se puede implementar paginación:
 

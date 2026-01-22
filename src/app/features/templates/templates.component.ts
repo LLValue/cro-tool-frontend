@@ -15,22 +15,8 @@ import { PageHeaderComponent } from '../../shared/page-header/page-header.compon
     MatIconModule,
     PageHeaderComponent
   ],
-  template: `
-    <app-page-header
-      title="Templates"
-      description="Start faster with reusable experiment templates and prebuilt structures.">
-    </app-page-header>
-    
-    <div class="templates-content">
-      <mat-card>
-        <mat-card-content>
-          <p>Templates content coming soon...</p>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-  `]
+  templateUrl: './templates.component.html',
+  styleUrls: ['./templates.component.scss']
 })
 export class TemplatesComponent {
 }

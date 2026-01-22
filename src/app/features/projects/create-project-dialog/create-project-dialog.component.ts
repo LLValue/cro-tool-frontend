@@ -17,40 +17,8 @@ import { CommonModule } from '@angular/common';
     MatInputModule,
     MatButtonModule
   ],
-  template: `
-    <h2 mat-dialog-title>Create New Project</h2>
-    <mat-dialog-content>
-      <form [formGroup]="form">
-        <mat-form-field appearance="outline" class="full-width">
-          <input matInput formControlName="name" required placeholder="Enter project name">
-          <mat-error *ngIf="form.get('name')?.hasError('required')">
-            Name is required
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <input matInput formControlName="pageUrl" type="url" placeholder="https://example.com">
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <textarea matInput formControlName="notes" rows="3" placeholder="Add any additional notes about this project"></textarea>
-        </mat-form-field>
-      </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="onCancel()">Cancel</button>
-      <button mat-raised-button color="primary" (click)="onSave()" [disabled]="form.invalid">
-        Create
-      </button>
-    </mat-dialog-actions>
-  `,
-  styles: [`
-    .full-width {
-      width: 100%;
-      margin-bottom: 16px;
-    }
-    .mdc-dialog__content>:first-child {
-      margin-top: 5px;
-    }
-  `]
+  templateUrl: './create-project-dialog.component.html',
+  styleUrls: ['./create-project-dialog.component.scss']
 })
 export class CreateProjectDialogComponent {
   form: FormGroup;

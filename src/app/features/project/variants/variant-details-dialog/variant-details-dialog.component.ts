@@ -7,17 +7,7 @@ import { Variant } from '../../../../data/models';
   selector: 'app-variant-details-dialog',
   standalone: true,
   imports: [MatDialogModule, MatButtonModule],
-  template: `
-    <h2 mat-dialog-title>{{ data.type === 'ux' ? 'UX Score Details' : 'Compliance Score Details' }}</h2>
-    <mat-dialog-content>
-      <p><strong>Score:</strong> {{ data.type === 'ux' ? data.variant.uxScore : data.variant.complianceScore }}/10</p>
-      <p><strong>Rationale:</strong></p>
-      <p>{{ data.type === 'ux' ? data.variant.uxRationale : data.variant.complianceRationale }}</p>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="close()">Close</button>
-    </mat-dialog-actions>
-  `
+  templateUrl: './variant-details-dialog.component.html'
 })
 export class VariantDetailsDialogComponent {
   constructor(

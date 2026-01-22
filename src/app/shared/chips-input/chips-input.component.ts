@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, forwardRef } from '@angular/core';
+import { Component, Input, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,50 +18,8 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
       multi: true
     }
   ],
-  template: `
-    <div class="chips-input-wrapper full-width">
-      <mat-form-field appearance="outline" floatLabel="always" class="chips-input full-width">
-        <mat-chip-grid #chipGrid [attr.aria-label]="getDisplayLabel()">
-          <mat-chip-row *ngFor="let item of value" (removed)="remove(item)">
-            {{ item }}
-            <button matChipRemove [attr.aria-label]="'remove ' + item">
-              <mat-icon>cancel</mat-icon>
-            </button>
-          </mat-chip-row>
-        </mat-chip-grid>
-        <input
-          [placeholder]="placeholder"
-          [matChipInputFor]="chipGrid"
-          [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-          [matChipInputAddOnBlur]="addOnBlur"
-          (matChipInputTokenEnd)="add($event)"
-        />
-      </mat-form-field>
-    </div>
-  `,
-  styles: [`
-    :host {
-      display: block;
-      width: 100%;
-    }
-    
-    .chips-input-wrapper {
-      width: 100%;
-      display: block;
-    }
-    
-    .chips-input-wrapper.full-width {
-      width: 60%;
-    }
-    
-    .chips-input-wrapper ::ng-deep .mat-mdc-form-field {
-      width: 100%;
-    }
-    
-    .chips-input-wrapper ::ng-deep .mat-mdc-text-field-wrapper {
-      width: 100%;
-    }
-  `]
+  templateUrl: './chips-input.component.html',
+  styleUrls: ['./chips-input.component.scss']
 })
 export class ChipsInputComponent implements ControlValueAccessor {
   @Input() label = '';

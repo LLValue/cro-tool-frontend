@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
-import { debounceTime, map } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
@@ -144,20 +144,6 @@ export class ContextComponent implements OnInit, OnDestroy {
       this.subscriptions.add(parentParamsSub);
     }
 
-    // Autosave with debounce
-    const globalFormSub = this.globalForm.valueChanges.pipe(debounceTime(500)).subscribe(() => {
-      if (!this.isUpdatingForm) {
-        this.saveGlobal();
-      }
-    });
-    this.subscriptions.add(globalFormSub);
-
-    const pointFormSub = this.pointForm.valueChanges.pipe(debounceTime(500)).subscribe(() => {
-      if (!this.isUpdatingForm) {
-        this.savePoint();
-      }
-    });
-    this.subscriptions.add(pointFormSub);
   }
 
   ngOnDestroy(): void {
@@ -325,16 +311,6 @@ export class ContextComponent implements OnInit, OnDestroy {
     }
   }
 
-  saveGlobal(): void {
-    const values = this.globalForm.value;
-    const mandatoryClaims = this.mandatoryClaims.controls.map((c: any) => c.value);
-    this.store.updateProject(this.projectId, {
-      ...values,
-      mandatoryClaims
-    });
-    this.toast.showInfo('Saved');
-  }
-
   saveLanguageAndVoice(): void {
     const values = this.globalForm.value;
     this.store.updateProject(this.projectId, {
@@ -403,7 +379,11 @@ export class ContextComponent implements OnInit, OnDestroy {
 
   removeClaim(index: number): void {
     this.mandatoryClaims.removeAt(index);
-    this.saveGlobal();
+    // Save only mandatory claims when removing
+    const mandatoryClaims = this.mandatoryClaims.controls.map((c: any) => c.value);
+    this.store.updateProject(this.projectId, {
+      mandatoryClaims: mandatoryClaims
+    });
   }
 
   // Character counter helpers

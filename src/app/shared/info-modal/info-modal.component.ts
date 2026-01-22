@@ -7,15 +7,7 @@ import { CommonModule } from '@angular/common';
   selector: 'app-info-modal',
   standalone: true,
   imports: [MatDialogModule, MatButtonModule, CommonModule],
-  template: `
-    <h2 mat-dialog-title>{{ data.title }}</h2>
-    <mat-dialog-content>
-      <div class="modal-content" [innerHTML]="data.content"></div>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="close()">Close</button>
-    </mat-dialog-actions>
-  `,
+  templateUrl: './info-modal.component.html',
   styleUrls: ['./info-modal.component.scss']
 })
 export class InfoModalComponent {

@@ -5,7 +5,14 @@ export interface OptimizationPointDto {
   selector: string;
   text: string;
   objective: string;
-  generationRules: string;
+  context?: string;
+  generationRules?: string;
+  elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
+  deviceScope?: 'All' | 'Mobile' | 'Desktop';
+  status?: 'Active' | 'Paused';
+  minChars?: number;
+  maxChars?: number;
+  maxWords?: number;
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
 }
@@ -15,7 +22,14 @@ export interface CreatePointRequest {
   selector?: string;
   text?: string;
   objective?: string;
+  context?: string;
   generationRules?: string;
+  elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
+  deviceScope?: 'All' | 'Mobile' | 'Desktop';
+  status?: 'Active' | 'Paused';
+  minChars?: number;
+  maxChars?: number;
+  maxWords?: number;
 }
 
 export interface UpdatePointRequest {
@@ -23,6 +37,13 @@ export interface UpdatePointRequest {
   selector?: string;
   text?: string;
   objective?: string;
+  context?: string;
   generationRules?: string;
+  elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
+  deviceScope?: 'All' | 'Mobile' | 'Desktop';
+  status?: 'Active' | 'Paused';
+  minChars?: number;
+  maxChars?: number;
+  maxWords?: number;
 }
 

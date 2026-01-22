@@ -1,0 +1,39 @@
+<h2 mat-dialog-title>Enter CSS Selector Manually</h2>
+<mat-dialog-content>
+  <p class="help-text">
+    Due to cross-origin restrictions, we cannot access the iframe content directly.
+    Please enter the CSS selector for the element you want to optimize.
+  </p>
+  <p class="help-text">
+    <strong>Tip:</strong> Open the page in a new tab, use browser DevTools (F12), 
+    right-click on the element, select "Inspect", then right-click the element in DevTools 
+    and choose "Copy > Copy selector".
+  </p>
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" class="full-width">
+      <input matInput formControlName="name" required placeholder="Enter point name">
+      <mat-error *ngIf="form.get('name')?.hasError('required')">
+        Name is required
+      </mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <textarea matInput formControlName="text" rows="3" placeholder="The text content of this element"></textarea>
+      <mat-hint>Enter the text that will be optimized for this point</mat-hint>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full-width">
+      <input matInput formControlName="selector" required placeholder="e.g., .hero-title, #cta-button, h1">
+      <mat-hint>Enter a valid CSS selector (ID, class, or element selector)</mat-hint>
+      <mat-error *ngIf="form.get('selector')?.hasError('required')">
+        Selector is required
+      </mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onSave()" [disabled]="form.invalid">
+    <mat-icon>check</mat-icon>
+    Create Point
+  </button>
+</mat-dialog-actions>
+
