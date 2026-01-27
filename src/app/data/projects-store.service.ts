@@ -286,22 +286,21 @@ export class ProjectsStoreService {
     return this.variants$;
   }
 
-  generateVariants(pointId: string, count: number = 10): Variant[] {
+  generateVariants(pointId: string, count: number = 10): Observable<Variant[]> {
     const point = this.getPoint(pointId);
-    if (!point) return [];
+    if (!point) {
+      return new Observable(observer => {
+        observer.error(new Error('Point not found'));
+        observer.complete();
+      });
+    }
 
-    let generated: Variant[] = [];
-    this.variantsApi.generateVariants(point.projectId, pointId, { count }).subscribe({
-      next: variants => {
-        generated = variants;
+    return this.variantsApi.generateVariants(point.projectId, pointId, { count }).pipe(
+      tap(variants => {
+        // Refresh variants list after generation
         this.listVariants(pointId);
-      },
-      error: err => {
-        throw err;
-      }
-    });
-
-    return generated;
+      })
+    );
   }
 
   approveVariant(id: string): void {

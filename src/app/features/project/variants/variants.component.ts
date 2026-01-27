@@ -15,6 +15,7 @@ import { OptimizationPoint, Variant } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { VariantDetailsDialogComponent } from './variant-details-dialog/variant-details-dialog.component';
+import { GenerateVariantsProgressComponent, GenerateVariantsProgressData } from '../../../shared/generate-variants-progress/generate-variants-progress.component';
 import { map } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 
@@ -183,11 +184,35 @@ export class VariantsComponent implements OnInit, OnDestroy {
   }
 
   generateVariants(): void {
-    if (this.selectedPointId) {
-      this.store.generateVariants(this.selectedPointId, 10);
-      this.toast.showSuccess('Variants generated');
+    if (!this.selectedPointId) return;
+
+    const selectedPoint = this.points.find(p => p.id === this.selectedPointId);
+    const generateObservable = this.store.generateVariants(this.selectedPointId, 10);
+    
+    const dialogRef = this.dialog.open(GenerateVariantsProgressComponent, {
+      width: '600px',
+      disableClose: true,
+      data: {
+        generateObservable: generateObservable,
+        pointName: selectedPoint?.name
+      } as GenerateVariantsProgressData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.action === 'review') {
+        // Refresh variants list
+        this.loadVariants();
+      } else if (result?.action === 'retry') {
+        // Retry generation
+        this.generateVariants();
+      } else if (result?.action === 'fallback') {
+        // Generate fallback variants (if backend supports it)
+        // For now, just retry
+        this.generateVariants();
+      }
+      // Always refresh variants list
       this.loadVariants();
-    }
+    });
   }
 
   updateVariant(variant: Variant): void {

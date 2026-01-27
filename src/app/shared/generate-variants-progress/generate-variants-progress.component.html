@@ -1,0 +1,85 @@
+<h2 mat-dialog-title>
+  <mat-icon>auto_awesome</mat-icon>
+  Generating Variants
+</h2>
+
+<mat-dialog-content>
+  <div class="progress-container" *ngIf="!isComplete && !error">
+    <!-- Progress Bar -->
+    <div class="progress-section">
+      <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+      <div class="progress-text">{{ Math.round(progress) }}%</div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message">
+      <p>{{ currentMessage }}</p>
+      <p class="time-note" *ngIf="progress < 90">This can take up to ~60 seconds</p>
+    </div>
+
+    <!-- Steps List -->
+    <div class="steps-list">
+      <div 
+        *ngFor="let step of steps" 
+        class="step-item"
+        [class.pending]="step.status === 'pending'"
+        [class.in-progress]="step.status === 'in-progress'"
+        [class.done]="step.status === 'done'">
+        <mat-icon class="step-icon">
+          <span *ngIf="step.status === 'pending'">radio_button_unchecked</span>
+          <span *ngIf="step.status === 'in-progress'">
+            <span class="spinner">autorenew</span>
+          </span>
+          <span *ngIf="step.status === 'done'">check_circle</span>
+        </mat-icon>
+        <span class="step-label">{{ step.label }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success State -->
+  <div class="success-container" *ngIf="isComplete && !error">
+    <div class="success-icon">
+      <mat-icon>check_circle</mat-icon>
+    </div>
+    <h3>Done</h3>
+    <p class="success-message">{{ variantCount }} variants generated</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="error">
+    <div class="error-icon">
+      <mat-icon>error</mat-icon>
+    </div>
+    <h3>Generation Failed</h3>
+    <p class="error-message">{{ error }}</p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onClose()" *ngIf="!isComplete && !error">
+    Cancel
+  </button>
+  <button 
+    mat-raised-button 
+    color="primary" 
+    (click)="onReviewVariants()" 
+    *ngIf="isComplete && !error">
+    <mat-icon>visibility</mat-icon>
+    Review Variants
+  </button>
+  <button 
+    mat-button 
+    (click)="onRetry()" 
+    *ngIf="error">
+    <mat-icon>refresh</mat-icon>
+    Retry
+  </button>
+  <button 
+    mat-button 
+    (click)="onGenerateFallback()" 
+    *ngIf="error">
+    <mat-icon>settings_backup_restore</mat-icon>
+    Generate Fallback Variants
+  </button>
+</mat-dialog-actions>

@@ -122,8 +122,8 @@ Authorization: Bearer <token>
       "tone": "string (optional)",
       "styleComplexity": "simple" | "technical (optional)",
       "styleLength": "short" | "med" | "long (optional)",
-      "productSummary": "string (optional, max 200 characters)",
-      "pageIntent": "string (optional, max 200 characters)",
+      "productSummary": "string (optional, max 5000 characters)",
+      "pageIntent": "string (optional, max 5000 characters)",
       "funnelStage": "discovery" | "consideration" | "conversion (optional)",
       "valueProps": ["string"] (optional),
       "typicalObjections": ["string"] (optional),
@@ -134,7 +134,7 @@ Authorization: Bearer <token>
       "forbiddenWords": ["string"],
       "mandatoryClaims": ["string"],
       "prohibitedClaims": ["string"] (optional),
-      "requiredDisclaimer": "string (optional, max 200 characters)",
+      "requiredDisclaimer": "string (optional, max 5000 characters)",
       "toneAllowed": ["string"],
       "toneDisallowed": ["string"],
       "pageContext": "string (legacy field)",
@@ -233,19 +233,35 @@ Authorization: Bearer <token>
   "id": "string",
   "name": "string",
   "pageUrl": "string",
+  "industry": "string (optional)",
+  "elementType": "string (optional)",
   "notes": "string",
-  "status": "draft" | "active" | "archived",
+  "status": "live" | "paused" | "preview",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)",
   "previewHtml": "string",
   "language": "string",
-  "pageContext": "string",
-  "croGuidelines": "string",
-  "brandGuardrails": "string",
+  "tone": "string (optional)",
+  "styleComplexity": "simple" | "technical (optional)",
+  "styleLength": "short" | "med" | "long (optional)",
+  "productSummary": "string (optional)",
+  "pageIntent": "string (optional)",
+  "funnelStage": "discovery" | "consideration" | "conversion (optional)",
+  "valueProps": ["string"] (optional),
+  "typicalObjections": ["string"] (optional),
+  "marketLocale": "string (optional)",
+  "allowedFacts": ["string"] (optional),
+  "mustNotClaim": ["string"] (optional),
+  "riskLevel": "Conservative" | "Standard" | "Exploratory (optional)",
   "forbiddenWords": ["string"],
   "mandatoryClaims": ["string"],
+  "prohibitedClaims": ["string"] (optional),
+  "requiredDisclaimer": "string (optional)",
   "toneAllowed": ["string"],
-  "toneDisallowed": ["string"]
+  "toneDisallowed": ["string"],
+  "pageContext": "string (legacy field)",
+  "croGuidelines": "string (legacy field)",
+  "brandGuardrails": "string (legacy field)"
 }
 ```
 
@@ -276,14 +292,14 @@ Content-Type: application/json
   "industry": "string (optional)",
   "elementType": "string (optional)",
   "notes": "string (optional)",
-  "status": "draft" | "active" | "archived" (optional),
+  "status": "live" | "paused" | "preview (optional)",
   "previewHtml": "string (optional)",
-  "language": "string (optional)",
-  "tone": "string (optional)",
+  "language": "string (optional, max 50 characters)",
+  "tone": "string (optional, max 5000 characters)",
   "styleComplexity": "simple" | "technical (optional)",
   "styleLength": "short" | "med" | "long (optional)",
-  "productSummary": "string (optional, max 200 characters)",
-  "pageIntent": "string (optional, max 200 characters)",
+  "productSummary": "string (optional, max 5000 characters)",
+  "pageIntent": "string (optional, max 5000 characters)",
   "funnelStage": "discovery" | "consideration" | "conversion (optional)",
   "valueProps": ["string"] (optional),
   "typicalObjections": ["string"] (optional),
@@ -294,7 +310,7 @@ Content-Type: application/json
   "forbiddenWords": ["string"] (optional),
   "mandatoryClaims": ["string"] (optional),
   "prohibitedClaims": ["string"] (optional),
-  "requiredDisclaimer": "string (optional, max 200 characters)",
+  "requiredDisclaimer": "string (optional, max 5000 characters)",
   "toneAllowed": ["string"] (optional),
   "toneDisallowed": ["string"] (optional),
   "pageContext": "string (optional, legacy field)",
@@ -310,18 +326,32 @@ Content-Type: application/json
   "name": "string",
   "pageUrl": "string",
   "notes": "string",
-  "status": "draft" | "active" | "archived",
+  "status": "live" | "paused" | "preview",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)",
   "previewHtml": "string",
   "language": "string",
-  "pageContext": "string",
-  "croGuidelines": "string",
-  "brandGuardrails": "string",
+  "tone": "string (optional)",
+  "styleComplexity": "simple" | "technical (optional)",
+  "styleLength": "short" | "med" | "long (optional)",
+  "productSummary": "string (optional)",
+  "pageIntent": "string (optional)",
+  "funnelStage": "discovery" | "consideration" | "conversion (optional)",
+  "valueProps": ["string"] (optional),
+  "typicalObjections": ["string"] (optional),
+  "marketLocale": "string (optional)",
+  "allowedFacts": ["string"] (optional),
+  "mustNotClaim": ["string"] (optional),
+  "riskLevel": "Conservative" | "Standard" | "Exploratory (optional)",
   "forbiddenWords": ["string"],
   "mandatoryClaims": ["string"],
+  "prohibitedClaims": ["string"] (optional),
+  "requiredDisclaimer": "string (optional)",
   "toneAllowed": ["string"],
-  "toneDisallowed": ["string"]
+  "toneDisallowed": ["string"],
+  "pageContext": "string (legacy field)",
+  "croGuidelines": "string (legacy field)",
+  "brandGuardrails": "string (legacy field)"
 }
 ```
 
@@ -341,6 +371,8 @@ Content-Type: application/json
 
 **Validaciones:**
 - Si se envía `name`, no puede estar vacío
+- `language`: máximo 50 caracteres
+- Campos de texto largo: máximo 5000 caracteres
 
 ---
 
@@ -477,7 +509,7 @@ Authorization: Bearer <token>
     "text": "string",
     "objective": "string",
     "context": "string (optional)",
-    "generationRules": "string (optional)",
+    "generationRules": "string (optional, JSON string)",
     "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
     "deviceScope": "All" | "Mobile" | "Desktop" (optional),
     "status": "Included" | "Excluded" (optional),
@@ -517,10 +549,10 @@ Content-Type: application/json
   "text": "string (optional)",
   "objective": "string (optional)",
   "context": "string (optional)",
-  "generationRules": "string (optional)",
+  "generationRules": "string (optional, JSON string)",
   "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
   "deviceScope": "All" | "Mobile" | "Desktop" (optional),
-  "status": "Active" | "Paused" (optional),
+  "status": "Included" | "Excluded" (optional),
   "minChars": "number (optional, min 0)",
   "maxChars": "number (optional, min 0)",
   "maxWords": "number (optional, min 0)"
@@ -540,7 +572,7 @@ Content-Type: application/json
   "generationRules": "string (optional)",
   "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
   "deviceScope": "All" | "Mobile" | "Desktop" (optional),
-  "status": "Active" | "Paused" (optional),
+  "status": "Included" | "Excluded" (optional),
   "minChars": "number (optional)",
   "maxChars": "number (optional)",
   "maxWords": "number (optional)",
@@ -586,10 +618,10 @@ Content-Type: application/json
   "text": "string (optional)",
   "objective": "string (optional)",
   "context": "string (optional)",
-  "generationRules": "string (optional)",
+  "generationRules": "string (optional, JSON string)",
   "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
   "deviceScope": "All" | "Mobile" | "Desktop" (optional),
-  "status": "Active" | "Paused" (optional),
+  "status": "Included" | "Excluded" (optional),
   "minChars": "number (optional, min 0)",
   "maxChars": "number (optional, min 0)",
   "maxWords": "number (optional, min 0)"
@@ -609,7 +641,7 @@ Content-Type: application/json
   "generationRules": "string (optional)",
   "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
   "deviceScope": "All" | "Mobile" | "Desktop" (optional),
-  "status": "Active" | "Paused" (optional),
+  "status": "Included" | "Excluded" (optional),
   "minChars": "number (optional)",
   "maxChars": "number (optional)",
   "maxWords": "number (optional)",
@@ -731,7 +763,7 @@ Content-Type: application/json
     "uxRationale": "string",
     "complianceScore": "number (0-10)",
     "complianceRationale": "string",
-    "status": "pending" | "approved" | "discarded",
+    "status": "pending",
     "createdAt": "string (ISO 8601)",
     "source": "fallback"
   }
@@ -745,9 +777,14 @@ Content-Type: application/json
 }
 ```
 
+**Notas:**
+- Este endpoint puede tardar hasta 60 segundos en completarse
+- El frontend muestra un modal de progreso durante la generación
+- Las variantes generadas tienen `status: "pending"` por defecto
+- El `source` debe ser `"fallback"` para variantes generadas automáticamente
+
 **Reglas de Negocio:**
-- Si `uxScore < 5` O `complianceScore < 5`, el `status` debe ser `"discarded"`
-- El `source` debe ser `"fallback"`
+- Si `uxScore < 5` O `complianceScore < 5`, el `status` debe ser `"discarded"` automáticamente
 - Los scores deben ser determinísticos basados en un seed (para reproducibilidad)
 
 ---
@@ -785,7 +822,7 @@ Content-Type: application/json
   "uxRationale": "string",
   "complianceScore": "number (0-10)",
   "complianceRationale": "string",
-  "status": "active" | "discarded",
+  "status": "pending" | "approved" | "discarded",
   "createdAt": "string (ISO 8601)",
   "source": "fallback" | "manual"
 }
@@ -929,7 +966,7 @@ Authorization: Bearer <token>
   {
     "id": "string",
     "projectId": "string",
-    "name": "string",
+    "name": "string (optional, max 500 characters)",
     "type": "clickSelector" | "urlReached" | "dataLayerEvent",
     "isPrimary": "boolean",
     "value": "string",
@@ -962,7 +999,7 @@ Content-Type: application/json
 {
   "goals": [
     {
-      "name": "string (optional)",
+      "name": "string (required, max 500 characters)",
       "type": "clickSelector" | "urlReached" | "dataLayerEvent",
       "isPrimary": "boolean",
       "value": "string (required)"
@@ -996,12 +1033,12 @@ Content-Type: application/json
 **Response 422:**
 ```json
 {
-  "message": "Goal name is required" | "Goal value is required" | "Event name must be 50 characters or less"
+  "message": "Goal name is required" | "Goal value is required" | "Only one primary goal is allowed" | "Event name must be 50 characters or less"
 }
 ```
 
 **Validaciones:**
-- `name`: Requerido para todos los goals
+- `name`: Requerido para todos los goals, máximo 500 caracteres
 - `value`: Requerido para todos los goals
 - Si `type === "dataLayerEvent"`, el `value` debe tener máximo 50 caracteres
 - Debe haber exactamente un goal con `isPrimary: true`
@@ -1009,6 +1046,7 @@ Content-Type: application/json
 **Reglas de Negocio:**
 - Reemplaza todos los goals existentes del proyecto
 - El backend debe generar los `id` y `createdAt` para cada goal
+- Solo puede haber un goal con `isPrimary: true`
 
 ---
 
@@ -1104,7 +1142,73 @@ Content-Type: application/json
 
 ---
 
-## 7. Tipos de Datos
+## 7. Proxy
+
+### 7.1 Fetch URL
+
+**Endpoint:** `GET /api/proxy/fetch`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `url`: string (required, valid URL)
+
+**Response 200:**
+```
+Content-Type: text/html
+
+(HTML content as plain text)
+```
+
+**Response 400:**
+```json
+{
+  "message": "URL parameter is required"
+}
+```
+
+---
+
+### 7.2 Preview con Variantes
+
+**Endpoint:** `GET /api/proxy/preview/:projectId`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Query Parameters:**
+- `variantIds`: string (optional, comma-separated list of variant IDs)
+
+**Response 200:**
+```json
+{
+  "html": "string (HTML content)"
+}
+```
+
+O alternativamente:
+
+```
+Content-Type: text/html
+
+(HTML content as plain text)
+```
+
+**Response 404:**
+```json
+{
+  "message": "Project not found"
+}
+```
+
+---
+
+## 8. Tipos de Datos
 
 ### Enums
 
@@ -1114,6 +1218,12 @@ type PointStatus = "Included" | "Excluded";
 type VariantStatus = "pending" | "approved" | "discarded";
 type VariantSource = "fallback" | "manual";
 type GoalType = "clickSelector" | "urlReached" | "dataLayerEvent";
+type ElementType = "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other";
+type DeviceScope = "All" | "Mobile" | "Desktop";
+type FunnelStage = "discovery" | "consideration" | "conversion";
+type RiskLevel = "Conservative" | "Standard" | "Exploratory";
+type StyleComplexity = "simple" | "technical";
+type StyleLength = "short" | "med" | "long";
 ```
 
 ### Formatos
@@ -1123,6 +1233,14 @@ type GoalType = "clickSelector" | "urlReached" | "dataLayerEvent";
 - **URLs**: URLs válidas (ej: `"https://example.com/page"`)
 - **CSS Selectors**: Selectores CSS válidos (ej: `".cta-button"`, `"#hero-title"`)
 - **HTML**: Strings con contenido HTML válido
+- **JSON Strings**: Para campos como `generationRules`, debe ser un string JSON válido
+
+### Límites de Caracteres
+
+- `language`: máximo 50 caracteres
+- `goal.name`: máximo 500 caracteres
+- `goal.value` (cuando `type === "dataLayerEvent"`): máximo 50 caracteres
+- Campos de texto largo (productSummary, pageIntent, tone, etc.): máximo 5000 caracteres
 
 ---
 
@@ -1169,29 +1287,6 @@ Todos los errores deben seguir este formato:
 
 ---
 
-## 10. Paginación (Futuro)
-
-Para endpoints que puedan retornar muchos resultados, se puede implementar paginación:
-
-**Query Parameters:**
-- `page`: número de página (default: 1)
-- `limit`: items por página (default: 20, max: 100)
-
-**Response con Paginación:**
-```json
-{
-  "data": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100,
-    "totalPages": 5
-  }
-}
-```
-
----
-
 ## 10. Notas de Implementación
 
 1. **Autenticación**: Todos los endpoints (excepto `/auth/login`) requieren el header `Authorization: Bearer <token>`
@@ -1209,6 +1304,17 @@ Para endpoints que puedan retornar muchos resultados, se puede implementar pagin
 6. **Determinismo**: Las simulaciones y generación de variantes deben ser reproducibles usando seeds
 
 7. **CORS**: El backend debe permitir requests desde el origen del frontend
+
+8. **Generación de Variantes**: 
+   - El endpoint puede tardar hasta 60 segundos
+   - El frontend muestra un modal de progreso durante la generación
+   - Las variantes generadas tienen `status: "pending"` por defecto
+   - Si los scores son bajos (< 5), el status se cambia automáticamente a `"discarded"`
+
+9. **Goals**: 
+   - Solo puede haber un goal con `isPrimary: true`
+   - El campo `name` es requerido y tiene un máximo de 500 caracteres
+   - Para goals de tipo `dataLayerEvent`, el `value` tiene un máximo de 50 caracteres
 
 ---
 
@@ -1243,7 +1349,9 @@ Authorization: Bearer <token>
 {
   "name": "Hero Title",
   "selector": ".hero-title",
-  "objective": "Increase click-through rate"
+  "objective": "Increase click-through rate",
+  "elementType": "Title",
+  "deviceScope": "All"
 }
 ```
 
@@ -1256,7 +1364,31 @@ Authorization: Bearer <token>
 }
 ```
 
-**5. Obtener Reporte:**
+**Nota:** Este endpoint puede tardar hasta 60 segundos. El frontend muestra un modal de progreso.
+
+**5. Establecer Goals:**
+```bash
+PUT /api/projects/{projectId}/goals
+Authorization: Bearer <token>
+{
+  "goals": [
+    {
+      "name": "Primary URL Goal",
+      "type": "urlReached",
+      "isPrimary": true,
+      "value": "https://example.com/thank-you"
+    },
+    {
+      "name": "Secondary CTA Click",
+      "type": "clickSelector",
+      "isPrimary": false,
+      "value": ".cta-button"
+    }
+  ]
+}
+```
+
+**6. Obtener Reporte:**
 ```bash
 GET /api/projects/{projectId}/reporting
 Authorization: Bearer <token>
@@ -1264,6 +1396,5 @@ Authorization: Bearer <token>
 
 ---
 
-**Versión del Documento:** 1.0  
-**Última Actualización:** 2024-01-12
-
+**Versión del Documento:** 2.0  
+**Última Actualización:** 2024-12-19

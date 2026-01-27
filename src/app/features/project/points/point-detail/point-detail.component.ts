@@ -18,6 +18,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { PageHeaderComponent } from '../../../../shared/page-header/page-header.component';
 import { ChipsInputComponent } from '../../../../shared/chips-input/chips-input.component';
 import { InfoModalComponent } from '../../../../shared/info-modal/info-modal.component';
+import { GenerateVariantsProgressComponent, GenerateVariantsProgressData } from '../../../../shared/generate-variants-progress/generate-variants-progress.component';
 import { ProjectsStoreService } from '../../../../data/projects-store.service';
 import { ProjectsApiService } from '../../../../api/services/projects-api.service';
 import { OptimizationPoint, Variant } from '../../../../data/models';
@@ -272,8 +273,32 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   generateVariants(): void {
     if (!this.pointId) return;
 
-    this.store.generateVariants(this.pointId, 10);
-    this.toast.showSuccess('Generating 10 variants...');
+    const generateObservable = this.store.generateVariants(this.pointId, 10);
+    
+    const dialogRef = this.dialog.open(GenerateVariantsProgressComponent, {
+      width: '600px',
+      disableClose: true,
+      data: {
+        generateObservable: generateObservable,
+        pointName: this.point?.name
+      } as GenerateVariantsProgressData
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.action === 'review') {
+        // Navigate to variants tab or refresh
+        this.loadVariants();
+      } else if (result?.action === 'retry') {
+        // Retry generation
+        this.generateVariants();
+      } else if (result?.action === 'fallback') {
+        // Generate fallback variants (if backend supports it)
+        // For now, just retry
+        this.generateVariants();
+      }
+      // Refresh variants list
+      this.loadVariants();
+    });
   }
 
   approveVariant(variantId: string): void {
