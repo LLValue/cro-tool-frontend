@@ -92,6 +92,7 @@
 .right-column {
   flex: 0 0 60%;
   min-width: 0;
+  padding-right: 24px;
 }
 
 :host-context(body.dark-mode) {

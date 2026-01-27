@@ -1,11 +1,13 @@
 .preview-panel {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
+  background: var(--background-card, white);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   height: calc(100vh - 120px);
   min-height: 600px;
+  overflow: hidden;
 
   &.sticky {
     position: sticky;
@@ -157,6 +159,7 @@
   .preview-panel {
     background: #1e1e1e;
     border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   .preview-header {
