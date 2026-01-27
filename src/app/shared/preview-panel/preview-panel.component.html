@@ -1,0 +1,85 @@
+<div class="preview-panel" [class.sticky]="true" [class.mobile-view]="viewMode === 'mobile'">
+  <div class="preview-header">
+    <h3>Page Preview</h3>
+    <div class="header-actions">
+      <div class="view-mode-toggle">
+        <button 
+          mat-icon-button 
+          [class.active]="viewMode === 'desktop'"
+          (click)="viewMode = 'desktop'"
+          matTooltip="Desktop view">
+          <mat-icon>desktop_windows</mat-icon>
+        </button>
+        <button 
+          mat-icon-button 
+          [class.active]="viewMode === 'mobile'"
+          (click)="viewMode = 'mobile'"
+          matTooltip="Mobile view">
+          <mat-icon>phone_android</mat-icon>
+        </button>
+      </div>
+      <button 
+        mat-icon-button 
+        (click)="onReload()" 
+        matTooltip="Reload page"
+        [disabled]="loading">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <button 
+        *ngIf="showReset && originalHtml" 
+        mat-icon-button 
+        (click)="onReset()" 
+        matTooltip="Reset to original"
+        [disabled]="loading">
+        <mat-icon>restore</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="preview-wrapper" [class.loading]="loading" [class.mobile-view]="viewMode === 'mobile'">
+    <div class="loading-overlay" *ngIf="loading">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <p>Loading page preview...</p>
+    </div>
+
+    <!-- Iframe preview -->
+    <iframe 
+      *ngIf="useIframe && safeIframeHtml && !loading" 
+      #previewIframe
+      [srcdoc]="safeIframeHtml" 
+      class="preview-iframe"
+      [class.mobile-view]="viewMode === 'mobile'"
+      tabindex="-1"
+      aria-hidden="true"
+      (load)="onIframeLoad()"
+      frameborder="0">
+    </iframe>
+    <iframe 
+      *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loading" 
+      #previewIframe
+      [src]="safeIframeUrl" 
+      class="preview-iframe"
+      [class.mobile-view]="viewMode === 'mobile'"
+      tabindex="-1"
+      aria-hidden="true"
+      (load)="onIframeLoad()"
+      frameborder="0">
+    </iframe>
+
+    <!-- Div preview -->
+    <div 
+      *ngIf="!useIframe && previewHtml && !loading" 
+      #previewContent
+      class="preview-content" 
+      [class.mobile-view]="viewMode === 'mobile'"
+      [innerHTML]="safePreviewHtml">
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!previewHtml && !previewUrl && !loading" class="empty-state">
+      <mat-icon>visibility_off</mat-icon>
+      <p>No preview available</p>
+      <p class="hint">Load a page preview to see it here</p>
+    </div>
+  </div>
+</div>

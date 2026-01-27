@@ -1,3 +1,20 @@
+.two-column-layout {
+  display: flex;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: flex-start;
+}
+
+.left-column {
+  flex: 0 0 40%;
+  min-width: 0;
+}
+
+.right-column {
+  flex: 0 0 60%;
+  min-width: 0;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

@@ -20,6 +20,14 @@ import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint, Variant, ReportingMetrics, Goal } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { PreviewPanelComponent } from '../../../shared/preview-panel/preview-panel.component';
+import { PreviewService } from '../../../shared/preview.service';
+import { ProjectsApiService } from '../../../api/services/projects-api.service';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { API_CLIENT } from '../../../api/api-client.token';
+import { ApiClient } from '../../../api/api-client';
+import { Inject } from '@angular/core';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-reporting',
@@ -37,6 +45,7 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     FormsModule,
     CommonModule,
     PageHeaderComponent,
+    PreviewPanelComponent,
     BaseChartDirective
   ],
   providers: [provideCharts(withDefaultRegisterables())],
@@ -69,6 +78,12 @@ export class ReportingComponent implements OnInit, OnDestroy {
   simulating = false;
   animatingMetrics = false;
   previousMetrics: ReportingMetrics[] = [];
+  previewHtml: string = '';
+  originalPreviewHtml: string = '';
+  previewUrl: string = '';
+  loadingPreview: boolean = false;
+  useIframe: boolean = true;
+  highlightSelector: string = '';
   
   // Grouped metrics by goal for Page Overview
   metricsByGoal: Map<string, {
@@ -138,7 +153,11 @@ export class ReportingComponent implements OnInit, OnDestroy {
     private router: Router,
     private store: ProjectsStoreService,
     private toast: ToastHelperService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private projectsApi: ProjectsApiService,
+    private previewService: PreviewService,
+    private sanitizer: DomSanitizer,
+    @Inject(API_CLIENT) private apiClient: ApiClient
   ) {}
 
   ngOnInit(): void {
@@ -158,6 +177,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
     if (initialProjectId) {
       this.projectId = initialProjectId;
       this.loadData();
+      this.loadPreview();
     }
 
     this.route.params.subscribe(params => {
@@ -165,6 +185,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
       if (newProjectId && newProjectId !== this.projectId) {
         this.projectId = newProjectId;
         this.loadData();
+        this.loadPreview();
       }
     });
 
@@ -174,6 +195,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
         if (newProjectId && newProjectId !== this.projectId) {
           this.projectId = newProjectId;
           this.loadData();
+          this.loadPreview();
         }
       });
     }
@@ -614,9 +636,90 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   previewVariant(variantId: string): void {
-    this.router.navigate(['/projects', this.projectId, 'preview'], {
-      queryParams: { variant: variantId }
+    const variant = this.variants.find(v => v.id === variantId);
+    if (!variant) {
+      this.toast.showError('Variant not found');
+      return;
+    }
+
+    const point = this.points.find(p => p.id === variant.optimizationPointId);
+    if (!point || !point.selector) {
+      this.toast.showError('Point selector not found');
+      return;
+    }
+
+    if (!this.originalPreviewHtml && this.previewHtml) {
+      this.originalPreviewHtml = this.previewHtml;
+    }
+
+    // Apply variant to HTML
+    const modifiedHtml = this.previewService.applyVariantsToHtml(
+      this.originalPreviewHtml || this.previewHtml,
+      [variant],
+      [point]
+    );
+
+    this.previewHtml = modifiedHtml;
+    this.highlightSelector = point.selector;
+    
+    // Clear highlight after animation
+    setTimeout(() => {
+      this.highlightSelector = '';
+    }, 1200);
+  }
+
+  loadPreview(): void {
+    if (!this.projectId) return;
+
+    this.loadingPreview = true;
+    this.store.listProjects().pipe(take(1)).subscribe({
+      next: (projects) => {
+        const project = projects.find(p => p.id === this.projectId);
+        if (project?.previewHtml) {
+          this.previewHtml = project.previewHtml;
+          if (!this.originalPreviewHtml) {
+            this.originalPreviewHtml = project.previewHtml;
+          }
+          this.useIframe = true;
+          this.loadingPreview = false;
+        } else if (project?.pageUrl) {
+          this.previewUrl = project.pageUrl;
+          this.loadingPreview = false;
+        } else {
+          this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
+            next: (p) => {
+              if (p.previewHtml) {
+                this.previewHtml = p.previewHtml;
+                if (!this.originalPreviewHtml) {
+                  this.originalPreviewHtml = p.previewHtml;
+                }
+                this.useIframe = true;
+              } else if (p.pageUrl) {
+                this.previewUrl = p.pageUrl;
+              }
+              this.loadingPreview = false;
+            },
+            error: () => {
+              this.loadingPreview = false;
+            }
+          });
+        }
+      },
+      error: () => {
+        this.loadingPreview = false;
+      }
     });
+  }
+
+  onPreviewReload(): void {
+    this.loadPreview();
+  }
+
+  onPreviewReset(): void {
+    if (this.originalPreviewHtml) {
+      this.previewHtml = this.originalPreviewHtml;
+      this.highlightSelector = '';
+    }
   }
 
   getSelectedPoint(): OptimizationPoint | undefined {

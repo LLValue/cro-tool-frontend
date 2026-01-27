@@ -322,75 +322,97 @@
     </mat-tab>
 
     <mat-tab label="Variants">
-      <div class="tab-content">
-        <div class="variants-header">
-          <mat-form-field appearance="outline" floatLabel="always" class="filter-field">
-            <mat-select [(ngModel)]="variantFilter" [ngModelOptions]="{standalone: true}" (selectionChange)="filterVariants()">
-              <mat-option value="all">All</mat-option>
-              <mat-option value="pending">Pending</mat-option>
-              <mat-option value="approved">Approved</mat-option>
-              <mat-option value="discarded">Discarded</mat-option>
-            </mat-select>
-          </mat-form-field>
-          <button mat-raised-button color="primary" (click)="generateVariants()">
-            <mat-icon>auto_awesome</mat-icon>
-            Generate Variants
-          </button>
-        </div>
-
-        <div *ngIf="filteredVariants.length === 0" class="empty-variants">
-          <p>No variants found. Click "Generate Variants" to create 10 variants.</p>
-        </div>
-
-        <mat-card *ngFor="let variant of filteredVariants" class="variant-card">
-          <mat-card-content>
-            <div class="variant-header">
-              <div class="variant-scores">
-                <div class="score">
-                  <span class="score-label">UX Score:</span>
-                  <span class="score-value">{{ variant.uxScore }}/10</span>
-                </div>
-                <div class="score">
-                  <span class="score-label">Compliance:</span>
-                  <span class="score-value">{{ variant.complianceScore }}/10</span>
-                </div>
-                <mat-chip-set>
-                  <mat-chip
-                    [class.active]="variant.status === 'approved'"
-                    [class.discarded]="variant.status === 'discarded'">
-                    {{ variant.status }}
-                  </mat-chip>
-                </mat-chip-set>
-              </div>
-              <div class="variant-actions">
-                <button *ngIf="variant.status !== 'approved'" mat-icon-button (click)="approveVariant(variant.id)" matTooltip="Approve">
-                  <mat-icon>check_circle</mat-icon>
-                </button>
-                <button *ngIf="variant.status === 'approved'" mat-icon-button (click)="unapproveVariant(variant.id)" matTooltip="Disable">
-                  <mat-icon>remove_circle</mat-icon>
-                </button>
-                <button mat-icon-button color="primary" (click)="deleteVariant(variant.id)" matTooltip="Delete">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
+      <div class="tab-content variants-tab-content">
+        <div class="two-column-layout">
+          <div class="left-column">
+            <div class="variants-header">
+              <mat-form-field appearance="outline" floatLabel="always" class="filter-field">
+                <mat-select [(ngModel)]="variantFilter" [ngModelOptions]="{standalone: true}" (selectionChange)="filterVariants()">
+                  <mat-option value="all">All</mat-option>
+                  <mat-option value="pending">Pending</mat-option>
+                  <mat-option value="approved">Approved</mat-option>
+                  <mat-option value="discarded">Discarded</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button mat-raised-button color="primary" (click)="generateVariants()">
+                <mat-icon>auto_awesome</mat-icon>
+                Generate Variants
+              </button>
             </div>
-            <mat-form-field appearance="outline" floatLabel="always" class="full-width variant-text">
-              <textarea 
-                matInput 
-                [(ngModel)]="variant.text" 
-                [ngModelOptions]="{standalone: true}"
-                [readonly]="variant.status === 'approved'"
-                (blur)="updateVariant(variant)"
-                rows="2">
-              </textarea>
-            </mat-form-field>
-            <div class="variant-details">
-              <p><strong>UX Rationale:</strong> {{ variant.uxRationale }}</p>
-              <p><strong>Compliance Rationale:</strong> {{ variant.complianceRationale }}</p>
-              <p class="variant-date">Created: {{ formatDate(variant.createdAt) }}</p>
+
+            <div *ngIf="filteredVariants.length === 0" class="empty-variants">
+              <p>No variants found. Click "Generate Variants" to create 10 variants.</p>
             </div>
-          </mat-card-content>
-        </mat-card>
+
+            <mat-card *ngFor="let variant of filteredVariants" class="variant-card">
+              <mat-card-content>
+                <div class="variant-header">
+                  <div class="variant-scores">
+                    <div class="score">
+                      <span class="score-label">UX Score:</span>
+                      <span class="score-value">{{ variant.uxScore }}/10</span>
+                    </div>
+                    <div class="score">
+                      <span class="score-label">Compliance:</span>
+                      <span class="score-value">{{ variant.complianceScore }}/10</span>
+                    </div>
+                    <mat-chip-set>
+                      <mat-chip
+                        [class.active]="variant.status === 'approved'"
+                        [class.discarded]="variant.status === 'discarded'">
+                        {{ variant.status }}
+                      </mat-chip>
+                    </mat-chip-set>
+                  </div>
+                  <div class="variant-actions">
+                    <button mat-raised-button color="primary" (click)="previewVariant(variant)">
+                      <mat-icon>visibility</mat-icon>
+                      Preview
+                    </button>
+                    <button *ngIf="variant.status !== 'approved'" mat-icon-button (click)="approveVariant(variant.id)" matTooltip="Approve">
+                      <mat-icon>check_circle</mat-icon>
+                    </button>
+                    <button *ngIf="variant.status === 'approved'" mat-icon-button (click)="unapproveVariant(variant.id)" matTooltip="Disable">
+                      <mat-icon>remove_circle</mat-icon>
+                    </button>
+                    <button mat-icon-button color="primary" (click)="deleteVariant(variant.id)" matTooltip="Delete">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <mat-form-field appearance="outline" floatLabel="always" class="full-width variant-text">
+                  <textarea 
+                    matInput 
+                    [(ngModel)]="variant.text" 
+                    [ngModelOptions]="{standalone: true}"
+                    [readonly]="variant.status === 'approved'"
+                    (blur)="updateVariant(variant)"
+                    rows="2">
+                  </textarea>
+                </mat-form-field>
+                <div class="variant-details">
+                  <p><strong>UX Rationale:</strong> {{ variant.uxRationale }}</p>
+                  <p><strong>Compliance Rationale:</strong> {{ variant.complianceRationale }}</p>
+                  <p class="variant-date">Created: {{ formatDate(variant.createdAt) }}</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <div class="right-column">
+            <app-preview-panel
+              [previewHtml]="previewHtml"
+              [previewUrl]="previewUrl"
+              [loading]="loadingPreview"
+              [useIframe]="true"
+              [showReset]="true"
+              [originalHtml]="originalPreviewHtml"
+              [highlightSelector]="highlightSelector"
+              (reload)="onPreviewReload()"
+              (reset)="onPreviewReset()">
+            </app-preview-panel>
+          </div>
+        </div>
       </div>
     </mat-tab>
     </mat-tab-group>

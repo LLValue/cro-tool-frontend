@@ -3,111 +3,89 @@
   description="Define the project basics and load a page preview to validate the target URL.">
 </app-page-header>
 
-<mat-card class="form-card">
-  <mat-card-content>
-    <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
-    <form [formGroup]="form" (ngSubmit)="onSave()">
-      <div class="form-field-wrapper">
-        <label class="field-label">
-          Project name
-          <span class="required-asterisk">*</span>
-        </label>
-        <p class="field-helper">Enter a descriptive name for your project.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <input matInput formControlName="name" required placeholder="Enter project name">
-          <mat-error *ngIf="form.get('name')?.hasError('required')">
-            Name is required
-          </mat-error>
-        </mat-form-field>
-      </div>
+<div class="two-column-layout">
+  <div class="left-column">
+    <mat-card class="form-card">
+      <mat-card-content>
+        <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
+        <form [formGroup]="form" (ngSubmit)="onSave()">
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Project name
+              <span class="required-asterisk">*</span>
+            </label>
+            <p class="field-helper">Enter a descriptive name for your project.</p>
+            <mat-form-field appearance="outline" class="brief-input">
+              <input matInput formControlName="name" required placeholder="Enter project name">
+              <mat-error *ngIf="form.get('name')?.hasError('required')">
+                Name is required
+              </mat-error>
+            </mat-form-field>
+          </div>
 
-      <div class="form-field-wrapper">
-        <label class="field-label">
-          Page URL
-          <span class="required-asterisk">*</span>
-        </label>
-        <p class="field-helper">Enter the URL of the page you want to optimize.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <input matInput formControlName="pageUrl" type="url" required placeholder="https://example.com">
-          <mat-error *ngIf="form.get('pageUrl')?.hasError('required')">
-            Page URL is required
-          </mat-error>
-        </mat-form-field>
-      </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">
+              Page URL
+              <span class="required-asterisk">*</span>
+            </label>
+            <p class="field-helper">Enter the URL of the page you want to optimize.</p>
+            <mat-form-field appearance="outline" class="brief-input">
+              <input matInput formControlName="pageUrl" type="url" required placeholder="https://example.com">
+              <mat-error *ngIf="form.get('pageUrl')?.hasError('required')">
+                Page URL is required
+              </mat-error>
+            </mat-form-field>
+          </div>
 
-      <div class="form-field-wrapper">
-        <label class="field-label">Industry</label>
-        <p class="field-helper">Specify the industry or sector this project belongs to.</p>
-        <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
-          <mat-select formControlName="industry">
-            <mat-option *ngFor="let industry of industries" [value]="industry">
-              {{ industry }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Industry</label>
+            <p class="field-helper">Specify the industry or sector this project belongs to.</p>
+            <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
+              <mat-select formControlName="industry">
+                <mat-option *ngFor="let industry of industries" [value]="industry">
+                  {{ industry }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
 
-      <div class="form-field-wrapper">
-        <label class="field-label">Notes</label>
-        <p class="field-helper">Add any additional notes or context about this project.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="notes" rows="2" placeholder="Add any additional notes about this project"></textarea>
-        </mat-form-field>
-      </div>
+          <div class="form-field-wrapper">
+            <label class="field-label">Notes</label>
+            <p class="field-helper">Add any additional notes or context about this project.</p>
+            <mat-form-field appearance="outline" class="brief-input">
+              <textarea matInput formControlName="notes" rows="2" placeholder="Add any additional notes about this project"></textarea>
+            </mat-form-field>
+          </div>
 
-      <div class="actions">
-        <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
-          <mat-icon>save</mat-icon>
-          Save
-        </button>
-        <button mat-raised-button color="primary" type="button" (click)="loadPreview()">
-          <mat-icon>refresh</mat-icon>
-          Load Page Preview
-        </button>
-        <button mat-raised-button color="primary" type="button" (click)="goBack()">
-          <mat-icon>arrow_back</mat-icon>
-          Back
-        </button>
-      </div>
-    </form>
-  </mat-card-content>
-</mat-card>
-
-<div class="preview-section">
-  <div class="preview-header">
-    <h3>Page Preview</h3>
-    <button mat-icon-button (click)="loadPreview()" matTooltip="Reload page">
-      <mat-icon>refresh</mat-icon>
-    </button>
+          <div class="actions">
+            <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">
+              <mat-icon>save</mat-icon>
+              Save
+            </button>
+            <button mat-raised-button color="primary" type="button" (click)="loadPreview()">
+              <mat-icon>refresh</mat-icon>
+              Load Page Preview
+            </button>
+            <button mat-raised-button color="primary" type="button" (click)="goBack()">
+              <mat-icon>arrow_back</mat-icon>
+              Back
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
   </div>
-  <div class="preview-wrapper" [class.loading]="loadingPreview">
-    <div class="loading-overlay" *ngIf="loadingPreview">
-      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-      <p>Loading page preview...</p>
-    </div>
-    <iframe 
-      *ngIf="useIframe && safeIframeHtml && !loadingPreview" 
-      [srcdoc]="safeIframeHtml" 
-      class="preview-iframe"
-      tabindex="-1"
-      aria-hidden="true"
-      (load)="onPreviewIframeLoad()"
-      frameborder="0">
-    </iframe>
-    <iframe 
-      *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loadingPreview" 
-      [src]="safeIframeUrl" 
-      class="preview-iframe"
-      tabindex="-1"
-      aria-hidden="true"
-      (load)="onPreviewIframeLoad()"
-      frameborder="0">
-    </iframe>
-    <div 
-      *ngIf="!useIframe && previewHtml && !loadingPreview" 
-      class="preview-content" 
-      [innerHTML]="safePreviewHtml">
-    </div>
+
+  <div class="right-column">
+    <app-preview-panel
+      [previewHtml]="previewHtml"
+      [previewUrl]="pageUrl"
+      [loading]="loadingPreview"
+      [useIframe]="useIframe"
+      [showReset]="false"
+      [originalHtml]="originalPreviewHtml"
+      (reload)="loadPreview()">
+    </app-preview-panel>
   </div>
 </div>
 

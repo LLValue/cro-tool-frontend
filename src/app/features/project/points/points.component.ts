@@ -13,8 +13,15 @@ import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint, Variant } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { PreviewPanelComponent } from '../../../shared/preview-panel/preview-panel.component';
 import { Subscription, combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { ProjectsApiService } from '../../../api/services/projects-api.service';
+import { PreviewService } from '../../../shared/preview.service';
+import { API_CLIENT } from '../../../api/api-client.token';
+import { ApiClient } from '../../../api/api-client';
+import { Inject } from '@angular/core';
 import { SelectorInputDialogComponent } from './selector-input-dialog/selector-input-dialog.component';
 import { PointEditorComponent } from './point-editor/point-editor.component';
 import { MatTableDataSource } from '@angular/material/table';
@@ -34,7 +41,8 @@ import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-d
     MatDialogModule,
     CommonModule,
     RouterModule,
-    PageHeaderComponent
+    PageHeaderComponent,
+    PreviewPanelComponent
   ],
   templateUrl: './points.component.html',
   styleUrls: ['./points.component.scss']
@@ -46,6 +54,12 @@ export class PointsComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['name', 'type', 'status', 'variantsApproved', 'lastUpdated', 'actions'];
   pointsDataSource = new MatTableDataSource<OptimizationPoint>([]);
   selectedPoint: OptimizationPoint | null = null;
+  previewHtml: string = '';
+  originalPreviewHtml: string = '';
+  previewUrl: string = '';
+  loadingPreview: boolean = false;
+  useIframe: boolean = true;
+  highlightSelector: string = '';
   private subscriptions = new Subscription();
 
   constructor(
@@ -53,7 +67,11 @@ export class PointsComponent implements OnInit, OnDestroy {
     private router: Router,
     private store: ProjectsStoreService,
     private toast: ToastHelperService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private projectsApi: ProjectsApiService,
+    private previewService: PreviewService,
+    private sanitizer: DomSanitizer,
+    @Inject(API_CLIENT) private apiClient: ApiClient
   ) {}
 
   ngOnInit(): void {
@@ -122,6 +140,7 @@ export class PointsComponent implements OnInit, OnDestroy {
     this.subscriptions.add(pointsSub);
     
     this.store.listPoints(projectId).subscribe();
+    this.loadPreview();
 
     const variantsSub = combineLatest([
       this.store.variants$,
@@ -230,6 +249,57 @@ export class PointsComponent implements OnInit, OnDestroy {
 
   setSelectedPoint(point: OptimizationPoint): void {
     this.selectedPoint = point;
+    if (point.selector) {
+      this.highlightSelector = point.selector;
+    }
+  }
+
+  loadPreview(): void {
+    const projectId = this.getProjectId();
+    if (!projectId) return;
+
+    this.loadingPreview = true;
+    this.store.listProjects().pipe(take(1)).subscribe({
+      next: (projects) => {
+        const project = projects.find(p => p.id === projectId);
+        if (project?.previewHtml) {
+          this.previewHtml = project.previewHtml;
+          if (!this.originalPreviewHtml) {
+            this.originalPreviewHtml = project.previewHtml;
+          }
+          this.useIframe = true;
+          this.loadingPreview = false;
+        } else if (project?.pageUrl) {
+          this.previewUrl = project.pageUrl;
+          this.loadingPreview = false;
+        } else {
+          this.projectsApi.getProject(projectId).pipe(take(1)).subscribe({
+            next: (p) => {
+              if (p.previewHtml) {
+                this.previewHtml = p.previewHtml;
+                if (!this.originalPreviewHtml) {
+                  this.originalPreviewHtml = p.previewHtml;
+                }
+                this.useIframe = true;
+              } else if (p.pageUrl) {
+                this.previewUrl = p.pageUrl;
+              }
+              this.loadingPreview = false;
+            },
+            error: () => {
+              this.loadingPreview = false;
+            }
+          });
+        }
+      },
+      error: () => {
+        this.loadingPreview = false;
+      }
+    });
+  }
+
+  onPreviewReload(): void {
+    this.loadPreview();
   }
 
   editPoint(pointId: string): void {

@@ -7,7 +7,9 @@
   </button>
 </app-page-header>
 
-<div class="points-list-container">
+<div class="two-column-layout">
+  <div class="left-column">
+    <div class="points-list-container">
   <div *ngIf="points.length === 0" class="empty-state">
     <mat-icon>gps_fixed</mat-icon>
     <h3>No Optimization Points</h3>
@@ -75,8 +77,24 @@
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="point-row"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+          class="point-row"
+          (click)="setSelectedPoint(row)">
     </table>
+  </div>
+    </div>
+  </div>
+
+  <div class="right-column">
+    <app-preview-panel
+      [previewHtml]="previewHtml"
+      [previewUrl]="previewUrl"
+      [loading]="loadingPreview"
+      [useIframe]="useIframe"
+      [showReset]="false"
+      [highlightSelector]="highlightSelector"
+      (reload)="onPreviewReload()">
+    </app-preview-panel>
   </div>
 </div>
 

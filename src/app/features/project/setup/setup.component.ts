@@ -15,6 +15,7 @@ import { ProjectsApiService } from '../../../api/services/projects-api.service';
 import { PreviewService } from '../../../shared/preview.service';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { PreviewPanelComponent } from '../../../shared/preview-panel/preview-panel.component';
 import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
 import { Project } from '../../../data/models';
 import { take } from 'rxjs/operators';
@@ -35,7 +36,8 @@ import { API_CLIENT } from '../../../api/api-client.token';
     MatCardModule,
     MatProgressBarModule,
     CommonModule,
-    PageHeaderComponent
+    PageHeaderComponent,
+    PreviewPanelComponent
   ],
   templateUrl: './setup.component.html',
   styleUrls: ['./setup.component.scss']
@@ -46,6 +48,7 @@ export class SetupComponent implements OnInit {
   project: Project | null = null;
   pageUrl: string = '';
   previewHtml: string = '';
+  originalPreviewHtml: string = '';
   safePreviewHtml: SafeHtml = '';
   useIframe: boolean = false;
   safeIframeUrl: SafeResourceUrl = '';
@@ -219,6 +222,9 @@ export class SetupComponent implements OnInit {
         if (response.html && response.html.trim().length > 0) {
           const processedHtml = this.removeCookiePopupsFromHtml(response.html);
           this.previewHtml = processedHtml;
+          if (!this.originalPreviewHtml) {
+            this.originalPreviewHtml = processedHtml;
+          }
           this.safePreviewHtml = this.previewService.sanitizeHtml(processedHtml);
           this.safeIframeHtml = this.sanitizer.bypassSecurityTrustHtml(processedHtml);
           this.useIframe = true;

@@ -13,7 +13,9 @@
   </div>
 </app-page-header>
 
-<mat-card class="tabs-card">
+<div class="two-column-layout">
+  <div class="left-column">
+    <mat-card class="tabs-card">
   <mat-tab-group class="reporting-tabs">
   <mat-tab label="Page Overview">
     <div class="reporting-content">
@@ -270,5 +272,21 @@
     </div>
   </mat-tab>
   </mat-tab-group>
-</mat-card>
+    </mat-card>
+  </div>
+
+  <div class="right-column">
+    <app-preview-panel
+      [previewHtml]="previewHtml"
+      [previewUrl]="previewUrl"
+      [loading]="loadingPreview"
+      [useIframe]="useIframe"
+      [showReset]="true"
+      [originalHtml]="originalPreviewHtml"
+      [highlightSelector]="highlightSelector"
+      (reload)="onPreviewReload()"
+      (reset)="onPreviewReset()">
+    </app-preview-panel>
+  </div>
+</div>
 

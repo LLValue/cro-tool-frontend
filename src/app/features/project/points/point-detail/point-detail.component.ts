@@ -19,6 +19,8 @@ import { PageHeaderComponent } from '../../../../shared/page-header/page-header.
 import { ChipsInputComponent } from '../../../../shared/chips-input/chips-input.component';
 import { InfoModalComponent } from '../../../../shared/info-modal/info-modal.component';
 import { GenerateVariantsProgressComponent, GenerateVariantsProgressData } from '../../../../shared/generate-variants-progress/generate-variants-progress.component';
+import { PreviewPanelComponent } from '../../../../shared/preview-panel/preview-panel.component';
+import { PreviewService } from '../../../../shared/preview.service';
 import { ProjectsStoreService } from '../../../../data/projects-store.service';
 import { ProjectsApiService } from '../../../../api/services/projects-api.service';
 import { OptimizationPoint, Variant } from '../../../../data/models';
@@ -55,7 +57,8 @@ interface SelectedElement {
     MatProgressBarModule,
     MatDialogModule,
     PageHeaderComponent,
-    ChipsInputComponent
+    ChipsInputComponent,
+    PreviewPanelComponent
   ],
   templateUrl: './point-detail.component.html',
   styleUrls: ['./point-detail.component.scss']
@@ -101,6 +104,13 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   
   private subscriptions = new Subscription();
 
+  // Variants tab preview properties
+  previewHtml: string = '';
+  originalPreviewHtml: string = '';
+  previewUrl: string = '';
+  loadingPreview: boolean = false;
+  highlightSelector: string = '';
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -110,7 +120,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     @Inject(API_CLIENT) private apiClient: ApiClient,
     private sanitizer: DomSanitizer,
     private projectsApi: ProjectsApiService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private previewService: PreviewService
   ) {
     this.setupForm = this.fb.group({
       name: ['', Validators.required],
@@ -136,6 +147,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       this.loadPoint();
       this.loadVariants();
       this.loadPreview();
+      this.loadProjectPreview();
     });
   }
 
@@ -877,6 +889,65 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       width: '600px',
       data: { title, content }
     });
+  }
+
+  // Variants tab preview methods
+  loadProjectPreview(): void {
+    if (!this.projectId) return;
+
+    this.loadingPreview = true;
+    this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
+      next: (project) => {
+        if (project.previewHtml) {
+          this.previewHtml = project.previewHtml;
+          this.originalPreviewHtml = project.previewHtml;
+        } else if (project.pageUrl) {
+          this.previewUrl = project.pageUrl;
+        }
+        this.loadingPreview = false;
+      },
+      error: () => {
+        this.loadingPreview = false;
+      }
+    });
+  }
+
+  previewVariant(variant: Variant): void {
+    if (!this.point || !this.point.selector) {
+      this.toast.showError('Point selector not found');
+      return;
+    }
+
+    if (!this.originalPreviewHtml && this.previewHtml) {
+      this.originalPreviewHtml = this.previewHtml;
+    }
+
+    // Apply variant to HTML
+    const modifiedHtml = this.previewService.applyVariantsToHtml(
+      this.originalPreviewHtml || this.previewHtml,
+      [variant],
+      [this.point]
+    );
+
+    this.previewHtml = modifiedHtml;
+    this.highlightSelector = this.point.selector;
+    
+    // Clear highlight after animation
+    setTimeout(() => {
+      this.highlightSelector = '';
+    }, 1200);
+  }
+
+  onPreviewReload(): void {
+    this.loadProjectPreview();
+  }
+
+  onPreviewReset(): void {
+    if (this.originalPreviewHtml) {
+      this.previewHtml = this.originalPreviewHtml;
+      this.highlightSelector = '';
+      this.toast.showSuccess('Preview reset to original');
+    }
   }
 
   /**
