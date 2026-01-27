@@ -202,8 +202,9 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         htmlElement.style.position = 'relative';
 
         // Only fade out if not persistent (for hover, keep it visible)
+        // For click/preview actions, fade out after duration
         if (!persistent && duration > 0) {
-          // Fade out
+          // Fade out after showing the highlight for a bit
           this.highlightTimeout = window.setTimeout(() => {
             htmlElement.style.transition = 'all 0.8s ease-out';
             htmlElement.style.outline = originalOutline;
@@ -214,8 +215,12 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
               htmlElement.style.transition = originalTransition;
               htmlElement.style.zIndex = '';
               htmlElement.style.position = '';
+              // Clean up stored values
+              delete (htmlElement as any).__originalOutline;
+              delete (htmlElement as any).__originalBoxShadow;
+              delete (htmlElement as any).__originalTransition;
             }, 800);
-          }, 200);
+          }, Math.max(200, duration - 200)); // Start fading out slightly before the full duration, but at least 200ms
         }
       });
     } catch (error) {
