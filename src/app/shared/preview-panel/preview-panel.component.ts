@@ -86,7 +86,9 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
           console.log('[PreviewPanel] Attempting to highlight element:', this.highlightSelector);
           if (this.useIframe && this.previewIframe?.nativeElement?.contentWindow) {
             console.log('[PreviewPanel] Using iframe highlight');
-            this.highlightElementInIframe(this.highlightSelector);
+            // Use persistent highlight for hover (no fade-out)
+            const isHover = !changes['highlightSelector'].previousValue || changes['highlightSelector'].previousValue === '';
+            this.highlightElementInIframe(this.highlightSelector, 1000, isHover);
           } else if (this.previewContent?.nativeElement) {
             console.log('[PreviewPanel] Using div highlight');
             this.highlightElementInDiv(this.highlightSelector);
@@ -143,8 +145,8 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     }
   }
 
-  private highlightElementInIframe(selector: string, duration: number = 1000): void {
-    console.log('[PreviewPanel] highlightElementInIframe called', { selector, duration });
+  private highlightElementInIframe(selector: string, duration: number = 1000, persistent: boolean = false): void {
+    console.log('[PreviewPanel] highlightElementInIframe called', { selector, duration, persistent });
     const iframe = this.previewIframe?.nativeElement;
     if (!iframe?.contentWindow || !iframe.contentDocument) {
       console.error('[PreviewPanel] Iframe not ready', { 
@@ -169,11 +171,19 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         return;
       }
 
+      // Clear any existing highlight first
+      this.clearHighlight();
+
       elements.forEach((element: Element) => {
         const htmlElement = element as HTMLElement;
         const originalOutline = htmlElement.style.outline;
         const originalBoxShadow = htmlElement.style.boxShadow;
         const originalTransition = htmlElement.style.transition;
+
+        // Store original styles for cleanup
+        (htmlElement as any).__originalOutline = originalOutline;
+        (htmlElement as any).__originalBoxShadow = originalBoxShadow;
+        (htmlElement as any).__originalTransition = originalTransition;
 
         // Apply highlight
         htmlElement.style.outline = '3px solid #673ab7';
@@ -183,19 +193,22 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         htmlElement.style.zIndex = '9999';
         htmlElement.style.position = 'relative';
 
-        // Fade out
-        this.highlightTimeout = window.setTimeout(() => {
-          htmlElement.style.transition = 'all 0.8s ease-out';
-          htmlElement.style.outline = originalOutline;
-          htmlElement.style.outlineOffset = '0';
-          htmlElement.style.boxShadow = originalBoxShadow;
+        // Only fade out if not persistent (for hover, keep it visible)
+        if (!persistent && duration > 0) {
+          // Fade out
+          this.highlightTimeout = window.setTimeout(() => {
+            htmlElement.style.transition = 'all 0.8s ease-out';
+            htmlElement.style.outline = originalOutline;
+            htmlElement.style.outlineOffset = '0';
+            htmlElement.style.boxShadow = originalBoxShadow;
 
-          setTimeout(() => {
-            htmlElement.style.transition = originalTransition;
-            htmlElement.style.zIndex = '';
-            htmlElement.style.position = '';
-          }, 800);
-        }, 200);
+            setTimeout(() => {
+              htmlElement.style.transition = originalTransition;
+              htmlElement.style.zIndex = '';
+              htmlElement.style.position = '';
+            }, 800);
+          }, 200);
+        }
       });
     } catch (error) {
       console.warn('Could not highlight element in iframe', error);
@@ -252,6 +265,29 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (this.highlightStyleElement) {
       this.highlightStyleElement.remove();
       this.highlightStyleElement = undefined;
+    }
+
+    // Clear any highlighted elements in iframe
+    if (this.useIframe && this.previewIframe?.nativeElement?.contentDocument) {
+      try {
+        const doc = this.previewIframe.nativeElement.contentDocument;
+        const highlightedElements = doc.querySelectorAll('[style*="outline: 3px solid rgb(103, 58, 183)"]');
+        highlightedElements.forEach((element: Element) => {
+          const htmlElement = element as HTMLElement;
+          const originalOutline = (htmlElement as any).__originalOutline || '';
+          const originalBoxShadow = (htmlElement as any).__originalBoxShadow || '';
+          const originalTransition = (htmlElement as any).__originalTransition || '';
+          
+          htmlElement.style.outline = originalOutline;
+          htmlElement.style.outlineOffset = '0';
+          htmlElement.style.boxShadow = originalBoxShadow;
+          htmlElement.style.transition = originalTransition;
+          htmlElement.style.zIndex = '';
+          htmlElement.style.position = '';
+        });
+      } catch (error) {
+        console.warn('Could not clear highlight in iframe', error);
+      }
     }
   }
 

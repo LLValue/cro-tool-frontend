@@ -254,6 +254,40 @@ export class PointsComponent implements OnInit, OnDestroy {
     }
   }
 
+  highlightPoint(point: OptimizationPoint): void {
+    if (point && point.selector) {
+      // Clean selector to remove temporary classes
+      const cleanSelector = this.cleanSelector(point.selector);
+      this.highlightSelector = cleanSelector;
+    }
+  }
+
+  clearHighlight(): void {
+    this.highlightSelector = '';
+  }
+
+  private cleanSelector(selector: string): string {
+    if (!selector) return selector;
+    
+    // Remove temporary classes used during element selection/highlighting
+    const temporaryClasses = [
+      '.point-editor-selected',
+      '.point-editor-highlight',
+      '.highlighted-element'
+    ];
+    
+    let cleanedSelector = selector;
+    temporaryClasses.forEach(tempClass => {
+      cleanedSelector = cleanedSelector.replace(tempClass, '');
+    });
+    
+    // Clean up any double dots or trailing dots
+    cleanedSelector = cleanedSelector.replace(/\.{2,}/g, '.');
+    cleanedSelector = cleanedSelector.replace(/\.$/, '');
+    
+    return cleanedSelector.trim();
+  }
+
   loadPreview(): void {
     const projectId = this.getProjectId();
     if (!projectId) return;

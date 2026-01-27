@@ -79,7 +79,9 @@
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
           class="point-row"
-          (click)="setSelectedPoint(row)">
+          (click)="setSelectedPoint(row)"
+          (mouseenter)="highlightPoint(row)"
+          (mouseleave)="clearHighlight()">
     </table>
   </div>
     </div>
