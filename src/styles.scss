@@ -713,16 +713,6 @@ body.dark-mode {
     border: 1px solid rgba(255, 255, 255, 0.12);
   }
 
-  .mat-mdc-card-title,
-  .mat-card-title {
-    color: #fff !important;
-  }
-
-  .mat-mdc-card-subtitle,
-  .mat-card-subtitle {
-    color: #fff !important;
-  }
-
   .mat-mdc-form-field {
     .mat-mdc-text-field-wrapper {
       background-color: rgba(255, 255, 255, 0.05);
@@ -1377,6 +1367,28 @@ body.dark-mode .cdk-overlay-container {
   .mat-mdc-form-field-hint,
   mat-hint {
     color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  // Preview panel icon buttons (mobile/desktop toggle, reload, reset)
+  app-preview-panel {
+    .mdc-icon-button,
+    .mat-mdc-icon-button {
+      color: #ffffff !important;
+
+      mat-icon {
+        color: #ffffff !important;
+      }
+
+      .mat-mdc-button-persistent-ripple {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  // Card subtitles
+  mat-card-subtitle,
+  .mat-mdc-card-subtitle {
+    color: #ffffff !important;
   }
 }
 
