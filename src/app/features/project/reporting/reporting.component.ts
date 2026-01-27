@@ -648,6 +648,11 @@ export class ReportingComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.previewHtml && !this.originalPreviewHtml) {
+      this.toast.showError('No preview available. Please wait for the preview to load.');
+      return;
+    }
+
     if (!this.originalPreviewHtml && this.previewHtml) {
       this.originalPreviewHtml = this.previewHtml;
     }
@@ -675,29 +680,48 @@ export class ReportingComponent implements OnInit, OnDestroy {
     this.store.listProjects().pipe(take(1)).subscribe({
       next: (projects) => {
         const project = projects.find(p => p.id === this.projectId);
-        if (project?.previewHtml) {
-          this.previewHtml = project.previewHtml;
-          if (!this.originalPreviewHtml) {
-            this.originalPreviewHtml = project.previewHtml;
-          }
-          this.useIframe = true;
-          this.loadingPreview = false;
-        } else if (project?.pageUrl) {
-          this.previewUrl = project.pageUrl;
-          this.loadingPreview = false;
+        if (project?.pageUrl) {
+          // Fetch HTML from URL using proxy
+          this.apiClient.proxyFetch(project.pageUrl).subscribe({
+            next: (response) => {
+              if (response.html && response.html.trim().length > 0) {
+                this.previewHtml = response.html;
+                if (!this.originalPreviewHtml) {
+                  this.originalPreviewHtml = response.html;
+                }
+                this.useIframe = true;
+              }
+              this.loadingPreview = false;
+            },
+            error: () => {
+              this.toast.showError('Could not load page preview');
+              this.loadingPreview = false;
+            }
+          });
         } else {
           this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
             next: (p) => {
-              if (p.previewHtml) {
-                this.previewHtml = p.previewHtml;
-                if (!this.originalPreviewHtml) {
-                  this.originalPreviewHtml = p.previewHtml;
-                }
-                this.useIframe = true;
-              } else if (p.pageUrl) {
-                this.previewUrl = p.pageUrl;
+              if (p.pageUrl) {
+                this.apiClient.proxyFetch(p.pageUrl).subscribe({
+                  next: (response) => {
+                    if (response.html && response.html.trim().length > 0) {
+                      this.previewHtml = response.html;
+                      if (!this.originalPreviewHtml) {
+                        this.originalPreviewHtml = response.html;
+                      }
+                      this.useIframe = true;
+                    }
+                    this.loadingPreview = false;
+                  },
+                  error: () => {
+                    this.toast.showError('Could not load page preview');
+                    this.loadingPreview = false;
+                  }
+                });
+              } else {
+                this.toast.showError('No page URL configured for this project');
+                this.loadingPreview = false;
               }
-              this.loadingPreview = false;
             },
             error: () => {
               this.loadingPreview = false;

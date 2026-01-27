@@ -898,13 +898,26 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     this.loadingPreview = true;
     this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
       next: (project) => {
-        if (project.previewHtml) {
-          this.previewHtml = project.previewHtml;
-          this.originalPreviewHtml = project.previewHtml;
-        } else if (project.pageUrl) {
-          this.previewUrl = project.pageUrl;
+        if (project.pageUrl) {
+          // Fetch HTML from URL using proxy
+          this.apiClient.proxyFetch(project.pageUrl).subscribe({
+            next: (response) => {
+              if (response.html && response.html.trim().length > 0) {
+                const processedHtml = this.removeCookiePopupsFromHtml(response.html);
+                this.previewHtml = processedHtml;
+                this.originalPreviewHtml = processedHtml;
+              }
+              this.loadingPreview = false;
+            },
+            error: () => {
+              this.toast.showError('Could not load page preview');
+              this.loadingPreview = false;
+            }
+          });
+        } else {
+          this.toast.showError('No page URL configured for this project');
+          this.loadingPreview = false;
         }
-        this.loadingPreview = false;
       },
       error: () => {
         this.loadingPreview = false;
@@ -913,8 +926,15 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   previewVariant(variant: Variant): void {
+    console.log('previewVariant called', { variant, point: this.point, previewHtml: this.previewHtml?.length, originalPreviewHtml: this.originalPreviewHtml?.length });
+    
     if (!this.point || !this.point.selector) {
       this.toast.showError('Point selector not found');
+      return;
+    }
+
+    if (!this.previewHtml && !this.originalPreviewHtml) {
+      this.toast.showError('No preview available. Please wait for the preview to load.');
       return;
     }
 
@@ -928,6 +948,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       [variant],
       [this.point]
     );
+
+    console.log('HTML modified', { originalLength: this.originalPreviewHtml?.length, modifiedLength: modifiedHtml?.length });
 
     this.previewHtml = modifiedHtml;
     this.highlightSelector = this.point.selector;
