@@ -197,17 +197,21 @@ export class PreviewService {
       return html;
     }
 
+    // Clean selector: remove temporary classes added during element selection
+    const cleanSelector = this.cleanSelector(selector);
+    console.log('[PreviewService] Cleaned selector:', { original: selector, clean: cleanSelector });
+
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      const elements = doc.querySelectorAll(selector);
+      const elements = doc.querySelectorAll(cleanSelector);
       
       console.log('[PreviewService] Elements found with DOMParser:', elements.length);
       
       if (elements.length === 0) {
         console.log('[PreviewService] No elements found, trying regex fallback');
-        return this.applyVariantWithRegex(html, selector, newText);
+        return this.applyVariantWithRegex(html, cleanSelector, newText);
       }
 
       elements.forEach((element, idx) => {
@@ -273,6 +277,31 @@ export class PreviewService {
     } catch {
       return true;
     }
+  }
+
+  /**
+   * Clean selector by removing temporary classes added during element selection
+   */
+  private cleanSelector(selector: string): string {
+    if (!selector) return selector;
+    
+    // Remove temporary classes used during element selection/highlighting
+    const temporaryClasses = [
+      '.point-editor-selected',
+      '.point-editor-highlight',
+      '.highlighted-element'
+    ];
+    
+    let cleanedSelector = selector;
+    temporaryClasses.forEach(tempClass => {
+      cleanedSelector = cleanedSelector.replace(tempClass, '');
+    });
+    
+    // Clean up any double dots or trailing dots
+    cleanedSelector = cleanedSelector.replace(/\.{2,}/g, '.');
+    cleanedSelector = cleanedSelector.replace(/\.$/, '');
+    
+    return cleanedSelector.trim();
   }
 }
 

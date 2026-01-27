@@ -155,13 +155,17 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       return;
     }
 
+    // Clean selector: remove temporary classes
+    const cleanSelector = this.cleanSelector(selector);
+    console.log('[PreviewPanel] Cleaned selector for highlight:', { original: selector, clean: cleanSelector });
+
     try {
       const doc = iframe.contentDocument;
-      const elements = doc.querySelectorAll(selector);
+      const elements = doc.querySelectorAll(cleanSelector);
 
       console.log('[PreviewPanel] Elements found:', elements.length);
       if (elements.length === 0) {
-        console.error('[PreviewPanel] No elements found for selector:', selector);
+        console.error('[PreviewPanel] No elements found for selector:', cleanSelector);
         return;
       }
 
@@ -249,5 +253,30 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       this.highlightStyleElement.remove();
       this.highlightStyleElement = undefined;
     }
+  }
+
+  /**
+   * Clean selector by removing temporary classes added during element selection
+   */
+  private cleanSelector(selector: string): string {
+    if (!selector) return selector;
+    
+    // Remove temporary classes used during element selection/highlighting
+    const temporaryClasses = [
+      '.point-editor-selected',
+      '.point-editor-highlight',
+      '.highlighted-element'
+    ];
+    
+    let cleanedSelector = selector;
+    temporaryClasses.forEach(tempClass => {
+      cleanedSelector = cleanedSelector.replace(tempClass, '');
+    });
+    
+    // Clean up any double dots or trailing dots
+    cleanedSelector = cleanedSelector.replace(/\.{2,}/g, '.');
+    cleanedSelector = cleanedSelector.replace(/\.$/, '');
+    
+    return cleanedSelector.trim();
   }
 }
