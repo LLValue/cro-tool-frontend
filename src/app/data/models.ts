@@ -5,7 +5,7 @@ export interface Project {
   industry?: string;
   elementType?: string;
   notes: string;
-  status: 'draft' | 'active' | 'archived';
+  status: 'live' | 'paused' | 'preview';
   createdAt: Date;
   updatedAt: Date;
   previewHtml: string;
@@ -49,7 +49,7 @@ export interface OptimizationPoint {
   generationRules: string;
   elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
   deviceScope?: 'All' | 'Mobile' | 'Desktop';
-  status?: 'Active' | 'Paused';
+  status?: 'Included' | 'Excluded';
   minChars?: number;
   maxChars?: number;
   maxWords?: number;
@@ -66,7 +66,7 @@ export interface Variant {
   uxRationale: string;
   complianceScore: number;
   complianceRationale: string;
-  status: 'active' | 'discarded';
+  status: 'pending' | 'approved' | 'discarded';
   createdAt: Date;
   source: 'fallback' | 'manual';
 }

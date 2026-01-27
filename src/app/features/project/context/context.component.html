@@ -5,360 +5,267 @@
 
 <mat-card class="tabs-card">
   <mat-tab-group>
-  <mat-tab label="Language & Voice">
-    <form [formGroup]="globalForm" class="form-container">
-      <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
-      
-      <div class="form-field-wrapper">
-        <label class="field-label">
-          Language
-          <span class="required-asterisk">*</span>
-          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Language', 'language')" matTooltip="More information">
-            <mat-icon>info</mat-icon>
-          </button>
-        </label>
-        <p class="field-helper">Select the primary language for all generated variants.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <mat-select formControlName="language" required>
-            <mat-option value="en">English</mat-option>
-            <mat-option value="es">Spanish</mat-option>
-            <mat-option value="fr">French</mat-option>
-            <mat-option value="de">German</mat-option>
-            <mat-option value="it">Italian</mat-option>
-            <mat-option value="pt">Portuguese</mat-option>
-          </mat-select>
-          <mat-error *ngIf="globalForm.get('language')?.hasError('required')">
-            Language is required
-          </mat-error>
-        </mat-form-field>
-      </div>
+    <!-- Business context tab -->
+    <mat-tab label="Business context">
+      <form [formGroup]="globalForm" class="form-container">
+        <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
+        
 
-      <div class="form-field-wrapper">
-        <label class="field-label">
-          Tone
-          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Tone', 'tone')" matTooltip="More information">
-            <mat-icon>info</mat-icon>
-          </button>
-        </label>
-        <p class="field-helper">Define the overall tone that should be used across all variants.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <mat-select formControlName="tone">
-            <mat-option value="professional">Professional</mat-option>
-            <mat-option value="friendly">Friendly</mat-option>
-            <mat-option value="casual">Casual</mat-option>
-            <mat-option value="formal">Formal</mat-option>
-            <mat-option value="conversational">Conversational</mat-option>
-            <mat-option value="authoritative">Authoritative</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-
-      <div class="form-row">
-        <div class="form-field-wrapper half-width">
-          <label class="field-label">Style complexity</label>
-          <p class="field-helper">Choose the complexity level of the writing style.</p>
-          <mat-form-field appearance="outline" class="brief-input">
-            <mat-select formControlName="styleComplexity">
-              <mat-option value="simple">Simple</mat-option>
-              <mat-option value="technical">Technical</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field-wrapper half-width">
-          <label class="field-label">Style length</label>
-          <p class="field-helper">Choose the preferred length of the writing style.</p>
-          <mat-form-field appearance="outline" class="brief-input">
-            <mat-select formControlName="styleLength">
-              <mat-option value="short">Short</mat-option>
-              <mat-option value="med">Medium</mat-option>
-              <mat-option value="long">Long</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-      </div>
-      
-      <div class="tab-actions">
-        <button mat-raised-button color="primary" (click)="saveLanguageAndVoice()" [disabled]="globalForm.get('language')?.invalid">
-          <mat-icon>save</mat-icon>
-          Save
-        </button>
-      </div>
-    </form>
-  </mat-tab>
-
-  <mat-tab label="Business & Page Context">
-    <form [formGroup]="globalForm" class="form-container">
-      <div class="form-field-wrapper">
-        <label class="field-label">Industry</label>
-        <p class="field-helper">Specify the industry or sector this project belongs to.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <input matInput formControlName="industry" placeholder="e.g., E-commerce, SaaS, Healthcare">
-        </mat-form-field>
-      </div>
-
-      <div class="form-field-wrapper">
-        <label class="field-label">
-          Product summary
-          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Product summary', 'productSummary')" matTooltip="More information">
-            <mat-icon>info</mat-icon>
-          </button>
-        </label>
-        <p class="field-helper">Describe what the product/service is and who it's for.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="productSummary" rows="2" placeholder="What is it, who is it for" maxlength="200"></textarea>
-          <mat-hint align="end">
-            <span *ngIf="getMaxLength('productSummary') > 0">{{ getCharacterCount('productSummary') }} / {{ getMaxLength('productSummary') }}</span>
-            <span *ngIf="getMaxLength('productSummary') === 0">{{ getCharacterCount('productSummary') }} characters</span>
-          </mat-hint>
-        </mat-form-field>
-      </div>
-
-      <div class="form-field-wrapper">
-        <label class="field-label">
-          Page intent / goal
-          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Page intent / goal', 'pageIntent')" matTooltip="More information">
-            <mat-icon>info</mat-icon>
-          </button>
-        </label>
-        <p class="field-helper">Define what action you want users to take on this page.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="pageIntent" rows="2" placeholder="What action do you want users to take?" maxlength="200"></textarea>
-          <mat-hint align="end">
-            <span *ngIf="getMaxLength('pageIntent') > 0">{{ getCharacterCount('pageIntent') }} / {{ getMaxLength('pageIntent') }}</span>
-            <span *ngIf="getMaxLength('pageIntent') === 0">{{ getCharacterCount('pageIntent') }} characters</span>
-          </mat-hint>
-        </mat-form-field>
-      </div>
-
-      <div class="form-field-wrapper">
-        <label class="field-label">Funnel stage</label>
-        <p class="field-helper">Select the stage of the customer journey this page targets.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <mat-select formControlName="funnelStage">
-            <mat-option value="discovery">Discovery</mat-option>
-            <mat-option value="consideration">Consideration</mat-option>
-            <mat-option value="conversion">Conversion</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-
-      <div class="section">
-        <label class="field-label">Value props (2-5 bullets)</label>
-        <p class="field-helper">List the key value propositions that should be emphasized (2-5 items).</p>
-        <app-chips-input
-          formControlName="valueProps"
-          label=""
-          placeholder="Add value proposition">
-        </app-chips-input>
-      </div>
-
-      <div class="section">
-        <label class="field-label">Typical objections (3 bullets)</label>
-        <p class="field-helper">List common objections that users might have (3 items).</p>
-        <app-chips-input
-          formControlName="typicalObjections"
-          label=""
-          placeholder="Add typical objection">
-        </app-chips-input>
-      </div>
-
-      <div class="form-field-wrapper">
-        <label class="field-label">Market / locale</label>
-        <p class="field-helper">Specify the target market or locale (e.g., country codes).</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <input matInput formControlName="marketLocale" placeholder="e.g., ES, MX, US">
-        </mat-form-field>
-      </div>
-      
-      <div class="tab-actions">
-        <button mat-raised-button color="primary" (click)="saveBusinessContext()">
-          <mat-icon>save</mat-icon>
-          Save
-        </button>
-      </div>
-    </form>
-  </mat-tab>
-
-  <mat-tab label="Proof & Source of Truth">
-    <form [formGroup]="globalForm" class="form-container">
-      <div class="section">
-        <label class="field-label">Allowed facts / proof points</label>
-        <p class="field-helper">List facts and proof points that can be used in generated variants.</p>
-        <app-chips-input
-          formControlName="allowedFacts"
-          label=""
-          placeholder="Add allowed fact or proof point">
-        </app-chips-input>
-      </div>
-
-      <div class="section">
-        <label class="field-label">What we must NOT claim</label>
-        <p class="field-helper">List claims that must never appear in any generated variant.</p>
-        <app-chips-input
-          formControlName="mustNotClaim"
-          label=""
-          placeholder="Add claim to avoid">
-        </app-chips-input>
-      </div>
-      
-      <div class="tab-actions">
-        <button mat-raised-button color="primary" (click)="saveProofAndTruth()">
-          <mat-icon>save</mat-icon>
-          Save
-        </button>
-      </div>
-    </form>
-  </mat-tab>
-
-  <mat-tab label="Legal & Brand Guardrails">
-    <form [formGroup]="globalForm" class="form-container">
-      <div class="form-field-wrapper">
-        <label class="field-label">Risk level</label>
-        <p class="field-helper">Select the risk tolerance level for content generation.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <mat-select formControlName="riskLevel">
-            <mat-option value="Conservative">Conservative</mat-option>
-            <mat-option value="Standard">Standard</mat-option>
-            <mat-option value="Exploratory">Exploratory</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-
-      <div class="section">
-        <label class="field-label">
-          Forbidden words
-          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Forbidden words', 'forbiddenWords')" matTooltip="More information">
-            <mat-icon>info</mat-icon>
-          </button>
-        </label>
-        <p class="field-helper">List words that must never appear in any generated variant.</p>
-        <app-chips-input
-          formControlName="forbiddenWords"
-          label=""
-          placeholder="Add forbidden word">
-        </app-chips-input>
-      </div>
-
-      <div class="section">
-        <label class="field-label">
-          Mandatory claims
-          <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Mandatory claims', 'mandatoryClaims')" matTooltip="More information">
-            <mat-icon>info</mat-icon>
-          </button>
-        </label>
-        <p class="field-helper">List claims that must appear in all variants.</p>
-        <div formArrayName="mandatoryClaims">
-          <div *ngFor="let claim of mandatoryClaims.controls; let i = index" class="claim-row">
-            <mat-form-field appearance="outline" class="claim-input">
-              <input matInput [formControl]="$any(claim)">
-            </mat-form-field>
-            <button mat-icon-button (click)="removeClaim(i)">
-              <mat-icon>delete</mat-icon>
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Product description
+            <span class="required-asterisk">*</span>
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Product description', 'productDescription')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
             </button>
+          </label>
+          <p class="field-helper">Describe what the product is, how it works at a high level, and the key features/benefits—avoid listing audience segments here.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="productDescription" rows="4" placeholder="Credit card designed for everyday spending with flexible repayment options. It helps customers manage monthly expenses, build credit history, and access purchase protection features. Suitable for customers who want convenience, secure payments, and clear control of their spending through a mobile app." maxlength="5000"></textarea>
+            <mat-error *ngIf="(globalForm.get('productDescription')?.touched || businessContextSubmitted) && globalForm.get('productDescription')?.hasError('required')">
+              Product description is required
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('productDescription') }} / {{ getMaxLength('productDescription') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Target audiences
+            <span class="required-asterisk">*</span>
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Target audiences', 'targetAudiences')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">Describe 2–5 audience segments, their goals, and their main concerns—avoid repeating the product definition here.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="targetAudiences" rows="4" placeholder="&quot;Young professionals: want convenience, digital-first management, and transparent fees.&quot;&#10;&quot;Families: want budgeting control, security, and protections for purchases.&quot;&#10;&quot;Frequent travelers: value international acceptance, fraud protection, and travel-related benefits (if applicable).&quot;&#10;&quot;Credit builders: want clarity, responsible limits, and guidance without shame or jargon.&quot;" maxlength="5000"></textarea>
+            <mat-error *ngIf="(globalForm.get('targetAudiences')?.touched || businessContextSubmitted) && globalForm.get('targetAudiences')?.hasError('required')">
+              Target audiences is required
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('targetAudiences') }} / {{ getMaxLength('targetAudiences') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Top value props
+            <span class="required-asterisk">*</span>
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Top value props', 'valueProps')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">List 3–6 key value propositions you want to emphasize.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="valueProps" rows="4" placeholder="Pay securely online and in-store with real-time card controls.&#10;Manage spending and repayments easily from the app.&#10;Clear repayment options that fit your monthly budget.&#10;Extra protection for eligible purchases (where applicable).&#10;Fast, simple application experience with transparent steps." maxlength="5000"></textarea>
+            <mat-error *ngIf="(globalForm.get('valueProps')?.touched || businessContextSubmitted) && globalForm.get('valueProps')?.hasError('required')">
+              Top value props is required
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('valueProps') }} / {{ getMaxLength('valueProps') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">Top objections</label>
+          <p class="field-helper">List the main concerns that stop users from applying or moving forward.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="typicalObjections" rows="4" placeholder="Will I be approved, or will I waste time applying?&#10;Are there hidden fees or conditions?&#10;Will I lose control and overspend?&#10;Is the repayment process complicated?&#10;Is it secure if I use it online or abroad?&#10;What happens if I miss a payment?" maxlength="5000"></textarea>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('typicalObjections') }} / {{ getMaxLength('typicalObjections') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        
+        <div class="tab-actions">
+          <button mat-raised-button color="primary" (click)="saveBusinessContext()" [disabled]="globalForm.get('productDescription')?.invalid || globalForm.get('targetAudiences')?.invalid || globalForm.get('valueProps')?.invalid">
+            <mat-icon>save</mat-icon>
+            Save
+          </button>
+        </div>
+      </form>
+    </mat-tab>
+
+    <!-- Journey context tab -->
+    <mat-tab label="Journey context">
+      <form [formGroup]="globalForm" class="form-container">
+        <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
+        
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Language (e.g., es-ES)
+            <span class="required-asterisk">*</span>
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Language', 'language')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">Set the language and locale format for the copy (e.g., en-GB, es-ES).</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <input matInput formControlName="language" required placeholder="'es-ES' (Spanish for Spain)" maxlength="50">
+            <mat-error *ngIf="(globalForm.get('language')?.touched || journeyContextSubmitted) && globalForm.get('language')?.hasError('required')">
+              Language is required
+            </mat-error>
+            <mat-error *ngIf="(globalForm.get('language')?.touched || journeyContextSubmitted) && globalForm.get('language')?.hasError('maxlength')">
+              Language must be 50 characters or less
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('language') }} / {{ getMaxLength('language') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Tone and style
+            <span class="required-asterisk">*</span>
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Tone and style', 'toneAndStyle')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">Describe how the brand should sound, with do/don't guidance.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="toneAndStyle" rows="4" placeholder="Tone: Clear, calm, and trustworthy. Professional but not cold. Focus on clarity and reassurance.&#10;&#10;Do: Use simple sentences, explain steps, emphasize control and security.&#10;&#10;Don't: Avoid hype, pressure tactics, slang, or absolute guarantees." maxlength="5000"></textarea>
+            <mat-error *ngIf="(globalForm.get('toneAndStyle')?.touched || journeyContextSubmitted) && globalForm.get('toneAndStyle')?.hasError('required')">
+              Tone and style is required
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('toneAndStyle') }} / {{ getMaxLength('toneAndStyle') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Page context and goal
+            <span class="required-asterisk">*</span>
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Page context and goal', 'pageContextAndGoal')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">Explain what this page is, what comes before/after, and what action you want.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="pageContextAndGoal" rows="3" placeholder="This is a product landing page for a credit card. Users arrive from paid search and comparison pages. The goal is to encourage them to start an application or eligibility check. The page should reduce fear of hidden fees and help users feel in control of spending and repayments." maxlength="5000"></textarea>
+            <mat-error *ngIf="(globalForm.get('pageContextAndGoal')?.touched || journeyContextSubmitted) && globalForm.get('pageContextAndGoal')?.hasError('required')">
+              Page context and goal is required
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('pageContextAndGoal') }} / {{ getMaxLength('pageContextAndGoal') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">Funnel stage and next action</label>
+          <p class="field-helper">Choose where the user is in the journey and the single action you want them to take next (one short line).</p>
+          <div class="form-row">
+            <div class="form-field-wrapper half-width">
+              <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
+                <mat-select formControlName="funnelStage">
+                  <mat-option value="discovery">Discovery</mat-option>
+                  <mat-option value="consideration">Consideration</mat-option>
+                  <mat-option value="conversion">Conversion</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="form-field-wrapper half-width">
+              <mat-form-field appearance="outline" class="brief-input">
+                <textarea matInput formControlName="nextAction" rows="2" placeholder="Next action: “Start application” (secondary: “Check eligibility”)" maxlength="5000"></textarea>
+                <mat-hint align="end">
+                  <span>{{ getCharacterCount('nextAction') }} / {{ getMaxLength('nextAction') }}</span>
+                </mat-hint>
+              </mat-form-field>
+            </div>
           </div>
         </div>
-        <button mat-raised-button color="primary" (click)="addClaim()">
-          <mat-icon>add</mat-icon>
-          Add Claim
-        </button>
-      </div>
+        
+        <div class="tab-actions">
+          <button mat-raised-button color="primary" (click)="saveJourneyContext()" [disabled]="globalForm.get('language')?.invalid || globalForm.get('toneAndStyle')?.invalid || globalForm.get('pageContextAndGoal')?.invalid">
+            <mat-icon>save</mat-icon>
+            Save
+          </button>
+        </div>
+      </form>
+    </mat-tab>
 
-      <div class="section">
-        <label class="field-label">Prohibited / sensitive claims</label>
-        <p class="field-helper">List claims that are prohibited or sensitive and must be avoided.</p>
-        <app-chips-input
-          formControlName="prohibitedClaims"
-          label=""
-          placeholder="Add prohibited claim">
-        </app-chips-input>
-      </div>
+    <!-- Guardrails tab -->
+    <mat-tab label="Guardrails">
+      <form [formGroup]="globalForm" class="form-container">
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Brand guidelines
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Brand guidelines', 'brandGuidelines')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">Add any brand rules the copy must follow (terminology, formatting, tone boundaries).</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="brandGuidelines" rows="4" placeholder="&quot;Use 'credit card' (not 'card' alone) on first mention.&quot;&#10;&quot;Avoid exclamation marks.&quot;&#10;&quot;Do not use slang or humor.&quot;&#10;&quot;Use 'apply' rather than 'get instantly'.&quot;&#10;&quot;Refer to the bank as 'Brand X' consistently.&quot;" maxlength="5000"></textarea>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('brandGuidelines') }} / {{ getMaxLength('brandGuidelines') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
 
-      <div class="form-field-wrapper">
-        <label class="field-label">Required disclaimer (optional)</label>
-        <p class="field-helper">Add any required disclaimers that must appear with the content.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="requiredDisclaimer" rows="2" placeholder="Add any required disclaimers" maxlength="200"></textarea>
-          <mat-hint align="end">
-            <span *ngIf="getMaxLength('requiredDisclaimer') > 0">{{ getCharacterCount('requiredDisclaimer') }} / {{ getMaxLength('requiredDisclaimer') }}</span>
-            <span *ngIf="getMaxLength('requiredDisclaimer') === 0">{{ getCharacterCount('requiredDisclaimer') }} characters</span>
-          </mat-hint>
-        </mat-form-field>
-      </div>
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Allowed proof points / facts
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Allowed proof points', 'allowedFacts')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">List verified facts the AI is allowed to state as factual claims.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="allowedFacts" rows="4" placeholder="Manage your card in the mobile app (freeze/unfreeze, notifications).&#10;Secure online payments with fraud monitoring.&#10;Contactless payments supported.&#10;Application subject to approval.&#10;Terms and conditions apply." maxlength="5000"></textarea>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('allowedFacts') }} / {{ getMaxLength('allowedFacts') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
 
-      <div class="section">
-        <label class="field-label">Allowed tones</label>
-        <p class="field-helper">List tones that are allowed for this project.</p>
-        <app-chips-input
-          formControlName="toneAllowed"
-          label=""
-          placeholder="Add allowed tone">
-        </app-chips-input>
-      </div>
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Forbidden words and claims
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Forbidden words and claims', 'forbiddenWordsAndClaims')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">Add words or claims the AI must never use in generated variants.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="forbiddenWordsAndClaims" rows="4" placeholder="Guaranteed approval&#10;No credit check (if not allowed)&#10;Instant approval (if not allowed)&#10;Best rates / Lowest fees (absolute superlatives)&#10;Free money" maxlength="5000"></textarea>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('forbiddenWordsAndClaims') }} / {{ getMaxLength('forbiddenWordsAndClaims') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
 
-      <div class="section">
-        <label class="field-label">Disallowed tones</label>
-        <p class="field-helper">List tones that must be avoided for this project.</p>
-        <app-chips-input
-          formControlName="toneDisallowed"
-          label=""
-          placeholder="Add disallowed tone">
-        </app-chips-input>
-      </div>
-      
-      <div class="tab-actions">
-        <button mat-raised-button color="primary" (click)="saveGuardrails()">
-          <mat-icon>save</mat-icon>
-          Save
-        </button>
-      </div>
-    </form>
-  </mat-tab>
-
-  <mat-tab label="Per-Point">
-    <form [formGroup]="pointForm" class="form-container">
-      <div class="form-field-wrapper">
-        <label class="field-label">Select point</label>
-        <p class="field-helper">Choose an optimization point to configure its specific settings.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <mat-select formControlName="pointId">
-            <mat-option *ngFor="let point of points" [value]="point.id">
-              {{ point.name }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-
-      <div class="form-field-wrapper">
-        <label class="field-label">Objective</label>
-        <p class="field-helper">Describe the objective for this specific optimization point.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="objective" rows="2" placeholder="Describe the objective for this point" maxlength="200"></textarea>
-          <mat-hint align="end">
-            <span *ngIf="getMaxLength('objective') > 0">{{ getCharacterCount('objective') }} / {{ getMaxLength('objective') }}</span>
-            <span *ngIf="getMaxLength('objective') === 0">{{ getCharacterCount('objective') }} characters</span>
-          </mat-hint>
-        </mat-form-field>
-      </div>
-
-      <div class="form-field-wrapper">
-        <label class="field-label">Generation rules</label>
-        <p class="field-helper">Add specific generation rules for this optimization point.</p>
-        <mat-form-field appearance="outline" class="brief-input">
-          <textarea matInput formControlName="generationRules" rows="2" placeholder="Add generation rules for this point" maxlength="200"></textarea>
-          <mat-hint align="end">
-            <span *ngIf="getMaxLength('generationRules') > 0">{{ getCharacterCount('generationRules') }} / {{ getMaxLength('generationRules') }}</span>
-            <span *ngIf="getMaxLength('generationRules') === 0">{{ getCharacterCount('generationRules') }} characters</span>
-          </mat-hint>
-        </mat-form-field>
-      </div>
-      
-      <div class="tab-actions">
-        <button mat-raised-button color="primary" (click)="savePoint()" [disabled]="!pointForm.get('pointId')?.value">
-          <mat-icon>save</mat-icon>
-          Save
-        </button>
-      </div>
-    </form>
-  </mat-tab>
-</mat-tab-group>
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Sensitive claims
+            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Sensitive claims', 'sensitiveClaims')" matTooltip="More information">
+              <mat-icon>info</mat-icon>
+            </button>
+          </label>
+          <p class="field-helper">List claim categories that require extra caution or manual review.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="sensitiveClaims" rows="4" placeholder="APR / interest rate mentions&#10;Fees (annual fee, foreign transaction fee)&#10;Rewards/cashback claims&#10;Approval time or acceptance rate&#10;Eligibility / credit score implications" maxlength="5000"></textarea>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('sensitiveClaims') }} / {{ getMaxLength('sensitiveClaims') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        
+        <div class="tab-actions">
+          <button mat-raised-button color="primary" (click)="saveGuardrails()">
+            <mat-icon>save</mat-icon>
+            Save
+          </button>
+        </div>
+      </form>
+    </mat-tab>
+  </mat-tab-group>
+</mat-card>

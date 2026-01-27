@@ -219,7 +219,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
       this.store.metrics$
     ]).subscribe(([variants, metricsMap]) => {
       const projectVariants = variants.filter(v => 
-        v.projectId === this.projectId && (v.status === 'active' || v.status === 'discarded')
+        v.projectId === this.projectId && (v.status === 'pending' || v.status === 'approved' || v.status === 'discarded')
       );
       this.variants = projectVariants;
       
@@ -526,9 +526,9 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   simulateTraffic(): void {
-    const activeVariants = this.variants.filter(v => v.status === 'active');
+    const activeVariants = this.variants.filter(v => v.status === 'approved');
     if (activeVariants.length === 0) {
-      this.toast.showError(`No active variants found for project ${this.projectId}. Please create variants first.`);
+      this.toast.showError(`No approved variants found for project ${this.projectId}. Please approve variants first.`);
       return;
     }
 
@@ -591,7 +591,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
 
     sortedMetrics.forEach((metric, index) => {
       const variant = this.variants.find(v => v.id === metric.variantId);
-      if (variant && metric.conversionRate < threshold && index > 0 && variant.status === 'active') {
+      if (variant && metric.conversionRate < threshold && index > 0 && variant.status === 'approved') {
         this.store.updateVariant(variant.id, { status: 'discarded' });
       }
     });

@@ -9,7 +9,7 @@ export interface OptimizationPointDto {
   generationRules?: string;
   elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
   deviceScope?: 'All' | 'Mobile' | 'Desktop';
-  status?: 'Active' | 'Paused';
+  status?: 'Included' | 'Excluded';
   minChars?: number;
   maxChars?: number;
   maxWords?: number;
@@ -26,7 +26,7 @@ export interface CreatePointRequest {
   generationRules?: string;
   elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
   deviceScope?: 'All' | 'Mobile' | 'Desktop';
-  status?: 'Active' | 'Paused';
+  status?: 'Included' | 'Excluded';
   minChars?: number;
   maxChars?: number;
   maxWords?: number;
@@ -41,7 +41,7 @@ export interface UpdatePointRequest {
   generationRules?: string;
   elementType?: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other';
   deviceScope?: 'All' | 'Mobile' | 'Desktop';
-  status?: 'Active' | 'Paused';
+  status?: 'Included' | 'Excluded';
   minChars?: number;
   maxChars?: number;
   maxWords?: number;

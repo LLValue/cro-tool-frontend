@@ -114,7 +114,7 @@ Authorization: Bearer <token>
       "industry": "string (optional)",
       "elementType": "string (optional)",
       "notes": "string",
-      "status": "draft" | "active" | "archived",
+      "status": "live" | "paused" | "preview",
       "createdAt": "string (ISO 8601)",
       "updatedAt": "string (ISO 8601)",
       "previewHtml": "string (HTML content)",
@@ -176,7 +176,7 @@ Content-Type: application/json
   "industry": "string (optional)",
   "elementType": "string (optional)",
   "notes": "string",
-  "status": "draft",
+  "status": "paused",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)",
   "previewHtml": "string",
@@ -392,7 +392,7 @@ Authorization: Bearer <token>
   "industry": "string (optional)",
   "elementType": "string (optional)",
   "notes": "string",
-  "status": "draft",
+  "status": "paused",
   "createdAt": "string (ISO 8601)",
   "updatedAt": "string (ISO 8601)",
   "previewHtml": "string",
@@ -480,7 +480,7 @@ Authorization: Bearer <token>
     "generationRules": "string (optional)",
     "elementType": "Title" | "CTA" | "Subheadline" | "Microcopy" | "Other" (optional),
     "deviceScope": "All" | "Mobile" | "Desktop" (optional),
-    "status": "Active" | "Paused" (optional),
+    "status": "Included" | "Excluded" (optional),
     "minChars": "number (optional)",
     "maxChars": "number (optional)",
     "maxWords": "number (optional)",
@@ -686,7 +686,7 @@ Authorization: Bearer <token>
     "uxRationale": "string",
     "complianceScore": "number (0-10)",
     "complianceRationale": "string",
-    "status": "active" | "discarded",
+    "status": "pending" | "approved" | "discarded",
     "createdAt": "string (ISO 8601)",
     "source": "fallback" | "manual"
   }
@@ -731,7 +731,7 @@ Content-Type: application/json
     "uxRationale": "string",
     "complianceScore": "number (0-10)",
     "complianceRationale": "string",
-    "status": "active" | "discarded",
+    "status": "pending" | "approved" | "discarded",
     "createdAt": "string (ISO 8601)",
     "source": "fallback"
   }
@@ -770,7 +770,7 @@ Content-Type: application/json
   "uxRationale": "string (optional)",
   "complianceScore": "number (optional, 0-10)",
   "complianceRationale": "string (optional)",
-  "status": "active" | "discarded" (optional)
+  "status": "pending" | "approved" | "discarded" (optional)
 }
 ```
 
@@ -828,7 +828,7 @@ Authorization: Bearer <token>
   "uxRationale": "string",
   "complianceScore": "number (0-10)",
   "complianceRationale": "string",
-  "status": "active",
+  "status": "approved",
   "createdAt": "string (ISO 8601)",
   "source": "fallback" | "manual"
 }
@@ -842,7 +842,7 @@ Authorization: Bearer <token>
 ```
 
 **Reglas de Negocio:**
-- Cambia el `status` a `"active"`
+- Cambia el `status` a `"approved"`
 
 ---
 
@@ -1048,7 +1048,7 @@ Authorization: Bearer <token>
 }
 ```
 
-**Nota:** Debe incluir métricas de variantes con `status: "active"` o `status: "discarded"` para mostrar métricas históricas
+**Nota:** Debe incluir métricas de variantes con `status: "approved"` o `status: "discarded"` para mostrar métricas históricas
 
 ---
 
@@ -1098,7 +1098,7 @@ Content-Type: application/json
 **Reglas de Negocio:**
 - La simulación debe ser determinística (usar seed basado en projectId)
 - Los valores deben actualizarse progresivamente durante `durationMs`
-- Solo simular para variantes con `status: "active"` o `status: "discarded"` (para mostrar métricas históricas)
+- Solo simular para variantes con `status: "approved"` o `status: "discarded"` (para mostrar métricas históricas)
 - `conversionRate = conversions / users` (si users > 0, sino 0)
 - `confidence` debe estar entre 0 y 99
 
@@ -1109,8 +1109,9 @@ Content-Type: application/json
 ### Enums
 
 ```typescript
-type ProjectStatus = "draft" | "active" | "archived";
-type VariantStatus = "active" | "discarded";
+type ProjectStatus = "live" | "paused" | "preview";
+type PointStatus = "Included" | "Excluded";
+type VariantStatus = "pending" | "approved" | "discarded";
 type VariantSource = "fallback" | "manual";
 type GoalType = "clickSelector" | "urlReached" | "dataLayerEvent";
 ```

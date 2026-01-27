@@ -283,7 +283,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
   loadVariants(): void {
     const sub = this.store.variants$.subscribe(variants => {
       const activeVariants = variants.filter(v => 
-        v.status === 'active' && 
+        v.status === 'approved' && 
         this.points.some(p => p.id === v.optimizationPointId)
       );
       this.appliedVariants = activeVariants;

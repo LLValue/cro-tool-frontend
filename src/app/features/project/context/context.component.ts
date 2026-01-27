@@ -43,12 +43,12 @@ import { InfoModalComponent } from '../../../shared/info-modal/info-modal.compon
 })
 export class ContextComponent implements OnInit, OnDestroy {
   globalForm: FormGroup;
-  pointForm: FormGroup;
   projectId: string = '';
-  points: OptimizationPoint[] = [];
-  mandatoryClaims: FormArray;
   private subscriptions = new Subscription();
   private isUpdatingForm = false;
+  businessContextSubmitted = false;
+  journeyContextSubmitted = false;
+  guardrailsSubmitted = false;
 
   constructor(
     private fb: FormBuilder,
@@ -58,43 +58,23 @@ export class ContextComponent implements OnInit, OnDestroy {
     private dialog: MatDialog
   ) {
     this.globalForm = this.fb.group({
-      // Language & Voice
-      language: ['en', Validators.required],
-      tone: ['professional'],
-      styleComplexity: ['simple'],
-      styleLength: ['short'],
-      // Business & Page Context
-      industry: [''],
-      productSummary: ['', [Validators.maxLength(200)]],
-      pageIntent: ['', [Validators.maxLength(200)]],
-      funnelStage: ['discovery'],
-      valueProps: [[]],
-      typicalObjections: [[]],
-      marketLocale: [''],
-      // Proof & Source of Truth
-      allowedFacts: [[]],
-      mustNotClaim: [[]],
-      // Legal & Brand Guardrails
-      riskLevel: ['Conservative'],
-      forbiddenWords: [[]],
-      mandatoryClaims: [[]],
-      prohibitedClaims: [[]],
-      requiredDisclaimer: ['', [Validators.maxLength(200)]],
-      toneAllowed: [[]],
-      toneDisallowed: [[]],
-      // Legacy fields
-      pageContext: [''],
-      croGuidelines: [''],
-      brandGuardrails: ['']
+      // Business context
+      productDescription: ['', Validators.required],
+      targetAudiences: ['', Validators.required],
+      valueProps: ['', Validators.required],
+      typicalObjections: [''],
+      // Journey context
+      language: ['es-ES', [Validators.required, Validators.maxLength(50)]],
+      toneAndStyle: ['', Validators.required],
+      pageContextAndGoal: ['', Validators.required],
+      funnelStage: [''],
+      nextAction: [''],
+      // Guardrails
+      brandGuidelines: [''],
+      allowedFacts: [''],
+      forbiddenWordsAndClaims: [''],
+      sensitiveClaims: ['']
     });
-
-    this.pointForm = this.fb.group({
-      pointId: [''],
-      objective: ['', [Validators.maxLength(200)]],
-      generationRules: ['', [Validators.maxLength(200)]]
-    });
-
-    this.mandatoryClaims = this.fb.array([]);
   }
 
   ngOnInit(): void {
@@ -117,17 +97,15 @@ export class ContextComponent implements OnInit, OnDestroy {
     if (initialProjectId) {
       this.projectId = initialProjectId;
       this.loadProjectData();
-      this.loadPoints();
     }
 
     // Subscribe to params changes (both current and parent)
     const paramsSub = this.route.params.subscribe((params: any) => {
       const newProjectId = params['projectId'];
-      if (newProjectId && newProjectId !== this.projectId) {
-        this.projectId = newProjectId;
-        this.loadProjectData();
-        this.loadPoints();
-      }
+        if (newProjectId && newProjectId !== this.projectId) {
+          this.projectId = newProjectId;
+          this.loadProjectData();
+        }
     });
     this.subscriptions.add(paramsSub);
 
@@ -138,7 +116,6 @@ export class ContextComponent implements OnInit, OnDestroy {
         if (newProjectId && newProjectId !== this.projectId) {
           this.projectId = newProjectId;
           this.loadProjectData();
-          this.loadPoints();
         }
       });
       this.subscriptions.add(parentParamsSub);
@@ -175,276 +152,264 @@ export class ContextComponent implements OnInit, OnDestroy {
     const project = this.store.getProject(this.projectId);
     if (project) {
       this.isUpdatingForm = true;
-      this.globalForm.patchValue({
-        language: project.language || 'en',
-        tone: project.tone || 'professional',
-        styleComplexity: project.styleComplexity || 'simple',
-        styleLength: project.styleLength || 'short',
-        industry: project.industry || '',
-        productSummary: project.productSummary || '',
-        pageIntent: project.pageIntent || '',
-        funnelStage: project.funnelStage || 'discovery',
-        valueProps: project.valueProps || [],
-        typicalObjections: project.typicalObjections || [],
-        marketLocale: project.marketLocale || '',
-        allowedFacts: project.allowedFacts || [],
-        mustNotClaim: project.mustNotClaim || [],
-        riskLevel: project.riskLevel || 'Conservative',
-        forbiddenWords: project.forbiddenWords || [],
-        prohibitedClaims: project.prohibitedClaims || [],
-        requiredDisclaimer: project.requiredDisclaimer || '',
-        toneAllowed: project.toneAllowed || [],
-        toneDisallowed: project.toneDisallowed || [],
-        pageContext: project.pageContext || '',
-        croGuidelines: project.croGuidelines || '',
-        brandGuardrails: project.brandGuardrails || ''
-      }, { emitEvent: false });
-      // Clear existing mandatory claims
-      while (this.mandatoryClaims.length !== 0) {
-        this.mandatoryClaims.removeAt(0);
-      }
-      project.mandatoryClaims?.forEach(claim => {
-        this.mandatoryClaims.push(this.fb.control(claim), { emitEvent: false });
-      });
-      this.isUpdatingForm = false;
+      // Map old fields to new structure for backward compatibility
+      const toneAndStyle = project.tone 
+        ? `${project.tone}${project.styleComplexity ? `, ${project.styleComplexity}` : ''}${project.styleLength ? `, ${project.styleLength}` : ''}`
+        : '';
       
-      // Set default values for empty select fields
-      this.setDefaultSelectValues();
-    } else {
-      // No project data, set defaults for new project
-      this.setDefaultSelectValues();
+      // Combine forbiddenWords and mustNotClaim into forbiddenWordsAndClaims
+      const forbiddenWordsAndClaims = [
+        ...(project.forbiddenWords || []),
+        ...(project.mustNotClaim || [])
+      ];
+
+      // Extract targetAudiences and nextAction from legacy fields
+      let targetAudiences = '';
+      try {
+        const pageContextData = project.pageContext ? JSON.parse(project.pageContext) : {};
+        if (Array.isArray(pageContextData.targetAudiences)) {
+          targetAudiences = pageContextData.targetAudiences.join('\n');
+        } else if (typeof pageContextData.targetAudiences === 'string') {
+          targetAudiences = pageContextData.targetAudiences;
+        }
+      } catch {
+        // If parsing fails, use empty string
+      }
+
+      let nextAction = '';
+      try {
+        const croGuidelinesData = project.croGuidelines ? JSON.parse(project.croGuidelines) : {};
+        nextAction = croGuidelinesData.nextAction || '';
+      } catch {
+        // If parsing fails, use empty string
+      }
+
+      // Convert arrays to text (one item per line)
+      const valuePropsText = Array.isArray(project.valueProps) ? project.valueProps.join('\n') : (project.valueProps || '');
+      const typicalObjectionsText = Array.isArray(project.typicalObjections) ? project.typicalObjections.join('\n') : (project.typicalObjections || '');
+      const allowedFactsText = Array.isArray(project.allowedFacts) ? project.allowedFacts.join('\n') : (project.allowedFacts || '');
+      const forbiddenWordsAndClaimsText = Array.isArray(forbiddenWordsAndClaims) ? forbiddenWordsAndClaims.join('\n') : (forbiddenWordsAndClaims || '');
+      const sensitiveClaimsText = Array.isArray(project.prohibitedClaims) ? project.prohibitedClaims.join('\n') : (project.prohibitedClaims || '');
+
+      this.globalForm.patchValue({
+        productDescription: project.productSummary || '',
+        targetAudiences: targetAudiences,
+        valueProps: valuePropsText,
+        typicalObjections: typicalObjectionsText,
+        language: project.language || 'es-ES',
+        toneAndStyle: toneAndStyle || '',
+        pageContextAndGoal: project.pageIntent || project.pageContext || '',
+        funnelStage: project.funnelStage || '',
+        nextAction: nextAction,
+        brandGuidelines: project.brandGuardrails || '',
+        allowedFacts: allowedFactsText,
+        forbiddenWordsAndClaims: forbiddenWordsAndClaimsText,
+        sensitiveClaims: sensitiveClaimsText
+      }, { emitEvent: false });
+      this.isUpdatingForm = false;
     }
   }
 
-  private setDefaultSelectValues(): void {
-    if (!this.globalForm.get('language')?.value) {
-      this.globalForm.patchValue({ language: 'en' }, { emitEvent: false });
-    }
-    if (!this.globalForm.get('tone')?.value) {
-      this.globalForm.patchValue({ tone: 'professional' }, { emitEvent: false });
-    }
-    if (!this.globalForm.get('styleLength')?.value) {
-      this.globalForm.patchValue({ styleLength: 'short' }, { emitEvent: false });
-    }
-    if (!this.globalForm.get('funnelStage')?.value) {
-      this.globalForm.patchValue({ funnelStage: 'discovery' }, { emitEvent: false });
-    }
-    if (!this.globalForm.get('riskLevel')?.value) {
-      this.globalForm.patchValue({ riskLevel: 'Conservative' }, { emitEvent: false });
-    }
-  }
 
-  loadPoints(): void {
-    // Ensure projectId is set from route
-    const projectId = this.getProjectId();
-    if (!projectId) {
+  saveBusinessContext(): void {
+    this.businessContextSubmitted = true;
+    if (this.globalForm.get('productDescription')?.invalid || 
+        this.globalForm.get('targetAudiences')?.invalid || 
+        this.globalForm.get('valueProps')?.invalid) {
       return;
     }
-    this.projectId = projectId; // Update instance variable
-
-    // Subscribe to points$ observable and filter by projectId
-    // This will automatically update when points are added/updated/deleted
-    const currentProjectId = this.projectId; // Capture for closure
-    const pointsSub = this.store.points$.pipe(
-      map((allPoints: OptimizationPoint[]) => allPoints.filter(p => p.projectId === currentProjectId))
-    ).subscribe({
-      next: (points: OptimizationPoint[]) => {
-        this.points = points;
-        const currentPointId = this.pointForm.get('pointId')?.value;
-        
-        // If no point is selected or the selected point no longer exists, select the first one
-        if (points.length > 0) {
-          if (!currentPointId || !points.find(p => p.id === currentPointId)) {
-            this.isUpdatingForm = true;
-            this.pointForm.patchValue({ pointId: points[0].id }, { emitEvent: false });
-            this.isUpdatingForm = false;
-            this.loadPointData(points[0].id);
-          } else {
-            // Reload data for currently selected point in case it was updated
-            this.loadPointData(currentPointId);
-          }
-        } else {
-          // No points available, clear the form
-          this.isUpdatingForm = true;
-          this.pointForm.patchValue({ pointId: '', objective: '', generationRules: '' }, { emitEvent: false });
-          this.isUpdatingForm = false;
-        }
-      },
-      error: () => {
-        // Silently handle error - points might not exist yet
-        this.points = [];
-      }
+    const values = this.globalForm.value;
+    // Convert text to arrays (split by newlines, filter empty)
+    const targetAudiencesArray = values.targetAudiences ? values.targetAudiences.split('\n').filter((line: string) => line.trim()) : [];
+    const valuePropsArray = values.valueProps ? values.valueProps.split('\n').filter((line: string) => line.trim()) : [];
+    const typicalObjectionsArray = values.typicalObjections ? values.typicalObjections.split('\n').filter((line: string) => line.trim()) : [];
+    
+    this.store.updateProject(this.projectId, {
+      productSummary: values.productDescription,
+      valueProps: valuePropsArray,
+      typicalObjections: typicalObjectionsArray,
+      // Store targetAudiences in legacy field for now
+      pageContext: JSON.stringify({ targetAudiences: values.targetAudiences })
     });
-    this.subscriptions.add(pointsSub);
-
-    // Subscribe to pointId changes (only once)
-    const pointIdSub = this.pointForm.get('pointId')?.valueChanges.subscribe((pointId: string) => {
-      if (pointId && !this.isUpdatingForm) {
-        this.loadPointData(pointId);
-      }
-    });
-    if (pointIdSub) {
-      this.subscriptions.add(pointIdSub);
-    }
-
-    // Trigger initial load from API
-    // Use the captured projectId from above
-    this.store.listPoints(currentProjectId).subscribe({
-      next: () => {
-        // Points will be updated via the points$ subscription above
-      },
-      error: () => {
-        // Silently handle error
-      }
-    });
+    this.toast.showSuccess('Business context saved');
+    this.businessContextSubmitted = false;
   }
 
-  loadPointData(pointId: string): void {
-    const point = this.points.find(p => p.id === pointId);
-    if (point) {
-      this.isUpdatingForm = true;
-      this.pointForm.patchValue({
-        objective: point.objective,
-        generationRules: point.generationRules
-      }, { emitEvent: false });
-      this.isUpdatingForm = false;
+  saveJourneyContext(): void {
+    this.journeyContextSubmitted = true;
+    if (this.globalForm.get('language')?.invalid || 
+        this.globalForm.get('toneAndStyle')?.invalid || 
+        this.globalForm.get('pageContextAndGoal')?.invalid) {
+      return;
     }
-  }
-
-  saveLanguageAndVoice(): void {
     const values = this.globalForm.value;
     this.store.updateProject(this.projectId, {
       language: values.language,
-      tone: values.tone,
-      styleComplexity: values.styleComplexity,
-      styleLength: values.styleLength
-    });
-    this.toast.showSuccess('Language & Voice saved');
-  }
-
-  saveBusinessContext(): void {
-    const values = this.globalForm.value;
-    this.store.updateProject(this.projectId, {
-      industry: values.industry,
-      productSummary: values.productSummary,
-      pageIntent: values.pageIntent,
+      pageIntent: values.pageContextAndGoal,
       funnelStage: values.funnelStage,
-      valueProps: values.valueProps,
-      typicalObjections: values.typicalObjections,
-      marketLocale: values.marketLocale
+      // Store toneAndStyle and nextAction in legacy fields for backward compatibility
+      tone: values.toneAndStyle?.split(',')[0]?.trim() || '',
+      styleComplexity: values.toneAndStyle?.split(',')[1]?.trim() || '',
+      styleLength: values.toneAndStyle?.split(',')[2]?.trim() || '',
+      croGuidelines: JSON.stringify({ nextAction: values.nextAction })
     });
-    this.toast.showSuccess('Business & Page Context saved');
-  }
-
-  saveProofAndTruth(): void {
-    const values = this.globalForm.value;
-    this.store.updateProject(this.projectId, {
-      allowedFacts: values.allowedFacts,
-      mustNotClaim: values.mustNotClaim
-    });
-    this.toast.showSuccess('Proof & Source of Truth saved');
+    this.toast.showSuccess('Journey context saved');
+    this.journeyContextSubmitted = false;
   }
 
   saveGuardrails(): void {
     const values = this.globalForm.value;
-    const mandatoryClaims = this.mandatoryClaims.controls.map((c: any) => c.value);
+    // Convert text to arrays (split by newlines, filter empty)
+    const allowedFactsArray = values.allowedFacts ? values.allowedFacts.split('\n').filter((line: string) => line.trim()) : [];
+    const forbiddenWordsAndClaimsArray = values.forbiddenWordsAndClaims ? values.forbiddenWordsAndClaims.split('\n').filter((line: string) => line.trim()) : [];
+    const sensitiveClaimsArray = values.sensitiveClaims ? values.sensitiveClaims.split('\n').filter((line: string) => line.trim()) : [];
+    
     this.store.updateProject(this.projectId, {
-      riskLevel: values.riskLevel,
-      forbiddenWords: values.forbiddenWords,
-      mandatoryClaims: mandatoryClaims,
-      prohibitedClaims: values.prohibitedClaims,
-      requiredDisclaimer: values.requiredDisclaimer,
-      toneAllowed: values.toneAllowed,
-      toneDisallowed: values.toneDisallowed
+      brandGuardrails: values.brandGuidelines,
+      allowedFacts: allowedFactsArray,
+      forbiddenWords: forbiddenWordsAndClaimsArray,
+      mustNotClaim: [], // Empty as we're combining into forbiddenWordsAndClaims
+      prohibitedClaims: sensitiveClaimsArray
     });
-    this.toast.showSuccess('Legal & Brand Guardrails saved');
-  }
-
-  savePoint(): void {
-    const values = this.pointForm.value;
-    if (values.pointId) {
-      this.store.updatePoint(values.pointId, {
-        objective: values.objective,
-        generationRules: values.generationRules
-      });
-      this.toast.showSuccess('Per-Point settings saved');
-    } else {
-      this.toast.showError('Please select a point first');
-    }
-  }
-
-  addClaim(): void {
-    this.mandatoryClaims.push(this.fb.control(''));
-  }
-
-  removeClaim(index: number): void {
-    this.mandatoryClaims.removeAt(index);
-    // Save only mandatory claims when removing
-    const mandatoryClaims = this.mandatoryClaims.controls.map((c: any) => c.value);
-    this.store.updateProject(this.projectId, {
-      mandatoryClaims: mandatoryClaims
-    });
+    this.toast.showSuccess('Guardrails saved');
   }
 
   // Character counter helpers
   getCharacterCount(controlName: string): number {
-    const form = controlName === 'objective' || controlName === 'generationRules' 
-      ? this.pointForm 
-      : this.globalForm;
-    const value = form.get(controlName)?.value || '';
+    const value = this.globalForm.get(controlName)?.value || '';
     return typeof value === 'string' ? value.length : 0;
   }
 
   getMaxLength(controlName: string): number {
-    const fieldsWithMaxLength = ['productSummary', 'pageIntent', 'requiredDisclaimer', 'objective', 'generationRules'];
-    if (fieldsWithMaxLength.includes(controlName)) {
-      return 200;
-    }
-    return 0;
+    const fieldsWithMaxLength: { [key: string]: number } = {
+      'productDescription': 5000,
+      'targetAudiences': 5000,
+      'valueProps': 5000,
+      'typicalObjections': 5000,
+      'language': 50,
+      'toneAndStyle': 5000,
+      'pageContextAndGoal': 5000,
+      'nextAction': 5000,
+      'brandGuidelines': 5000,
+      'allowedFacts': 5000,
+      'forbiddenWordsAndClaims': 5000,
+      'sensitiveClaims': 5000
+    };
+    return fieldsWithMaxLength[controlName] || 0;
   }
 
   // Info modal content
   getInfoModalContent(field: string): string {
     const contents: { [key: string]: string } = {
       language: `
-        <p><strong>Select the primary language</strong> for all generated variants.</p>
-        <p>This ensures all copy is written in the correct language and follows language-specific conventions.</p>
+        <p><strong>Set the language and locale format</strong> for the copy (e.g., en-GB, es-ES).</p>
+        <p>This controls spelling, phrasing, and locale conventions. Use standard locale codes (language-country) so the AI writes naturally for that market.</p>
+        <p><strong>Examples:</strong> es-ES (Spain), es-MX (Mexico), en-GB (UK), en-US (USA).</p>
+        <p><strong>Banking example (credit cards):</strong> "es-ES" (Spanish for Spain), so the AI uses local phrasing and tone expected on Spanish banking sites.</p>
       `,
-      tone: `
-        <p><strong>Define the overall tone</strong> that should be used across all variants.</p>
-        <p><strong>Options:</strong></p>
+      productDescription: `
+        <p><strong>Use this field to give the AI the "source narrative" for the product:</strong> what it is, what problem it solves, and the core benefits—without marketing fluff. Keep it accurate and high-level (no unverified numbers unless you will also include them in Allowed proof points).</p>
+        <p><strong>Include:</strong> product type, key features, eligibility level (if relevant), and the main user needs it addresses.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <p>"Credit card designed for everyday spending with flexible repayment options. It helps customers manage monthly expenses, build credit history, and access purchase protection features. Suitable for customers who want convenience, secure payments, and clear control of their spending through a mobile app."</p>
+      `,
+      targetAudiences: `
+        <p><strong>Define 2–5 audience types</strong> so the AI can tailor tone, motivations, and objections. For each segment, include a short description: their goal, their typical concerns, and what drives trust. Avoid overly broad labels like "everyone."</p>
+        <p>You can format it as bullets (recommended), one segment per bullet.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
         <ul>
-          <li>Professional: Formal, business-appropriate</li>
-          <li>Friendly: Warm, approachable</li>
-          <li>Casual: Relaxed, informal</li>
-          <li>Formal: Very structured, traditional</li>
-          <li>Conversational: Natural, like speaking to a friend</li>
-          <li>Authoritative: Confident, expert voice</li>
+          <li>"Young professionals: want convenience, digital-first management, and transparent fees."</li>
+          <li>"Families: want budgeting control, security, and protections for purchases."</li>
+          <li>"Frequent travelers: value international acceptance, fraud protection, and travel-related benefits (if applicable)."</li>
+          <li>"Credit builders: want clarity, responsible limits, and guidance without shame or jargon."</li>
         </ul>
       `,
-      productSummary: `
-        <p><strong>Describe what the product/service is and who it's for.</strong></p>
-        <p>This helps the AI understand the core offering and target audience, ensuring all variants align with the product's value proposition.</p>
-        <p><strong>Example:</strong> "A SaaS platform for small businesses to manage their inventory and sales. Target audience: retail store owners with 1-10 employees."</p>
-      `,
-      pageIntent: `
-        <p><strong>Define what action you want users to take on this page.</strong></p>
-        <p>This guides the AI to write copy that drives toward the desired conversion goal.</p>
-        <p><strong>Examples:</strong></p>
+      valueProps: `
+        <p><strong>These are the primary "reasons to choose this product"</strong> that the AI should use to shape headlines, CTA copy, and supporting microcopy. Keep them short, specific, and customer-facing. If a value prop depends on a specific feature or claim (e.g., "no annual fee"), only include it if it's verified and allowed.</p>
+        <p><strong>Recommended format:</strong> bullet list, each bullet starting with a user benefit.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
         <ul>
-          <li>Sign up for a free trial</li>
-          <li>Request a demo</li>
-          <li>Download a resource</li>
-          <li>Make a purchase</li>
+          <li>"Pay securely online and in-store with real-time card controls."</li>
+          <li>"Manage spending and repayments easily from the app."</li>
+          <li>"Clear repayment options that fit your monthly budget."</li>
+          <li>"Extra protection for eligible purchases (where applicable)."</li>
+          <li>"Fast, simple application experience with transparent steps."</li>
         </ul>
       `,
-      forbiddenWords: `
-        <p><strong>List words that must never appear</strong> in any generated variant.</p>
-        <p>These are global constraints that apply across all optimization points. Use for compliance-sensitive terms, competitor names, or brand-inappropriate language.</p>
+      typicalObjections: `
+        <p><strong>Use this to help the AI proactively reduce friction.</strong> Include 3–8 objections commonly seen in banking journeys: trust, fees, eligibility, complexity, hidden conditions, and fear of rejection. Keep them in the user's voice.</p>
+        <p><strong>Recommended format:</strong> bullets.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <ul>
+          <li>"Will I be approved, or will I waste time applying?"</li>
+          <li>"Are there hidden fees or conditions?"</li>
+          <li>"Will I lose control and overspend?"</li>
+          <li>"Is the repayment process complicated?"</li>
+          <li>"Is it secure if I use it online or abroad?"</li>
+          <li>"What happens if I miss a payment?"</li>
+        </ul>
       `,
-      mandatoryClaims: `
-        <p><strong>List claims that must appear</strong> in all variants.</p>
-        <p>These are required statements for legal or compliance reasons. Use sparingly to maintain copy quality.</p>
+      toneAndStyle: `
+        <p><strong>Define the voice in practical terms.</strong> Include tone (e.g., confident, reassuring), formality level, and wording preferences (simple vs technical). Add 2–3 "do" and "don't" examples to anchor the style.</p>
+        <p>If the industry is regulated, keep urgency and claims conservative unless explicitly allowed.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <p><strong>Tone:</strong> "Clear, calm, and trustworthy. Professional but not cold. Focus on clarity and reassurance."</p>
+        <p><strong>Do:</strong> "Use simple sentences, explain steps, emphasize control and security."</p>
+        <p><strong>Don't:</strong> "Avoid hype, pressure tactics, slang, or absolute guarantees."</p>
+      `,
+      pageContextAndGoal: `
+        <p><strong>Describe the page's role in the journey and the desired user action.</strong> Include: what the user likely knows when they arrive, what information they're seeking, and what should happen next (apply, check eligibility, compare options, request info).</p>
+        <p>This helps the AI write copy that matches intent, not just product marketing.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <p>"This is a product landing page for a credit card. Users arrive from paid search and comparison pages. The goal is to encourage them to start an application or eligibility check. The page should reduce fear of hidden fees and help users feel in control of spending and repayments."</p>
+      `,
+      brandGuidelines: `
+        <p><strong>Use this for concrete, enforceable rules:</strong> preferred terms, banned phrasing, capitalization rules, naming conventions, and how to refer to the product. This complements tone/style by making rules explicit.</p>
+        <p>Keep it bullet-based when possible.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <ul>
+          <li>"Use 'credit card' (not 'card' alone) on first mention."</li>
+          <li>"Avoid exclamation marks."</li>
+          <li>"Do not use slang or humor."</li>
+          <li>"Use 'apply' rather than 'get instantly'."</li>
+          <li>"Refer to the bank as 'Brand X' consistently."</li>
+        </ul>
+      `,
+      allowedFacts: `
+        <p><strong>This is your "safe facts list."</strong> It prevents the AI from inventing features, pricing, time-to-approval, or guarantees. Only include items that are accurate and approved for marketing use.</p>
+        <p>If this field is empty, the system should avoid strong factual claims and use safer, non-absolute wording.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <ul>
+          <li>"Manage your card in the mobile app (freeze/unfreeze, notifications)."</li>
+          <li>"Secure online payments with fraud monitoring."</li>
+          <li>"Contactless payments supported."</li>
+          <li>"Application subject to approval."</li>
+          <li>"Terms and conditions apply."</li>
+        </ul>
+      `,
+      forbiddenWordsAndClaims: `
+        <p><strong>Use this to block risky or non-compliant language:</strong> "guaranteed", "no risk", "instant approval", or any internal red-flag terms. Include both single words and short phrases.</p>
+        <p>This list should be treated as a hard filter during generation and review.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <ul>
+          <li>"Guaranteed approval"</li>
+          <li>"No credit check" (if not allowed)</li>
+          <li>"Instant approval" (if not allowed)</li>
+          <li>"Best rates" / "Lowest fees" (absolute superlatives)</li>
+          <li>"Free money"</li>
+        </ul>
+      `,
+      sensitiveClaims: `
+        <p><strong>Sensitive claims are not always forbidden, but they often require legal review or specific disclaimers.</strong> Use this list to flag variants for "needs review" if they mention these topics.</p>
+        <p><strong>Examples:</strong> fees, APR, interest, rewards, eligibility, credit impact, approval speed, "no annual fee", or comparisons vs competitors.</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <ul>
+          <li>"APR / interest rate mentions"</li>
+          <li>"Fees (annual fee, foreign transaction fee)"</li>
+          <li>"Rewards/cashback claims"</li>
+          <li>"Approval time or acceptance rate"</li>
+          <li>"Eligibility / credit score implications"</li>
+        </ul>
       `
     };
     return contents[field] || '';

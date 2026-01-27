@@ -46,7 +46,7 @@ export class ProjectsStoreService {
             name: 'Landing Page A',
             pageUrl: 'https://pack.stage.es',
             notes: 'Main conversion page',
-            status: 'active',
+            status: 'live',
             createdAt: new Date('2024-01-01'),
             updatedAt: new Date('2024-01-10'),
             previewHtml: '',
@@ -71,7 +71,7 @@ export class ProjectsStoreService {
           name: 'Landing Page A',
           pageUrl: 'https://pack.stage.es',
           notes: 'Main conversion page',
-          status: 'active',
+          status: 'live',
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-10'),
           previewHtml: '',
@@ -119,7 +119,7 @@ export class ProjectsStoreService {
       name: req.name,
       pageUrl: req.pageUrl,
       notes: req.notes,
-      status: 'draft',
+      status: 'paused',
       createdAt: new Date(),
       updatedAt: new Date(),
       previewHtml: '',
@@ -310,7 +310,7 @@ export class ProjectsStoreService {
 
     const currentVariants = this.variantsSubject.value;
     const updatedVariants = currentVariants.map(v => 
-      v.id === id ? { ...v, status: 'active' as const } : v
+      v.id === id ? { ...v, status: 'approved' as const } : v
     );
     this.variantsSubject.next(updatedVariants);
 
@@ -335,7 +335,7 @@ export class ProjectsStoreService {
   discardLowScoreVariants(pointId: string): void {
     const variants = this.variantsSubject.value.filter(v => v.optimizationPointId === pointId);
     variants.forEach(variant => {
-      if ((variant.uxScore < 5 || variant.complianceScore < 5) && variant.status === 'active') {
+      if ((variant.uxScore < 5 || variant.complianceScore < 5) && variant.status === 'approved') {
         this.variantsApi.discardVariant(variant.projectId, variant.id).subscribe({
           next: () => this.listVariants(pointId),
           error: () => {} // Error handling done in components

@@ -5,7 +5,7 @@ export interface ProjectDto {
   industry?: string;
   elementType?: string;
   notes: string;
-  status: 'draft' | 'active' | 'archived';
+  status: 'live' | 'paused' | 'preview';
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
   previewHtml: string;
@@ -50,7 +50,7 @@ export interface UpdateProjectRequest {
   industry?: string;
   elementType?: string;
   notes?: string;
-  status?: 'draft' | 'active' | 'archived';
+  status?: 'live' | 'paused' | 'preview';
   previewHtml?: string;
   // Language & Voice
   language?: string;

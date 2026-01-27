@@ -48,18 +48,6 @@
       </div>
 
       <div class="form-field-wrapper">
-        <label class="field-label">Element type</label>
-        <p class="field-helper">Select the type of element you want to optimize.</p>
-        <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
-          <mat-select formControlName="elementType">
-            <mat-option *ngFor="let elementType of elementTypes" [value]="elementType">
-              {{ elementType }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-
-      <div class="form-field-wrapper">
         <label class="field-label">Notes</label>
         <p class="field-helper">Add any additional notes or context about this project.</p>
         <mat-form-field appearance="outline" class="brief-input">

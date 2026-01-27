@@ -146,7 +146,7 @@ export class PointsComponent implements OnInit, OnDestroy {
 
   getApprovedVariantsCount(pointId: string): number {
     return this.variants.filter(v => 
-      v.optimizationPointId === pointId && v.status === 'active'
+      v.optimizationPointId === pointId && v.status === 'approved'
     ).length;
   }
 
@@ -186,7 +186,7 @@ export class PointsComponent implements OnInit, OnDestroy {
           selector: result.selector,
           text: result.text || '',
           elementType: result.elementType || 'Other',
-          status: 'Active'
+          status: 'Included'
         }).subscribe({
           next: () => {
             this.toast.showSuccess('Point created successfully');
@@ -216,7 +216,7 @@ export class PointsComponent implements OnInit, OnDestroy {
       generationRules: point.generationRules,
       elementType: point.elementType,
       deviceScope: point.deviceScope,
-      status: point.status || 'Active'
+      status: point.status || 'Included'
     }).subscribe({
       next: () => {
         this.toast.showSuccess('Point duplicated successfully');

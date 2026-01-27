@@ -77,45 +77,65 @@
           <div class="form-section">
             <h3>Point Details</h3>
             <form [formGroup]="setupForm" (ngSubmit)="saveSetup()">
-              <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-                <input matInput formControlName="name" required placeholder="Enter point name">
-                <mat-error *ngIf="setupForm.get('name')?.hasError('required')">
-                  Name is required
-                </mat-error>
-              </mat-form-field>
+              <div class="form-field-wrapper">
+                <label class="field-label">
+                  Name
+                  <span class="required-asterisk">*</span>
+                </label>
+                <p class="field-helper">Enter a descriptive name for this optimization point.</p>
+                <mat-form-field appearance="outline" class="brief-input">
+                  <input matInput formControlName="name" required placeholder="Enter point name">
+                  <mat-error *ngIf="setupForm.get('name')?.hasError('required')">
+                    Name is required
+                  </mat-error>
+                </mat-form-field>
+              </div>
 
-              <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-                <mat-select formControlName="elementType">
-                  <mat-option value="Title">Title</mat-option>
-                  <mat-option value="CTA">CTA</mat-option>
-                  <mat-option value="Subheadline">Subheadline</mat-option>
-                  <mat-option value="Microcopy">Microcopy</mat-option>
-                  <mat-option value="Other">Other</mat-option>
-                </mat-select>
-              </mat-form-field>
+              <div class="form-field-wrapper">
+                <label class="field-label">Element type</label>
+                <p class="field-helper">Select the type of element you want to optimize.</p>
+                <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
+                  <mat-select formControlName="elementType">
+                    <mat-option *ngFor="let elementType of elementTypes" [value]="elementType">
+                      {{ elementType }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
 
-              <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-                <input matInput formControlName="selector" required placeholder="e.g., .hero-title, #cta-button, h1">
-                <mat-hint *ngIf="selectedElement">Generated from selected element - you can edit it manually</mat-hint>
-                <mat-hint *ngIf="!selectedElement">Select an element or enter manually</mat-hint>
-                <mat-error *ngIf="setupForm.get('selector')?.hasError('required')">
-                  CSS Selector is required
-                </mat-error>
-              </mat-form-field>
+              <div class="form-field-wrapper">
+                <label class="field-label">
+                  CSS Selector
+                  <span class="required-asterisk">*</span>
+                </label>
+                <p class="field-helper">Enter the CSS selector for the element (e.g., .hero-title, #cta-button, h1).</p>
+                <mat-form-field appearance="outline" class="brief-input">
+                  <input matInput formControlName="selector" required placeholder="e.g., .hero-title, #cta-button, h1">
+                  <mat-hint *ngIf="selectedElement">Generated from selected element - you can edit it manually</mat-hint>
+                  <mat-hint *ngIf="!selectedElement">Select an element or enter manually</mat-hint>
+                  <mat-error *ngIf="setupForm.get('selector')?.hasError('required')">
+                    CSS Selector is required
+                  </mat-error>
+                </mat-form-field>
+              </div>
 
-              <mat-form-field appearance="outline" floatLabel="always" class="full-width">
-                <mat-select formControlName="deviceScope">
-                  <mat-option value="All">All</mat-option>
-                  <mat-option value="Mobile">Mobile</mat-option>
-                  <mat-option value="Desktop">Desktop</mat-option>
-                </mat-select>
-              </mat-form-field>
+              <div class="form-field-wrapper">
+                <label class="field-label">Device scope</label>
+                <p class="field-helper">Select which devices this optimization point applies to.</p>
+                <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
+                  <mat-select formControlName="deviceScope">
+                    <mat-option value="All">All</mat-option>
+                    <mat-option value="Mobile">Mobile</mat-option>
+                    <mat-option value="Desktop">Desktop</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
 
               <div class="form-row">
                 <mat-slide-toggle 
-                  [checked]="setupForm.get('status')?.value === 'Active'"
+                  [checked]="setupForm.get('status')?.value === 'Included'"
                   (change)="onStatusToggleChange($event.checked)">
-                  {{ setupForm.get('status')?.value === 'Active' ? 'Active' : 'Paused' }}
+                  {{ setupForm.get('status')?.value === 'Included' ? 'Included' : 'Excluded' }}
                 </mat-slide-toggle>
               </div>
 
@@ -307,8 +327,8 @@
           <mat-form-field appearance="outline" floatLabel="always" class="filter-field">
             <mat-select [(ngModel)]="variantFilter" [ngModelOptions]="{standalone: true}" (selectionChange)="filterVariants()">
               <mat-option value="all">All</mat-option>
-              <mat-option value="active">Active</mat-option>
               <mat-option value="pending">Pending</mat-option>
+              <mat-option value="approved">Approved</mat-option>
               <mat-option value="discarded">Discarded</mat-option>
             </mat-select>
           </mat-form-field>
@@ -336,17 +356,17 @@
                 </div>
                 <mat-chip-set>
                   <mat-chip
-                    [class.active]="variant.status === 'active'"
+                    [class.active]="variant.status === 'approved'"
                     [class.discarded]="variant.status === 'discarded'">
                     {{ variant.status }}
                   </mat-chip>
                 </mat-chip-set>
               </div>
               <div class="variant-actions">
-                <button *ngIf="variant.status !== 'active'" mat-icon-button (click)="approveVariant(variant.id)" matTooltip="Approve">
+                <button *ngIf="variant.status !== 'approved'" mat-icon-button (click)="approveVariant(variant.id)" matTooltip="Approve">
                   <mat-icon>check_circle</mat-icon>
                 </button>
-                <button *ngIf="variant.status === 'active'" mat-icon-button (click)="unapproveVariant(variant.id)" matTooltip="Disable">
+                <button *ngIf="variant.status === 'approved'" mat-icon-button (click)="unapproveVariant(variant.id)" matTooltip="Disable">
                   <mat-icon>remove_circle</mat-icon>
                 </button>
                 <button mat-icon-button color="primary" (click)="deleteVariant(variant.id)" matTooltip="Delete">
@@ -359,7 +379,7 @@
                 matInput 
                 [(ngModel)]="variant.text" 
                 [ngModelOptions]="{standalone: true}"
-                [readonly]="variant.status === 'active'"
+                [readonly]="variant.status === 'approved'"
                 (blur)="updateVariant(variant)"
                 rows="2">
               </textarea>
@@ -378,8 +398,8 @@
 
   <div class="bottom-actions">
     <button mat-raised-button color="primary" (click)="toggleStatus()">
-      <mat-icon>{{ point?.status === 'Paused' ? 'play_arrow' : 'pause' }}</mat-icon>
-      {{ point?.status === 'Paused' ? 'Activate Point' : 'Pause Point' }}
+      <mat-icon>{{ point?.status === 'Excluded' ? 'play_arrow' : 'pause' }}</mat-icon>
+      {{ point?.status === 'Excluded' ? 'Include Point' : 'Exclude Point' }}
     </button>
   </div>
 </div>

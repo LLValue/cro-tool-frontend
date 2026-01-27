@@ -40,8 +40,8 @@
         <th mat-header-cell *matHeaderCellDef>Status</th>
         <td mat-cell *matCellDef="let point">
           <mat-chip-set>
-            <mat-chip [class.active]="point.status === 'Active'" [class.paused]="point.status === 'Paused'">
-              {{ point.status || 'Active' }}
+            <mat-chip [class.active]="point.status === 'Included'" [class.paused]="point.status === 'Excluded'">
+              {{ point.status || 'Included' }}
             </mat-chip>
           </mat-chip-set>
         </td>

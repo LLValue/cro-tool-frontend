@@ -113,19 +113,19 @@ $primary-color: #7EF473;
   }
 }
 
-.status-draft {
+.status-paused {
   background-color: #e0e0e0 !important;
   color: #424242 !important;
 }
 
-.status-active {
+.status-live {
   background: linear-gradient(135deg, #4caf50 0%, #45a049 100%) !important;
   color: white !important;
   box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
 }
 
-.status-archived {
-  background-color: #9e9e9e !important;
+.status-preview {
+  background-color: #ff9800 !important;
   color: white !important;
 }
 
@@ -240,8 +240,13 @@ $primary-color: #7EF473;
     }
   }
 
-  .status-draft {
+  .status-paused {
     background-color: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+  }
+  
+  .status-preview {
+    background-color: rgba(255, 152, 0, 0.3) !important;
     color: #ffffff !important;
   }
 

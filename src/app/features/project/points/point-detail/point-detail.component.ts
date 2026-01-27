@@ -77,6 +77,17 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   mustIncludeKeywords: string[] = [];
   mustAvoidTerms: string[] = [];
   
+  elementTypes = [
+    'Headline (H1)',
+    'Subheadline / Subheader (H2)',
+    'Call to Action (CTA) Button',
+    'Supporting Copy / Body Text',
+    'Form Labels & Helper Text',
+    'Trust & Assurance Copy',
+    'Benefit Bullets (feature list)',
+    'Other'
+  ];
+  
   // Preview and selection properties
   html: string = '';
   safeHtml: SafeHtml | null = null;
@@ -102,10 +113,10 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   ) {
     this.setupForm = this.fb.group({
       name: ['', Validators.required],
-      elementType: ['Title'], // First option as default
+      elementType: [this.elementTypes[0]], // First option as default
       selector: ['', Validators.required],
       deviceScope: ['All'],
-      status: ['Active']
+      status: ['Included']
     });
 
     this.briefForm = this.fb.group({
@@ -140,10 +151,10 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       if (this.point) {
         this.setupForm.patchValue({
           name: this.point.name || '',
-          elementType: this.point.elementType || 'Title', // First option
+          elementType: this.point.elementType || this.elementTypes[0], // First option
           selector: this.point.selector || '',
           deviceScope: this.point.deviceScope || 'All', // First option
-          status: this.point.status || 'Active'
+          status: this.point.status || 'Included'
         });
         this.briefForm.patchValue({
           objective: this.point.objective || '',
@@ -163,7 +174,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       } else {
         // No point data, ensure defaults are set
         if (!this.setupForm.get('elementType')?.value) {
-          this.setupForm.patchValue({ elementType: 'Title' });
+          this.setupForm.patchValue({ elementType: this.elementTypes[0] });
         }
         if (!this.setupForm.get('deviceScope')?.value) {
           this.setupForm.patchValue({ deviceScope: 'All' });
@@ -179,7 +190,16 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     const sub = this.store.variants$.subscribe(variants => {
       this.variants = variants
         .filter(v => v.optimizationPointId === this.pointId)
-        .sort((a, b) => b.uxScore - a.uxScore);
+        .sort((a, b) => {
+          // First sort by UX score (descending)
+          if (b.uxScore !== a.uxScore) {
+            return b.uxScore - a.uxScore;
+          }
+          // Then sort by status (approved first)
+          if (a.status === 'approved' && b.status !== 'approved') return -1;
+          if (a.status !== 'approved' && b.status === 'approved') return 1;
+          return 0;
+        });
       this.filterVariants();
     });
     this.subscriptions.add(sub);
@@ -193,18 +213,27 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       filtered = this.variants;
     } else {
       filtered = this.variants.filter(v => {
-        if (this.variantFilter === 'active') return v.status === 'active';
+        if (this.variantFilter === 'approved') return v.status === 'approved';
         if (this.variantFilter === 'discarded') return v.status === 'discarded';
         return true;
       });
     }
-    this.filteredVariants = filtered.sort((a, b) => b.uxScore - a.uxScore);
+    this.filteredVariants = filtered.sort((a, b) => {
+      // First sort by UX score (descending)
+      if (b.uxScore !== a.uxScore) {
+        return b.uxScore - a.uxScore;
+      }
+      // Then sort by status (approved first)
+      if (a.status === 'approved' && b.status !== 'approved') return -1;
+      if (a.status !== 'approved' && b.status === 'approved') return 1;
+      return 0;
+    });
   }
 
   saveSetup(): void {
     if (this.setupForm.invalid || !this.point) return;
 
-    const status = this.setupForm.get('status')?.value ? 'Active' : 'Paused';
+    const status = this.setupForm.get('status')?.value ? 'Included' : 'Excluded';
     
     this.store.updatePoint(this.pointId, {
       name: this.setupForm.get('name')?.value,
@@ -265,7 +294,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   updateVariant(variant: Variant): void {
-    if (variant.status === 'active') return;
+    if (variant.status === 'approved') return;
     
     this.store.updateVariant(variant.id, { text: variant.text });
   }
@@ -273,25 +302,25 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   onStatusToggleChange(checked: boolean): void {
     if (!this.point) return;
 
-    const newStatus = checked ? 'Active' : 'Paused';
+    const newStatus = checked ? 'Included' : 'Excluded';
     this.setupForm.patchValue({ status: newStatus });
     
     this.store.updatePoint(this.pointId, {
       status: newStatus,
       updatedAt: new Date()
     });
-    this.toast.showSuccess(`Point ${newStatus === 'Active' ? 'activated' : 'paused'}`);
+    this.toast.showSuccess(`Point ${newStatus === 'Included' ? 'included' : 'excluded'}`);
   }
 
   toggleStatus(): void {
     if (!this.point) return;
 
-    const newStatus = this.point.status === 'Active' ? 'Paused' : 'Active';
+    const newStatus = this.point.status === 'Included' ? 'Excluded' : 'Included';
     this.store.updatePoint(this.pointId, {
       status: newStatus,
       updatedAt: new Date()
     });
-    this.toast.showSuccess(`Point ${newStatus === 'Active' ? 'activated' : 'paused'}`);
+    this.toast.showSuccess(`Point ${newStatus === 'Included' ? 'included' : 'excluded'}`);
   }
 
   formatDate(date: Date | string | undefined): string {

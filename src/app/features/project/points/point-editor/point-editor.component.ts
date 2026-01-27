@@ -56,6 +56,17 @@ export class PointEditorComponent implements OnInit, OnDestroy {
   private subscriptions = new Subscription();
   private highlightStyle: HTMLStyleElement | null = null;
 
+  elementTypes = [
+    'Headline (H1)',
+    'Subheadline / Subheader (H2)',
+    'Call to Action (CTA) Button',
+    'Supporting Copy / Body Text',
+    'Form Labels & Helper Text',
+    'Trust & Assurance Copy',
+    'Benefit Bullets (feature list)',
+    'Other'
+  ];
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: { projectId: string },
     private dialogRef: MatDialogRef<PointEditorComponent>,
@@ -68,7 +79,7 @@ export class PointEditorComponent implements OnInit, OnDestroy {
   ) {
     this.form = this.fb.group({
       name: ['', Validators.required],
-      elementType: ['Title', Validators.required], // First option as default
+      elementType: [this.elementTypes[0], Validators.required], // First option as default
       selector: ['', Validators.required],
       text: ['']
     });

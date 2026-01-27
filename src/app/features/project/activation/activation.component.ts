@@ -140,12 +140,11 @@ export class ActivationComponent implements OnInit, OnDestroy {
     const projectStatus = this.project.status;
     let activationStatus: 'Live' | 'Paused' | 'Preview' = 'Paused';
     
-    if (projectStatus === 'active') {
+    if (projectStatus === 'live') {
       activationStatus = 'Live';
-    } else if (projectStatus === 'draft') {
-      const currentFormStatus = this.activationForm.get('status')?.value;
-      activationStatus = currentFormStatus === 'Preview' ? 'Preview' : 'Paused';
-    } else if (projectStatus === 'archived') {
+    } else if (projectStatus === 'preview') {
+      activationStatus = 'Preview';
+    } else if (projectStatus === 'paused') {
       activationStatus = 'Paused';
     }
     
@@ -252,9 +251,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     const formStatus = this.activationForm.get('status')?.value;
     if (formStatus === 'Live') {
-      this.store.updateProject(this.projectId, { status: 'active' });
-    } else if (formStatus === 'Paused' || formStatus === 'Preview') {
-      this.store.updateProject(this.projectId, { status: 'draft' });
+      this.store.updateProject(this.projectId, { status: 'live' });
+    } else if (formStatus === 'Preview') {
+      this.store.updateProject(this.projectId, { status: 'preview' });
+    } else if (formStatus === 'Paused') {
+      this.store.updateProject(this.projectId, { status: 'paused' });
     }
 
     this.loadActivationConfig();
@@ -269,7 +270,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     this.activationForm.patchValue({ status: 'Live' });
-    this.store.updateProject(this.projectId, { status: 'active' });
+    this.store.updateProject(this.projectId, { status: 'live' });
     this.saveActivation();
     this.addActivityLog('activated', 'Project activated');
     this.toast.showSuccess('Project activated successfully');
@@ -277,7 +278,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   pauseProject(): void {
     this.activationForm.patchValue({ status: 'Paused' });
-    this.store.updateProject(this.projectId, { status: 'draft' });
+    this.store.updateProject(this.projectId, { status: 'paused' });
     this.saveActivation();
     this.addActivityLog('paused', 'Project paused');
     this.toast.showSuccess('Project paused');
@@ -285,7 +286,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   previewProject(): void {
     this.activationForm.patchValue({ status: 'Preview' });
-    this.store.updateProject(this.projectId, { status: 'draft' });
+    this.store.updateProject(this.projectId, { status: 'preview' });
     this.loadPreview();
     this.saveActivation();
     this.addActivityLog('preview', 'Switched to preview mode');

@@ -42,7 +42,7 @@ export class VariantsComponent implements OnInit, OnDestroy {
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
   selectedPointId: string | null = null;
-  filter: 'all' | 'active' | 'discarded' = 'all';
+  filter: 'all' | 'pending' | 'approved' | 'discarded' = 'all';
   projectId: string = '';
   private subscriptions = new Subscription();
 
@@ -170,7 +170,16 @@ export class VariantsComponent implements OnInit, OnDestroy {
     } else {
       filtered = this.variants.filter(v => v.status === this.filter);
     }
-    return filtered.sort((a, b) => b.uxScore - a.uxScore);
+    return filtered.sort((a, b) => {
+      // First sort by UX score (descending)
+      if (b.uxScore !== a.uxScore) {
+        return b.uxScore - a.uxScore;
+      }
+      // Then sort by status (approved first)
+      if (a.status === 'approved' && b.status !== 'approved') return -1;
+      if (a.status !== 'approved' && b.status === 'approved') return 1;
+      return 0;
+    });
   }
 
   generateVariants(): void {

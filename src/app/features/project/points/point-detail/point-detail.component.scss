@@ -31,7 +31,7 @@
 .tab-content {
   padding: 24px;
   position: relative;
-  min-height: 600px;
+  min-height: 800px;
 }
 
 .mandatory-note {
@@ -209,7 +209,7 @@
 }
 
 ::ng-deep {
-  .mat-mdc-chip.active {
+  .mat-mdc-chip.approved {
     background: rgba(76, 175, 80, 0.18) !important;
     border: 1px solid rgba(76, 175, 80, 0.35) !important;
   }
@@ -389,7 +389,7 @@
       padding-right: 8px;
 
       button {
-        &.active {
+        &.approved {
           background-color: rgba(var(--theme-primary-rgb, 126, 244, 115), 0.1);
           color: var(--theme-primary, #7ef473);
         }
@@ -505,7 +505,6 @@
   flex-direction: column;
   gap: 0;
   max-height: calc(95vh - 200px);
-  overflow-y: auto;
   padding-right: 8px;
 
   h3 {

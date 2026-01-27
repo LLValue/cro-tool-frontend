@@ -42,8 +42,13 @@ mat-chip.selected {
   width: 100%;
 }
 
-.status-active {
+.status-approved {
   background-color: #4caf50;
+  color: white;
+}
+
+.status-pending {
+  background-color: #ff9800;
   color: white;
 }
 

@@ -78,11 +78,9 @@
 
         <mat-form-field appearance="outline" floatLabel="always" class="full-width">
           <mat-select formControlName="elementType" required>
-            <mat-option value="Title">Title</mat-option>
-            <mat-option value="CTA">CTA</mat-option>
-            <mat-option value="Subheadline">Subheadline</mat-option>
-            <mat-option value="Microcopy">Microcopy</mat-option>
-            <mat-option value="Other">Other</mat-option>
+            <mat-option *ngFor="let elementType of elementTypes" [value]="elementType">
+              {{ elementType }}
+            </mat-option>
           </mat-select>
         </mat-form-field>
 

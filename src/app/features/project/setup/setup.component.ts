@@ -92,7 +92,6 @@ export class SetupComponent implements OnInit {
       name: ['', Validators.required],
       pageUrl: ['', Validators.required],
       industry: [this.industries[0]],
-      elementType: [this.elementTypes[0]],
       notes: ['']
     });
   }
@@ -184,7 +183,6 @@ export class SetupComponent implements OnInit {
         name: this.project.name || '',
         pageUrl: this.project.pageUrl || '',
         industry: this.project.industry || this.industries[0],
-        elementType: this.project.elementType || this.elementTypes[0],
         notes: this.project.notes || ''
       });
       this.pageUrl = this.project.pageUrl || '';

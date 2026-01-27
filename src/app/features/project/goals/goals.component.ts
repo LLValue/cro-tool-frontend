@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators, AbstractControl } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { CommonModule } from '@angular/common';
 import { take } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
@@ -27,6 +28,7 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
     MatIconModule,
     MatCardModule,
     MatRadioModule,
+    MatTooltipModule,
     CommonModule,
     PageHeaderComponent
   ],
@@ -34,9 +36,10 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
   styleUrls: ['./goals.component.scss']
 })
 export class GoalsComponent implements OnInit {
-  primaryGoalForm: FormGroup;
-  secondaryGoalsForm: FormGroup;
+  goalForm: FormGroup;
   projectId: string = '';
+  formSubmitted = false;
+  savedGoals: Goal[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -44,19 +47,17 @@ export class GoalsComponent implements OnInit {
     private store: ProjectsStoreService,
     private toast: ToastHelperService
   ) {
-    this.primaryGoalForm = this.fb.group({
-      name: [''], // Optional - will come from backend in the future
-      type: ['clickSelector', Validators.required],
-      value: ['', Validators.required]
+    this.goalForm = this.fb.group({
+      name: ['', [Validators.required, Validators.maxLength(500)]],
+      type: ['urlReached', Validators.required],
+      value: ['', Validators.required],
+      isPrimary: [false, Validators.required]
     });
 
-    this.secondaryGoalsForm = this.fb.group({
-      goals: this.fb.array([])
+    // Add custom validator for primary goal uniqueness
+    this.goalForm.get('isPrimary')?.valueChanges.subscribe(() => {
+      this.checkPrimaryExists();
     });
-  }
-
-  get goalsArray(): FormArray {
-    return this.secondaryGoalsForm.get('goals') as FormArray;
   }
 
   ngOnInit(): void {
@@ -106,57 +107,50 @@ export class GoalsComponent implements OnInit {
     }
     
     this.store.getGoals(this.projectId).subscribe(goals => {
-      const primary = goals.find(g => g.isPrimary);
-      if (primary) {
-        this.primaryGoalForm.patchValue({
-          name: primary.name || '', // Handle undefined name
-          type: primary.type || 'clickSelector', // First option as default
-          value: primary.value
-        });
-      } else {
-        // No primary goal, ensure default type is set
-        if (!this.primaryGoalForm.get('type')?.value) {
-          this.primaryGoalForm.patchValue({ type: 'clickSelector' });
-        }
-      }
-
-      const secondary = goals.filter(g => !g.isPrimary);
-      this.goalsArray.clear();
-      secondary.forEach(goal => {
-        this.goalsArray.push(this.fb.group({
-          name: [goal.name || ''], // Optional - handle undefined name
-          type: [goal.type, Validators.required],
-          value: [goal.value, Validators.required]
-        }));
-      });
+      this.savedGoals = goals;
+      this.checkPrimaryExists();
     });
   }
 
-  addSecondaryGoal(): void {
-    this.goalsArray.push(this.fb.group({
-      name: [''], // Optional - will come from backend in the future
-      type: ['clickSelector', Validators.required],
-      value: ['', Validators.required]
-    }));
+  checkPrimaryExists(): void {
+    const isPrimary = this.goalForm.get('isPrimary')?.value;
+    if (isPrimary && this.savedGoals.some(g => g.isPrimary)) {
+      this.goalForm.get('isPrimary')?.setErrors({ primaryExists: true });
+    } else {
+      const errors = this.goalForm.get('isPrimary')?.errors;
+      if (errors && errors['primaryExists']) {
+        delete errors['primaryExists'];
+        if (Object.keys(errors).length === 0) {
+          this.goalForm.get('isPrimary')?.setErrors(null);
+        } else {
+          this.goalForm.get('isPrimary')?.setErrors(errors);
+        }
+      }
+    }
   }
 
-  removeSecondaryGoal(index: number): void {
-    this.goalsArray.removeAt(index);
+  removeGoal(goalId: string): void {
+    this.store.getGoals(this.projectId).pipe(take(1)).subscribe(goals => {
+      const updatedGoals = goals.filter(g => g.id !== goalId);
+      this.store.setGoals(this.projectId, updatedGoals);
+      this.savedGoals = updatedGoals;
+      this.toast.showSuccess('Goal deleted');
+      this.checkPrimaryExists();
+    });
   }
 
   getValueLabel(): string {
-    const type = this.primaryGoalForm.get('type')?.value;
+    const type = this.goalForm.get('type')?.value;
     return this.getLabelForType(type);
   }
 
   getValuePlaceholder(): string {
-    const type = this.primaryGoalForm.get('type')?.value;
+    const type = this.goalForm.get('type')?.value;
     return this.getPlaceholderForType(type);
   }
 
-  getValuePlaceholderForGoal(goal: FormGroup): string {
-    const type = goal.get('type')?.value;
-    return this.getPlaceholderForType(type);
+  getValueLabelForGoal(goal: Goal): string {
+    return this.getLabelForType(goal.type);
   }
 
   getLabelForType(type: string): string {
@@ -170,18 +164,18 @@ export class GoalsComponent implements OnInit {
 
   getPlaceholderForType(type: string): string {
     switch (type) {
-      case 'clickSelector': return '.cta-button';
-      case 'urlReached': return 'https://pack.stage.es';
-      case 'dataLayerEvent': return 'purchase';
+      case 'clickSelector': return 'Enter CSS selector';
+      case 'urlReached': return 'Enter URL';
+      case 'dataLayerEvent': return 'Enter event name';
       default: return '';
     }
   }
 
   getTypeLabel(type: string): string {
     switch (type) {
-      case 'clickSelector': return 'Click Selector';
-      case 'urlReached': return 'URL Reached';
-      case 'dataLayerEvent': return 'Data Layer Event';
+      case 'clickSelector': return 'CSS Selector';
+      case 'urlReached': return 'URL';
+      case 'dataLayerEvent': return 'Event Name';
       default: return 'Unknown';
     }
   }
@@ -200,132 +194,56 @@ export class GoalsComponent implements OnInit {
     return isPrimary ? `Primary ${typeLabel}` : `Secondary ${typeLabel}`;
   }
 
-  savePrimaryGoal(): void {
-    if (!this.projectId) {
-      this.toast.showError('Project ID is missing');
-      return;
-    }
-
-    if (!this.primaryGoalForm.valid) {
-      this.toast.showError('Please fill in all required fields for the primary goal');
-      return;
-    }
-
-    // Get existing goals
-    this.store.getGoals(this.projectId).pipe(take(1)).subscribe(existingGoals => {
-      const goals: Goal[] = [];
-      
-      // Add primary goal
-      const primaryFormValue = this.primaryGoalForm.value;
-      goals.push({
-        id: existingGoals.find(g => g.isPrimary)?.id || Date.now().toString(),
-        projectId: this.projectId,
-        isPrimary: true,
-        type: primaryFormValue.type,
-        value: primaryFormValue.value,
-        // Only include name if it's provided (not empty)
-        ...(primaryFormValue.name ? { name: primaryFormValue.name } : {})
-      });
-
-      // Keep existing secondary goals
-      const secondaryGoals = existingGoals.filter(g => !g.isPrimary);
-      goals.push(...secondaryGoals);
-
-      this.store.setGoals(this.projectId, goals);
-      this.toast.showSuccess('Primary goal saved');
-    });
+  getCharacterCount(fieldName: string): number {
+    const value = this.goalForm.get(fieldName)?.value || '';
+    return typeof value === 'string' ? value.length : 0;
   }
 
-  saveSecondaryGoals(): void {
-    if (!this.projectId) {
-      this.toast.showError('Project ID is missing');
-      return;
-    }
-
-    if (this.goalsArray.length === 0) {
-      this.toast.showError('Please add at least one secondary goal');
-      return;
-    }
-
-    // Validate all secondary goals
-    const invalidGoals = this.goalsArray.controls.filter(control => !control.valid);
-    if (invalidGoals.length > 0) {
-      this.toast.showError('Please fill in all required fields for secondary goals');
-      return;
-    }
-
-    // Get existing goals
-    this.store.getGoals(this.projectId).pipe(take(1)).subscribe(existingGoals => {
-      const goals: Goal[] = [];
-      
-      // Keep existing primary goal
-      const primaryGoal = existingGoals.find(g => g.isPrimary);
-      if (primaryGoal) {
-        goals.push(primaryGoal);
-      }
-
-      // Add secondary goals
-      this.goalsArray.controls.forEach((control, index) => {
-        if (control.valid) {
-          const existingSecondary = existingGoals.filter(g => !g.isPrimary)[index];
-          const goalValue = control.value;
-          goals.push({
-            id: existingSecondary?.id || Date.now().toString() + Math.random(),
-            projectId: this.projectId,
-            isPrimary: false,
-            type: goalValue.type,
-            value: goalValue.value,
-            // Only include name if it's provided (not empty)
-            ...(goalValue.name ? { name: goalValue.name } : {})
-          });
-        }
-      });
-
-      this.store.setGoals(this.projectId, goals);
-      this.toast.showSuccess('Secondary goals saved');
-    });
-  }
-
-  saveGoals(): void {
-    if (!this.projectId) {
-      this.toast.showError('Project ID is missing');
-      return;
-    }
-
-    const goals: Goal[] = [];
+  saveGoal(): void {
+    this.formSubmitted = true;
     
-    // Primary goal
-    if (this.primaryGoalForm.valid) {
-      const primaryFormValue = this.primaryGoalForm.value;
-      goals.push({
-        id: Date.now().toString(),
-        projectId: this.projectId,
-        isPrimary: true,
-        type: primaryFormValue.type,
-        value: primaryFormValue.value,
-        // Only include name if it's provided (not empty)
-        ...(primaryFormValue.name ? { name: primaryFormValue.name } : {})
-      });
+    if (!this.projectId) {
+      this.toast.showError('Project ID is missing');
+      return;
     }
 
-    // Secondary goals
-    this.goalsArray.controls.forEach(control => {
-      if (control.valid) {
-        const goalValue = control.value;
-        goals.push({
-          id: Date.now().toString() + Math.random(),
-          projectId: this.projectId,
-          isPrimary: false,
-          type: goalValue.type,
-          value: goalValue.value,
-          // Only include name if it's provided (not empty)
-          ...(goalValue.name ? { name: goalValue.name } : {})
-        });
-      }
-    });
+    if (this.goalForm.invalid) {
+      this.toast.showError('Please fill in all required fields');
+      return;
+    }
 
-    this.store.setGoals(this.projectId, goals);
-    this.toast.showSuccess('All goals saved');
+    // Check if primary already exists
+    this.checkPrimaryExists();
+    if (this.goalForm.get('isPrimary')?.hasError('primaryExists')) {
+      this.toast.showError('A primary goal already exists. Only one primary goal is allowed.');
+      return;
+    }
+
+    // Get existing goals
+    this.store.getGoals(this.projectId).pipe(take(1)).subscribe(existingGoals => {
+      const goalValue = this.goalForm.value;
+      const newGoal: Goal = {
+        id: Date.now().toString() + Math.random(),
+        projectId: this.projectId,
+        isPrimary: goalValue.isPrimary,
+        type: goalValue.type,
+        value: goalValue.value,
+        name: goalValue.name
+      };
+
+      const updatedGoals = [...existingGoals, newGoal];
+      this.store.setGoals(this.projectId, updatedGoals);
+      this.savedGoals = updatedGoals;
+      this.toast.showSuccess('Goal saved');
+      
+      // Reset form
+      this.goalForm.reset({
+        name: '',
+        type: 'urlReached',
+        value: '',
+        isPrimary: false
+      });
+      this.formSubmitted = false;
+    });
   }
 }
-

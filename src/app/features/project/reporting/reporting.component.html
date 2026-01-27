@@ -37,8 +37,8 @@
         </mat-form-field>
       </div>
       <div *ngIf="globalMetrics.length === 0" class="no-data-message">
-        <p>No metrics available. Click "Simulate Traffic" to generate metrics for active variants.</p>
-        <p *ngIf="variants.length === 0" class="warning">No active variants found. Create variants first in the Variants page.</p>
+        <p>No metrics available. Click "Simulate Traffic" to generate metrics for approved variants.</p>
+        <p *ngIf="variants.length === 0" class="warning">No approved variants found. Approve variants first in the Variants page.</p>
       </div>
       <div *ngIf="globalMetrics.length > 0" class="charts-section">
         <div class="charts-grid">

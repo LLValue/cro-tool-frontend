@@ -4,19 +4,51 @@
 </app-page-header>
 
 <div class="goals-container">
-  <mat-card class="primary-goal-card">
+  <mat-card class="goals-card">
     <mat-card-header>
-      <mat-card-title>Primary Goal</mat-card-title>
+      <mat-card-title>Goal</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      <form [formGroup]="primaryGoalForm">
+      <form [formGroup]="goalForm">
+        <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
+        
         <div class="form-field-wrapper">
-          <label class="field-label">Goal name (optional)</label>
-          <p class="field-helper">Give your primary goal a descriptive name.</p>
+          <label class="field-label">
+            Goal priority
+            <span class="required-asterisk">*</span>
+          </label>
+          <p class="field-helper">Select whether this is a primary or secondary goal.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <input matInput formControlName="name" placeholder="e.g., Primary Conversion">
+            <mat-select formControlName="isPrimary" required>
+              <mat-option [value]="true">Primary</mat-option>
+              <mat-option [value]="false">Secondary</mat-option>
+            </mat-select>
+            <mat-error *ngIf="(goalForm.get('isPrimary')?.touched || formSubmitted) && goalForm.get('isPrimary')?.hasError('required')">
+              Goal priority is required
+            </mat-error>
+            <mat-error *ngIf="goalForm.get('isPrimary')?.hasError('primaryExists')">
+              A primary goal already exists. Only one primary goal is allowed.
+            </mat-error>
           </mat-form-field>
         </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Goal name
+            <span class="required-asterisk">*</span>
+          </label>
+          <p class="field-helper">Give your goal a descriptive name.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <input matInput formControlName="name" required maxlength="500">
+            <mat-error *ngIf="(goalForm.get('name')?.touched || formSubmitted) && goalForm.get('name')?.hasError('required')">
+              Goal name is required
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('name') }} / 500</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
         <div class="form-field-wrapper">
           <label class="field-label">
             Goal type
@@ -24,16 +56,17 @@
           </label>
           <p class="field-helper">Select the type of goal you want to track.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <mat-select formControlName="type">
-              <mat-option value="clickSelector">Click Selector</mat-option>
-              <mat-option value="urlReached">URL Reached</mat-option>
-              <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
+            <mat-select formControlName="type" required>
+              <mat-option value="urlReached">URL</mat-option>
+              <mat-option value="clickSelector">CSS Selector</mat-option>
+              <mat-option value="dataLayerEvent">Event Name</mat-option>
             </mat-select>
-            <mat-error *ngIf="primaryGoalForm.get('type')?.hasError('required')">
+            <mat-error *ngIf="(goalForm.get('type')?.touched || formSubmitted) && goalForm.get('type')?.hasError('required')">
               Goal type is required
             </mat-error>
           </mat-form-field>
         </div>
+
         <div class="form-field-wrapper">
           <label class="field-label">
             {{ getValueLabel() }}
@@ -41,8 +74,8 @@
           </label>
           <p class="field-helper">{{ getValuePlaceholder() }}</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <input matInput formControlName="value" [placeholder]="getValuePlaceholder()">
-            <mat-error *ngIf="primaryGoalForm.get('value')?.hasError('required')">
+            <input matInput formControlName="value" required>
+            <mat-error *ngIf="(goalForm.get('value')?.touched || formSubmitted) && goalForm.get('value')?.hasError('required')">
               {{ getValueLabel() }} is required
             </mat-error>
           </mat-form-field>
@@ -50,61 +83,9 @@
       </form>
     </mat-card-content>
     <mat-card-actions>
-      <button mat-raised-button color="primary" (click)="savePrimaryGoal()" [disabled]="primaryGoalForm.invalid">
+      <button mat-raised-button color="primary" (click)="saveGoal()" [disabled]="goalForm.invalid">
         <mat-icon>save</mat-icon>
-        Save Primary Goal
-      </button>
-    </mat-card-actions>
-  </mat-card>
-
-  <mat-card class="secondary-goals-card">
-    <mat-card-header>
-      <mat-card-title>Secondary Goals</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <form [formGroup]="secondaryGoalsForm">
-        <div formArrayName="goals">
-          <div *ngFor="let goal of goalsArray.controls; let i = index" [formGroupName]="i" class="goal-row">
-            <div class="form-field-wrapper goal-name">
-              <label class="field-label">Name (optional)</label>
-              <p class="field-helper">Give this secondary goal a descriptive name.</p>
-              <mat-form-field appearance="outline" class="brief-input">
-                <input matInput formControlName="name" placeholder="e.g., Secondary Goal">
-              </mat-form-field>
-            </div>
-            <div class="form-field-wrapper goal-type">
-              <label class="field-label">Type</label>
-              <p class="field-helper">Select the type of goal you want to track.</p>
-              <mat-form-field appearance="outline" class="brief-input">
-                <mat-select formControlName="type">
-                  <mat-option value="clickSelector">Click Selector</mat-option>
-                  <mat-option value="urlReached">URL Reached</mat-option>
-                  <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-            <div class="form-field-wrapper goal-value">
-              <label class="field-label">Value</label>
-              <p class="field-helper">{{ getValuePlaceholderForGoal($any(goal)) }}</p>
-              <mat-form-field appearance="outline" class="brief-input">
-                <input matInput formControlName="value" [placeholder]="getValuePlaceholderForGoal($any(goal))">
-              </mat-form-field>
-            </div>
-            <button mat-icon-button (click)="removeSecondaryGoal(i)" class="delete-button">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </div>
-        <button mat-raised-button color="primary" (click)="addSecondaryGoal()">
-          <mat-icon>add</mat-icon>
-          Add Secondary Goal
-        </button>
-      </form>
-    </mat-card-content>
-    <mat-card-actions>
-      <button mat-raised-button color="primary" (click)="saveSecondaryGoals()" [disabled]="secondaryGoalsForm.invalid || goalsArray.length === 0">
-        <mat-icon>save</mat-icon>
-        Save Secondary Goals
+        Save Goal
       </button>
     </mat-card-actions>
   </mat-card>
@@ -116,53 +97,36 @@
     </mat-card-header>
     <mat-card-content>
       <div class="goals-list">
-        <!-- Primary Goal -->
-        <div class="goal-item primary-goal" *ngIf="primaryGoalForm.get('value')?.value">
+        <div class="goal-item" *ngFor="let goal of savedGoals; let i = index" [class.primary-goal]="goal.isPrimary" [class.secondary-goal]="!goal.isPrimary">
           <div class="goal-header">
-            <div class="goal-badge primary">
-              <mat-icon>flag</mat-icon>
-              <span>Primary</span>
+            <div class="goal-header-content">
+              <div class="goal-badge" [class.primary]="goal.isPrimary" [class.secondary]="!goal.isPrimary">
+                <mat-icon>{{ goal.isPrimary ? 'flag' : 'label' }}</mat-icon>
+                <span>{{ goal.isPrimary ? 'Primary' : 'Secondary ' + (i + 1) }}</span>
+              </div>
+              <div class="goal-type-badge" [class]="'type-' + goal.type">
+                {{ getTypeLabel(goal.type) }}
+              </div>
             </div>
-            <div class="goal-type-badge" [class]="'type-' + primaryGoalForm.get('type')?.value">
-              {{ getTypeLabel(primaryGoalForm.get('type')?.value) }}
-            </div>
+            <button mat-icon-button (click)="removeGoal(goal.id)" class="delete-button" type="button" matTooltip="Delete goal">
+              <mat-icon>delete</mat-icon>
+            </button>
           </div>
           <div class="goal-content">
-            <h3 class="goal-name">{{ primaryGoalForm.get('name')?.value || getDefaultGoalName(primaryGoalForm.get('type')?.value, true) }}</h3>
+            <h3 class="goal-name">{{ goal.name || getDefaultGoalName(goal.type, goal.isPrimary) }}</h3>
             <div class="goal-value">
-              <mat-icon class="value-icon">{{ getTypeIcon(primaryGoalForm.get('type')?.value) }}</mat-icon>
-              <code>{{ primaryGoalForm.get('value')?.value || 'Not set' }}</code>
-            </div>
-          </div>
-        </div>
-
-        <!-- Secondary Goals -->
-        <div class="goal-item secondary-goal" *ngFor="let goal of goalsArray.controls; let i = index">
-          <div class="goal-header">
-            <div class="goal-badge secondary">
-              <mat-icon>label</mat-icon>
-              <span>Secondary {{ i + 1 }}</span>
-            </div>
-            <div class="goal-type-badge" [class]="'type-' + goal.get('type')?.value">
-              {{ getTypeLabel(goal.get('type')?.value) }}
-            </div>
-          </div>
-          <div class="goal-content">
-            <h3 class="goal-name">{{ goal.get('name')?.value || getDefaultGoalName(goal.get('type')?.value, false) }}</h3>
-            <div class="goal-value">
-              <mat-icon class="value-icon">{{ getTypeIcon(goal.get('type')?.value) }}</mat-icon>
-              <code>{{ goal.get('value')?.value || 'Not set' }}</code>
+              <mat-icon class="value-icon">{{ getTypeIcon(goal.type) }}</mat-icon>
+              <code>{{ goal.value || 'Not set' }}</code>
             </div>
           </div>
         </div>
 
         <!-- Empty State -->
-        <div class="empty-state" *ngIf="!primaryGoalForm.get('value')?.value && goalsArray.length === 0">
+        <div class="empty-state" *ngIf="savedGoals.length === 0">
           <mat-icon>info</mat-icon>
-          <p>No goals configured yet. Add a primary goal above to get started.</p>
+          <p>No goals configured yet. Add a goal above to get started.</p>
         </div>
       </div>
     </mat-card-content>
   </mat-card>
 </div>
-
