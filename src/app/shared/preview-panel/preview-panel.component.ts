@@ -80,7 +80,7 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         current: changes['highlightSelector'].currentValue,
         previous: changes['highlightSelector'].previousValue
       });
-      if (this.highlightSelector) {
+      if (this.highlightSelector && this.highlightSelector.trim() !== '') {
         // Wait for iframe/content to be ready
         setTimeout(() => {
           console.log('[PreviewPanel] Attempting to highlight element:', this.highlightSelector);
@@ -97,7 +97,7 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
           }
         }, 200);
       } else {
-        console.log('[PreviewPanel] Clearing highlight');
+        console.log('[PreviewPanel] Clearing highlight - selector is empty');
         this.clearHighlight();
       }
     }
@@ -258,6 +258,8 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   private clearHighlight(): void {
+    console.log('[PreviewPanel] clearHighlight called');
+    
     if (this.highlightTimeout) {
       clearTimeout(this.highlightTimeout);
       this.highlightTimeout = undefined;
@@ -271,22 +273,71 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (this.useIframe && this.previewIframe?.nativeElement?.contentDocument) {
       try {
         const doc = this.previewIframe.nativeElement.contentDocument;
-        const highlightedElements = doc.querySelectorAll('[style*="outline: 3px solid rgb(103, 58, 183)"]');
-        highlightedElements.forEach((element: Element) => {
+        // Find all elements with the purple outline (highlight style)
+        const allElements = doc.querySelectorAll('*');
+        let clearedCount = 0;
+        
+        allElements.forEach((element: Element) => {
           const htmlElement = element as HTMLElement;
-          const originalOutline = (htmlElement as any).__originalOutline || '';
-          const originalBoxShadow = (htmlElement as any).__originalBoxShadow || '';
-          const originalTransition = (htmlElement as any).__originalTransition || '';
+          const style = htmlElement.style;
           
-          htmlElement.style.outline = originalOutline;
-          htmlElement.style.outlineOffset = '0';
-          htmlElement.style.boxShadow = originalBoxShadow;
-          htmlElement.style.transition = originalTransition;
-          htmlElement.style.zIndex = '';
-          htmlElement.style.position = '';
+          // Check if element has the highlight outline
+          if (style.outline && style.outline.includes('rgb(103, 58, 183)')) {
+            const originalOutline = (htmlElement as any).__originalOutline || '';
+            const originalBoxShadow = (htmlElement as any).__originalBoxShadow || '';
+            const originalTransition = (htmlElement as any).__originalTransition || '';
+            
+            htmlElement.style.outline = originalOutline;
+            htmlElement.style.outlineOffset = '0';
+            htmlElement.style.boxShadow = originalBoxShadow;
+            htmlElement.style.transition = originalTransition;
+            htmlElement.style.zIndex = '';
+            htmlElement.style.position = '';
+            
+            // Clean up stored original values
+            delete (htmlElement as any).__originalOutline;
+            delete (htmlElement as any).__originalBoxShadow;
+            delete (htmlElement as any).__originalTransition;
+            
+            clearedCount++;
+          }
+        });
+        
+        console.log('[PreviewPanel] Cleared', clearedCount, 'highlighted elements');
+      } catch (error) {
+        console.warn('[PreviewPanel] Could not clear highlight in iframe', error);
+      }
+    }
+    
+    // Also clear in div content if used
+    if (this.previewContent?.nativeElement) {
+      try {
+        const container = this.previewContent.nativeElement;
+        const allElements = container.querySelectorAll('*');
+        
+        allElements.forEach((element: Element) => {
+          const htmlElement = element as HTMLElement;
+          const style = htmlElement.style;
+          
+          if (style.outline && style.outline.includes('rgb(103, 58, 183)')) {
+            const originalOutline = (htmlElement as any).__originalOutline || '';
+            const originalBoxShadow = (htmlElement as any).__originalBoxShadow || '';
+            const originalTransition = (htmlElement as any).__originalTransition || '';
+            
+            htmlElement.style.outline = originalOutline;
+            htmlElement.style.outlineOffset = '0';
+            htmlElement.style.boxShadow = originalBoxShadow;
+            htmlElement.style.transition = originalTransition;
+            htmlElement.style.zIndex = '';
+            htmlElement.style.position = '';
+            
+            delete (htmlElement as any).__originalOutline;
+            delete (htmlElement as any).__originalBoxShadow;
+            delete (htmlElement as any).__originalTransition;
+          }
         });
       } catch (error) {
-        console.warn('Could not clear highlight in iframe', error);
+        console.warn('[PreviewPanel] Could not clear highlight in div', error);
       }
     }
   }
