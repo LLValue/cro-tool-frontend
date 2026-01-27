@@ -978,20 +978,25 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     console.log('[PointDetail] Setting previewHtml (this should trigger ngOnChanges in PreviewPanel)');
     this.previewHtml = modifiedHtml;
-    console.log('[PointDetail] Setting highlightSelector:', this.point.selector);
-    this.highlightSelector = this.point.selector;
     
-    console.log('[PointDetail] Current state after update:', {
-      previewHtmlLength: this.previewHtml.length,
-      highlightSelector: this.highlightSelector,
-      loadingPreview: this.loadingPreview
-    });
-
-    // Clear highlight after animation
+    // Clear any existing highlight first
+    this.highlightSelector = '';
+    
+    // Use setTimeout to ensure change detection picks up the change
     setTimeout(() => {
-      console.log('[PointDetail] Clearing highlight selector');
-      this.highlightSelector = '';
-    }, 1200);
+      console.log('[PointDetail] Setting highlightSelector:', this.point.selector);
+      // Set the highlight selector to trigger the highlight animation
+      this.highlightSelector = this.point.selector;
+      
+      // Don't clear the highlight immediately - let it fade out naturally
+      // The PreviewPanel will handle the fade-out after ~1 second
+      
+      console.log('[PointDetail] Current state after update:', {
+        previewHtmlLength: this.previewHtml.length,
+        highlightSelector: this.highlightSelector,
+        loadingPreview: this.loadingPreview
+      });
+    }, 50);
     
     console.log('[PointDetail] ==================== END PREVIEW VARIANT ====================');
   }
