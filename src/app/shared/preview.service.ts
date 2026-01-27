@@ -141,26 +141,59 @@ export class PreviewService {
     variants: Variant[],
     points: OptimizationPoint[]
   ): string {
+    console.log('[PreviewService] applyVariantsToHtml called', {
+      htmlLength: html?.length,
+      variantsCount: variants?.length,
+      pointsCount: points?.length
+    });
+
     if (!html || !variants || variants.length === 0) {
+      console.log('[PreviewService] Early return - missing data', { hasHtml: !!html, hasVariants: !!variants, variantsLength: variants?.length });
       return html;
     }
 
     let modifiedHtml = html;
 
-    variants.forEach(variant => {
+    variants.forEach((variant, index) => {
+      console.log(`[PreviewService] Processing variant ${index + 1}/${variants.length}`, {
+        variantId: variant.id,
+        variantText: variant.text,
+        optimizationPointId: variant.optimizationPointId
+      });
+
       const point = points.find(p => p.id === variant.optimizationPointId);
       if (!point || !point.selector) {
+        console.error('[PreviewService] Point not found or missing selector', { 
+          pointFound: !!point,
+          pointId: variant.optimizationPointId,
+          selector: point?.selector
+        });
         return;
       }
 
+      console.log('[PreviewService] Applying variant to HTML', {
+        selector: point.selector,
+        newText: variant.text
+      });
+
       modifiedHtml = this.applyVariantToHtml(modifiedHtml, point.selector, variant.text);
+      console.log('[PreviewService] HTML modified', { newLength: modifiedHtml.length });
     });
 
+    console.log('[PreviewService] All variants applied', { finalLength: modifiedHtml.length });
     return modifiedHtml;
   }
 
   private applyVariantToHtml(html: string, selector: string, newText: string): string {
+    console.log('[PreviewService] applyVariantToHtml', { 
+      selectorLength: selector?.length, 
+      newTextLength: newText?.length,
+      selector,
+      newText
+    });
+
     if (!selector || !newText) {
+      console.log('[PreviewService] Missing selector or newText');
       return html;
     }
 
@@ -170,11 +203,19 @@ export class PreviewService {
       
       const elements = doc.querySelectorAll(selector);
       
+      console.log('[PreviewService] Elements found with DOMParser:', elements.length);
+      
       if (elements.length === 0) {
+        console.log('[PreviewService] No elements found, trying regex fallback');
         return this.applyVariantWithRegex(html, selector, newText);
       }
 
-      elements.forEach(element => {
+      elements.forEach((element, idx) => {
+        console.log(`[PreviewService] Updating element ${idx + 1}/${elements.length}`, {
+          tagName: element.tagName,
+          oldText: element.textContent?.substring(0, 50),
+          newText: newText.substring(0, 50)
+        });
         if (element.textContent !== null) {
           element.textContent = newText;
         } else {
@@ -182,9 +223,11 @@ export class PreviewService {
         }
       });
 
-      return doc.documentElement.outerHTML;
+      const result = doc.documentElement.outerHTML;
+      console.log('[PreviewService] DOM modification complete');
+      return result;
     } catch (error) {
-      console.warn('Error applying variant with DOMParser, using regex fallback', error);
+      console.error('[PreviewService] Error applying variant with DOMParser, using regex fallback', error);
       return this.applyVariantWithRegex(html, selector, newText);
     }
   }

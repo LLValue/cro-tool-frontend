@@ -893,71 +893,107 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
   // Variants tab preview methods
   loadProjectPreview(): void {
-    if (!this.projectId) return;
+    console.log('[PointDetail] loadProjectPreview called', { projectId: this.projectId });
+    if (!this.projectId) {
+      console.log('[PointDetail] No projectId, returning');
+      return;
+    }
 
     this.loadingPreview = true;
     this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
       next: (project) => {
+        console.log('[PointDetail] Project loaded', { pageUrl: project.pageUrl, hasPreviewHtml: !!project.previewHtml });
         if (project.pageUrl) {
           // Fetch HTML from URL using proxy
+          console.log('[PointDetail] Fetching HTML from proxy', project.pageUrl);
           this.apiClient.proxyFetch(project.pageUrl).subscribe({
             next: (response) => {
+              console.log('[PointDetail] Proxy fetch response', { hasHtml: !!response.html, htmlLength: response.html?.length });
               if (response.html && response.html.trim().length > 0) {
                 const processedHtml = this.removeCookiePopupsFromHtml(response.html);
                 this.previewHtml = processedHtml;
                 this.originalPreviewHtml = processedHtml;
+                console.log('[PointDetail] Preview HTML set', { previewHtmlLength: this.previewHtml.length, originalLength: this.originalPreviewHtml.length });
               }
               this.loadingPreview = false;
             },
-            error: () => {
+            error: (err) => {
+              console.error('[PointDetail] Proxy fetch error', err);
               this.toast.showError('Could not load page preview');
               this.loadingPreview = false;
             }
           });
         } else {
+          console.log('[PointDetail] No pageUrl in project');
           this.toast.showError('No page URL configured for this project');
           this.loadingPreview = false;
         }
       },
-      error: () => {
+      error: (err) => {
+        console.error('[PointDetail] Get project error', err);
         this.loadingPreview = false;
       }
     });
   }
 
   previewVariant(variant: Variant): void {
-    console.log('previewVariant called', { variant, point: this.point, previewHtml: this.previewHtml?.length, originalPreviewHtml: this.originalPreviewHtml?.length });
+    console.log('[PointDetail] ==================== PREVIEW VARIANT CLICKED ====================');
+    console.log('[PointDetail] Variant:', variant);
+    console.log('[PointDetail] Point:', this.point);
+    console.log('[PointDetail] Preview HTML length:', this.previewHtml?.length);
+    console.log('[PointDetail] Original HTML length:', this.originalPreviewHtml?.length);
+    console.log('[PointDetail] Current highlightSelector:', this.highlightSelector);
     
     if (!this.point || !this.point.selector) {
+      console.error('[PointDetail] ERROR: Point or selector not found', { point: this.point });
       this.toast.showError('Point selector not found');
       return;
     }
 
     if (!this.previewHtml && !this.originalPreviewHtml) {
+      console.error('[PointDetail] ERROR: No preview HTML available');
       this.toast.showError('No preview available. Please wait for the preview to load.');
       return;
     }
 
     if (!this.originalPreviewHtml && this.previewHtml) {
+      console.log('[PointDetail] Setting originalPreviewHtml from previewHtml');
       this.originalPreviewHtml = this.previewHtml;
     }
 
+    const baseHtml = this.originalPreviewHtml || this.previewHtml;
+    console.log('[PointDetail] Using base HTML:', baseHtml.substring(0, 200));
+    console.log('[PointDetail] Applying variant with selector:', this.point.selector, 'and text:', variant.text);
+
     // Apply variant to HTML
     const modifiedHtml = this.previewService.applyVariantsToHtml(
-      this.originalPreviewHtml || this.previewHtml,
+      baseHtml,
       [variant],
       [this.point]
     );
 
-    console.log('HTML modified', { originalLength: this.originalPreviewHtml?.length, modifiedLength: modifiedHtml?.length });
+    console.log('[PointDetail] Modified HTML length:', modifiedHtml?.length);
+    console.log('[PointDetail] HTML changed:', baseHtml !== modifiedHtml);
+    console.log('[PointDetail] Modified HTML preview:', modifiedHtml.substring(0, 200));
 
+    console.log('[PointDetail] Setting previewHtml (this should trigger ngOnChanges in PreviewPanel)');
     this.previewHtml = modifiedHtml;
+    console.log('[PointDetail] Setting highlightSelector:', this.point.selector);
     this.highlightSelector = this.point.selector;
     
+    console.log('[PointDetail] Current state after update:', {
+      previewHtmlLength: this.previewHtml.length,
+      highlightSelector: this.highlightSelector,
+      loadingPreview: this.loadingPreview
+    });
+
     // Clear highlight after animation
     setTimeout(() => {
+      console.log('[PointDetail] Clearing highlight selector');
       this.highlightSelector = '';
     }, 1200);
+    
+    console.log('[PointDetail] ==================== END PREVIEW VARIANT ====================');
   }
 
   onPreviewReload(): void {

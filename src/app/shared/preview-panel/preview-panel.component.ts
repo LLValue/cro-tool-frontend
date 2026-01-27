@@ -62,32 +62,59 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    console.log('[PreviewPanel] ngOnChanges called', {
+      hasPreviewHtmlChange: !!changes['previewHtml'],
+      hasPreviewUrlChange: !!changes['previewUrl'],
+      hasHighlightSelectorChange: !!changes['highlightSelector'],
+      previewHtml: this.previewHtml?.substring(0, 100),
+      previewUrl: this.previewUrl,
+      highlightSelector: this.highlightSelector
+    });
+
     if (changes['previewHtml'] || changes['previewUrl']) {
+      console.log('[PreviewPanel] Updating safe HTML');
       this.updateSafeHtml();
     }
     if (changes['highlightSelector']) {
+      console.log('[PreviewPanel] Highlight selector changed:', {
+        current: changes['highlightSelector'].currentValue,
+        previous: changes['highlightSelector'].previousValue
+      });
       if (this.highlightSelector) {
         // Wait for iframe/content to be ready
         setTimeout(() => {
+          console.log('[PreviewPanel] Attempting to highlight element:', this.highlightSelector);
           if (this.useIframe && this.previewIframe?.nativeElement?.contentWindow) {
+            console.log('[PreviewPanel] Using iframe highlight');
             this.highlightElementInIframe(this.highlightSelector);
           } else if (this.previewContent?.nativeElement) {
+            console.log('[PreviewPanel] Using div highlight');
             this.highlightElementInDiv(this.highlightSelector);
+          } else {
+            console.error('[PreviewPanel] No iframe or content element found');
           }
         }, 200);
       } else {
+        console.log('[PreviewPanel] Clearing highlight');
         this.clearHighlight();
       }
     }
   }
 
   private updateSafeHtml(): void {
+    console.log('[PreviewPanel] updateSafeHtml called', {
+      hasPreviewHtml: !!this.previewHtml,
+      previewHtmlLength: this.previewHtml?.length,
+      hasPreviewUrl: !!this.previewUrl
+    });
     if (this.previewHtml) {
       this.safePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(this.previewHtml);
       this.safeIframeHtml = this.sanitizer.bypassSecurityTrustHtml(this.previewHtml);
+      console.log('[PreviewPanel] Safe HTML updated');
     }
     if (this.previewUrl) {
       this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewUrl);
+      console.log('[PreviewPanel] Safe URL updated');
     }
   }
 
@@ -117,14 +144,26 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   private highlightElementInIframe(selector: string, duration: number = 1000): void {
+    console.log('[PreviewPanel] highlightElementInIframe called', { selector, duration });
     const iframe = this.previewIframe?.nativeElement;
-    if (!iframe?.contentWindow || !iframe.contentDocument) return;
+    if (!iframe?.contentWindow || !iframe.contentDocument) {
+      console.error('[PreviewPanel] Iframe not ready', { 
+        hasIframe: !!iframe, 
+        hasContentWindow: !!iframe?.contentWindow,
+        hasContentDocument: !!iframe?.contentDocument
+      });
+      return;
+    }
 
     try {
       const doc = iframe.contentDocument;
       const elements = doc.querySelectorAll(selector);
 
-      if (elements.length === 0) return;
+      console.log('[PreviewPanel] Elements found:', elements.length);
+      if (elements.length === 0) {
+        console.error('[PreviewPanel] No elements found for selector:', selector);
+        return;
+      }
 
       elements.forEach((element: Element) => {
         const htmlElement = element as HTMLElement;
