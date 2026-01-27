@@ -86,8 +86,16 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
           console.log('[PreviewPanel] Attempting to highlight element:', this.highlightSelector);
           if (this.useIframe && this.previewIframe?.nativeElement?.contentWindow) {
             console.log('[PreviewPanel] Using iframe highlight');
-            // Use persistent highlight for hover (no fade-out)
-            const isHover = !changes['highlightSelector'].previousValue || changes['highlightSelector'].previousValue === '';
+            // Determine if this is a hover (temporary) or click (with fade-out)
+            // Hover: previous value was empty, current is set, and will be cleared soon
+            // Click: previous value might exist or this is a deliberate preview action
+            // For now, we'll use persistent=false (with fade-out) for all cases except hover
+            // Hover detection: if previous was empty and this is a quick change, it's likely hover
+            const previousWasEmpty = !changes['highlightSelector'].previousValue || changes['highlightSelector'].previousValue.trim() === '';
+            // Use persistent highlight only if we detect it's a hover (previous was empty)
+            // For clicks/preview actions, use fade-out (persistent=false)
+            const isHover = previousWasEmpty;
+            console.log('[PreviewPanel] Highlight type:', isHover ? 'HOVER (persistent)' : 'CLICK (with fade-out)');
             this.highlightElementInIframe(this.highlightSelector, 1000, isHover);
           } else if (this.previewContent?.nativeElement) {
             console.log('[PreviewPanel] Using div highlight');

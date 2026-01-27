@@ -665,12 +665,18 @@ export class ReportingComponent implements OnInit, OnDestroy {
     );
 
     this.previewHtml = modifiedHtml;
-    this.highlightSelector = point.selector;
     
-    // Clear highlight after animation
+    // Clear any existing highlight first
+    this.highlightSelector = '';
+    
+    // Use setTimeout to ensure change detection picks up the change
     setTimeout(() => {
-      this.highlightSelector = '';
-    }, 1200);
+      // Set the highlight selector to trigger the highlight animation
+      this.highlightSelector = point.selector;
+      
+      // Don't clear the highlight immediately - let it fade out naturally
+      // The PreviewPanel will handle the fade-out after ~1 second
+    }, 50);
   }
 
   loadPreview(): void {
