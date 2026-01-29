@@ -44,6 +44,7 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   private longWaitThreshold = 45000; // 45 seconds
   private minDisplayTime = 3000; // Minimum 3 seconds to show the progress
   private responseReceived = false;
+  private progressSimulationActive = true;
 
   // Status messages (rotate every 4-6s)
   private statusMessages = [
@@ -142,7 +143,7 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$),
       map(() => elapsed())
     ).subscribe(time => {
-      if (this.isComplete || this.error) return;
+      if (this.isComplete || this.error || !this.progressSimulationActive) return;
 
       // Find current checkpoint
       let currentCheckpoint = checkpoints[0];
@@ -175,8 +176,10 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
         this.progress = currentCheckpoint.progress;
       }
 
-      // Update step statuses
-      this.updateStepStatuses(currentCheckpoint.stepIndex);
+      // Update step statuses only if simulation is still active
+      if (this.progressSimulationActive) {
+        this.updateStepStatuses(currentCheckpoint.stepIndex);
+      }
 
       // Handle long wait messages
       if (time > this.longWaitThreshold && !this.isComplete) {
@@ -203,6 +206,9 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   }
 
   private completeProgress(): void {
+    // Stop the automatic progress simulation
+    this.progressSimulationActive = false;
+    
     const elapsed = Date.now() - this.startTime;
     const remainingTime = Math.max(0, this.minDisplayTime - elapsed);
     
@@ -223,12 +229,26 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
 
   private animateThroughAllSteps(duration: number): void {
     const totalSteps = this.steps.length;
-    const currentStepIndex = this.steps.findIndex(s => s.status === 'in-progress');
-    const startStepIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
+    // Find the last step that is done or in-progress
+    let currentStepIndex = -1;
+    for (let i = 0; i < this.steps.length; i++) {
+      if (this.steps[i].status === 'done' || this.steps[i].status === 'in-progress') {
+        currentStepIndex = i;
+      }
+    }
+    
+    // Start from the next step after the last completed one
+    const startStepIndex = currentStepIndex + 1;
     const remainingSteps = totalSteps - startStepIndex;
     
+    if (remainingSteps <= 0) {
+      // All steps already done, just update progress
+      this.progress = 95;
+      return;
+    }
+    
     // Time per step (distribute remaining time across remaining steps)
-    const timePerStep = duration / Math.max(remainingSteps, 1);
+    const timePerStep = duration / remainingSteps;
     
     // Animate through each remaining step
     for (let i = 0; i < remainingSteps; i++) {
@@ -236,19 +256,21 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
       const stepDelay = i * timePerStep;
       
       setTimeout(() => {
-        // Mark previous step as done
-        if (stepIndex > 0) {
-          this.steps[stepIndex - 1].status = 'done';
-        }
-        
-        // Mark current step as in-progress
+        // Mark current step as in-progress first
         if (stepIndex < this.steps.length) {
           this.steps[stepIndex].status = 'in-progress';
         }
         
-        // Update progress based on step completion
-        const progressPercent = Math.min(10 + (stepIndex + 1) * (85 / totalSteps), 95);
-        this.progress = progressPercent;
+        // Then mark as done after a short delay (to show it was in-progress)
+        setTimeout(() => {
+          if (stepIndex < this.steps.length) {
+            this.steps[stepIndex].status = 'done';
+          }
+          
+          // Update progress based on step completion
+          const progressPercent = Math.min(10 + (stepIndex + 1) * (85 / totalSteps), 95);
+          this.progress = progressPercent;
+        }, Math.min(200, timePerStep * 0.3)); // Show in-progress for 30% of step time or 200ms, whichever is less
       }, stepDelay);
     }
   }
