@@ -5,17 +5,40 @@
       <div class="view-mode-toggle">
         <button 
           mat-icon-button 
-          [class.active]="viewMode === 'desktop'"
-          (click)="viewMode = 'desktop'"
-          matTooltip="Desktop view">
-          <mat-icon>desktop_windows</mat-icon>
+          [class.active]="viewMode === 'mobile'"
+          (click)="setViewMode('mobile')"
+          matTooltip="Mobile view">
+          <mat-icon>phone_android</mat-icon>
         </button>
         <button 
           mat-icon-button 
-          [class.active]="viewMode === 'mobile'"
-          (click)="viewMode = 'mobile'"
-          matTooltip="Mobile view">
-          <mat-icon>phone_android</mat-icon>
+          [class.active]="viewMode === 'desktop'"
+          (click)="setViewMode('desktop')"
+          matTooltip="Desktop view">
+          <mat-icon>desktop_windows</mat-icon>
+        </button>
+      </div>
+      <div class="zoom-controls" *ngIf="viewMode === 'mobile'">
+        <button 
+          mat-button 
+          [class.active]="zoomMode === 'fit'"
+          (click)="setZoomMode('fit')"
+          matTooltip="Fit to width">
+          Fit
+        </button>
+        <button 
+          mat-button 
+          [class.active]="zoomMode === '100%'"
+          (click)="setZoomMode('100%')"
+          matTooltip="100% scale">
+          100%
+        </button>
+        <button 
+          mat-button 
+          [class.active]="zoomMode === '75%'"
+          (click)="setZoomMode('75%')"
+          matTooltip="75% scale">
+          75%
         </button>
       </div>
       <button 
@@ -36,35 +59,48 @@
     </div>
   </div>
 
-  <div class="preview-wrapper" [class.loading]="loading" [class.mobile-view]="viewMode === 'mobile'">
+  <div class="preview-wrapper" 
+       [class.loading]="loading" 
+       [class.mobile-view]="viewMode === 'mobile'"
+       [class.zoom-fit]="zoomMode === 'fit'"
+       [class.zoom-100]="zoomMode === '100%'"
+       [class.zoom-75]="zoomMode === '75%'"
+       [class.zoom-125]="zoomMode === '125%'">
     <div class="loading-overlay" *ngIf="loading">
       <mat-progress-bar mode="indeterminate"></mat-progress-bar>
       <p>Loading page preview...</p>
     </div>
 
     <!-- Iframe preview -->
-    <iframe 
-      *ngIf="useIframe && safeIframeHtml && !loading" 
-      #previewIframe
-      [srcdoc]="safeIframeHtml" 
-      class="preview-iframe"
-      [class.mobile-view]="viewMode === 'mobile'"
-      tabindex="-1"
-      aria-hidden="true"
-      (load)="onIframeLoad()"
-      frameborder="0">
-    </iframe>
-    <iframe 
-      *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loading" 
-      #previewIframe
-      [src]="safeIframeUrl" 
-      class="preview-iframe"
-      [class.mobile-view]="viewMode === 'mobile'"
-      tabindex="-1"
-      aria-hidden="true"
-      (load)="onIframeLoad()"
-      frameborder="0">
-    </iframe>
+    <div class="iframe-container" 
+         [class.mobile-view]="viewMode === 'mobile'"
+         [class.zoom-fit]="zoomMode === 'fit' && viewMode === 'mobile'"
+         [class.zoom-100]="zoomMode === '100%' && viewMode === 'mobile'"
+         [class.zoom-75]="zoomMode === '75%' && viewMode === 'mobile'"
+         [class.zoom-125]="zoomMode === '125%' && viewMode === 'mobile'">
+      <iframe 
+        *ngIf="useIframe && safeIframeHtml && !loading" 
+        #previewIframe
+        [srcdoc]="safeIframeHtml" 
+        class="preview-iframe"
+        [class.mobile-view]="viewMode === 'mobile'"
+        tabindex="-1"
+        aria-hidden="true"
+        (load)="onIframeLoad()"
+        frameborder="0">
+      </iframe>
+      <iframe 
+        *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loading" 
+        #previewIframe
+        [src]="safeIframeUrl" 
+        class="preview-iframe"
+        [class.mobile-view]="viewMode === 'mobile'"
+        tabindex="-1"
+        aria-hidden="true"
+        (load)="onIframeLoad()"
+        frameborder="0">
+      </iframe>
+    </div>
 
     <!-- Div preview -->
     <div 

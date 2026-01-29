@@ -38,12 +38,14 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   @ViewChild('previewIframe', { static: false }) previewIframe?: ElementRef<HTMLIFrameElement>;
   @ViewChild('previewContent', { static: false }) previewContent?: ElementRef<HTMLDivElement>;
 
-  viewMode: 'desktop' | 'mobile' = 'desktop';
+  viewMode: 'desktop' | 'mobile' = 'mobile';
+  zoomMode: 'fit' | '100%' | '75%' | '125%' = 'fit';
   safePreviewHtml: SafeHtml = '';
   safeIframeUrl: SafeResourceUrl = '';
   safeIframeHtml: SafeHtml = '';
   private highlightTimeout?: number;
   private highlightStyleElement?: HTMLStyleElement;
+  private resizeListener?: () => void;
 
   constructor(private sanitizer: DomSanitizer) {}
 
@@ -55,10 +57,23 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (this.highlightSelector) {
       setTimeout(() => this.highlightElement(this.highlightSelector), 100);
     }
+    // Calculate fit scale for mobile view
+    setTimeout(() => this.updateFitScale(), 200);
+    
+    // Add resize listener to recalculate fit scale
+    this.resizeListener = () => {
+      if (this.viewMode === 'mobile' && this.zoomMode === 'fit') {
+        this.updateFitScale();
+      }
+    };
+    window.addEventListener('resize', this.resizeListener);
   }
 
   ngOnDestroy(): void {
     this.clearHighlight();
+    if (this.resizeListener) {
+      window.removeEventListener('resize', this.resizeListener);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -74,6 +89,11 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (changes['previewHtml'] || changes['previewUrl']) {
       console.log('[PreviewPanel] Updating safe HTML');
       this.updateSafeHtml();
+      // Update fit scale after content loads
+      setTimeout(() => this.updateFitScale(), 200);
+    }
+    if (changes['zoomMode'] || changes['viewMode']) {
+      setTimeout(() => this.updateFitScale(), 100);
     }
     if (changes['highlightSelector']) {
       console.log('[PreviewPanel] Highlight selector changed:', {
@@ -137,9 +157,89 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     this.reload.emit();
   }
 
+  setZoomMode(mode: 'fit' | '100%' | '75%' | '125%'): void {
+    this.zoomMode = mode;
+    setTimeout(() => this.updateFitScale(), 0);
+  }
+
+  setViewMode(mode: 'desktop' | 'mobile'): void {
+    this.viewMode = mode;
+    setTimeout(() => this.updateFitScale(), 0);
+  }
+
   onIframeLoad(): void {
     if (this.highlightSelector && this.previewIframe?.nativeElement?.contentWindow) {
       setTimeout(() => this.highlightElementInIframe(this.highlightSelector), 100);
+    }
+    setTimeout(() => this.updateFitScale(), 100);
+  }
+
+  private updateFitScale(): void {
+    console.log('[PreviewPanel] updateFitScale called', { viewMode: this.viewMode, zoomMode: this.zoomMode });
+    
+    // Try to find iframe using ViewChild first, then fallback to querySelector
+    let iframe: HTMLIFrameElement | null = null;
+    if (this.previewIframe?.nativeElement) {
+      iframe = this.previewIframe.nativeElement;
+    } else {
+      // Fallback: find iframe in the DOM
+      const container = document.querySelector('.iframe-container');
+      if (container) {
+        iframe = container.querySelector('.preview-iframe') as HTMLIFrameElement;
+      }
+    }
+
+    if (!iframe) {
+      console.log('[PreviewPanel] No iframe found, will retry');
+      // Retry after a short delay if iframe is not ready
+      setTimeout(() => this.updateFitScale(), 100);
+      return;
+    }
+
+    console.log('[PreviewPanel] Iframe found, updating scale', { zoomMode: this.zoomMode });
+
+    if (this.viewMode === 'mobile') {
+      if (this.zoomMode === 'fit') {
+        // Fit: scale to fit available width
+        const container = iframe.parentElement;
+        if (container) {
+          const containerWidth = container.clientWidth - 40; // Account for padding
+          const iframeWidth = 375; // Mobile width
+          const scale = Math.min(1, Math.max(0.1, containerWidth / iframeWidth));
+          console.log('[PreviewPanel] Fit scale calculated', { containerWidth, iframeWidth, scale });
+          iframe.style.width = '375px';
+          iframe.style.height = '100%';
+          iframe.style.maxWidth = '100%';
+          iframe.style.transform = `scale(${scale})`;
+          iframe.style.transformOrigin = 'top center';
+          iframe.style.display = 'block';
+        }
+      } else {
+        // Fixed scale modes
+        iframe.style.width = '375px';
+        iframe.style.height = '100%';
+        iframe.style.maxWidth = 'none';
+        let scale = 1;
+        if (this.zoomMode === '100%') {
+          scale = 1;
+        } else if (this.zoomMode === '75%') {
+          scale = 0.75;
+        } else if (this.zoomMode === '125%') {
+          scale = 1.25;
+        }
+        console.log('[PreviewPanel] Fixed scale applied', { zoomMode: this.zoomMode, scale });
+        iframe.style.transform = `scale(${scale})`;
+        iframe.style.transformOrigin = 'top center';
+        iframe.style.display = 'block';
+      }
+    } else {
+      // Desktop mode: reset transforms
+      console.log('[PreviewPanel] Resetting to desktop mode');
+      iframe.style.transform = 'none';
+      iframe.style.width = '100%';
+      iframe.style.height = '100%';
+      iframe.style.maxWidth = '100%';
+      iframe.style.display = 'block';
     }
   }
 
