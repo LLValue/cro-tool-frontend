@@ -42,6 +42,8 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   private confidenceIndex = 0;
   private startTime = Date.now();
   private longWaitThreshold = 45000; // 45 seconds
+  private minDisplayTime = 3000; // Minimum 3 seconds to show the progress
+  private responseReceived = false;
 
   // Status messages (rotate every 4-6s)
   private statusMessages = [
@@ -92,9 +94,11 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     this.data.generateObservable.subscribe({
       next: (variants) => {
         this.variantCount = Array.isArray(variants) ? variants.length : 10;
+        this.responseReceived = true;
         this.completeProgress();
       },
       error: (err) => {
+        this.responseReceived = true;
         this.handleError(err);
       }
     });
@@ -199,6 +203,32 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   }
 
   private completeProgress(): void {
+    const elapsed = Date.now() - this.startTime;
+    const remainingTime = Math.max(0, this.minDisplayTime - elapsed);
+    
+    // If we haven't shown the modal for the minimum time, wait
+    if (remainingTime > 0) {
+      // Continue showing progress until minimum time is reached
+      setTimeout(() => {
+        this.finishProgress();
+      }, remainingTime);
+      
+      // Continue progress simulation during the wait
+      const progressInterval = setInterval(() => {
+        if (this.progress < 95) {
+          this.progress = Math.min(this.progress + 2, 95);
+        }
+        if (Date.now() - this.startTime >= this.minDisplayTime) {
+          clearInterval(progressInterval);
+        }
+      }, 100);
+    } else {
+      // Already shown for minimum time, complete immediately
+      this.finishProgress();
+    }
+  }
+
+  private finishProgress(): void {
     this.isComplete = true;
     this.progress = 100;
     this.steps.forEach(step => step.status = 'done');
