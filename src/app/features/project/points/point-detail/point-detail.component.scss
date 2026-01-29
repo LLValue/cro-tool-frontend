@@ -201,15 +201,16 @@
 .left-column {
   padding: 24px;
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - 70px);
 }
 
 .right-column {
   position: sticky;
-  top: 0;
-  height: calc(100vh - 200px);
+  top: 4px;
+  height: calc(100vh - 100px);
   overflow: hidden;
   padding-left: 24px;
+  padding-right: 24px;
 }
 
 .variants-header {
