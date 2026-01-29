@@ -23,7 +23,6 @@ import { API_CLIENT } from '../../../api/api-client.token';
 import { ApiClient } from '../../../api/api-client';
 import { Inject } from '@angular/core';
 import { SelectorInputDialogComponent } from './selector-input-dialog/selector-input-dialog.component';
-import { PointEditorComponent } from './point-editor/point-editor.component';
 import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 
@@ -187,37 +186,8 @@ export class PointsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Open the editor mode dialog
-    const dialogRef = this.dialog.open(PointEditorComponent, {
-      width: '95vw',
-      maxWidth: '1800px',
-      height: '95vh',
-      maxHeight: '1200px',
-      data: { projectId },
-      disableClose: false,
-      panelClass: 'point-editor-dialog'
-    });
-
-    const dialogSub = dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        const addPointSub = this.store.addPoint(projectId, {
-          name: result.name,
-          selector: result.selector,
-          text: result.text || '',
-          elementType: result.elementType || 'Other',
-          status: 'Included'
-        }).subscribe({
-          next: () => {
-            this.toast.showSuccess('Point created successfully');
-          },
-          error: () => {
-            this.toast.showError('Failed to create point');
-          }
-        });
-        this.subscriptions.add(addPointSub);
-      }
-    });
-    this.subscriptions.add(dialogSub);
+    // Navigate to point-detail in create mode
+    this.router.navigate(['/projects', projectId, 'points', 'new']);
   }
 
   duplicatePoint(point: OptimizationPoint): void {

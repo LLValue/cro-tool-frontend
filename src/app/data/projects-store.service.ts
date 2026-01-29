@@ -214,7 +214,10 @@ export class ProjectsStoreService {
       selector: point.selector || '',
       text: point.text || '',
       objective: point.objective || '',
-      generationRules: point.generationRules || ''
+      generationRules: point.generationRules || '',
+      elementType: point.elementType,
+      deviceScope: point.deviceScope,
+      status: point.status
     };
 
     return this.pointsApi.createPoint(projectId, req).pipe(

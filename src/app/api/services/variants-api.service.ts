@@ -62,7 +62,10 @@ export class VariantsApiService {
       complianceRationale: dto.complianceRationale,
       status: dto.status,
       createdAt: new Date(dto.createdAt),
-      source: dto.source
+      source: dto.source,
+      angle: dto.angle,
+      reviewStatus: dto.reviewStatus,
+      riskFlags: dto.riskFlags
     };
   }
 }

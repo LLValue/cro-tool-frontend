@@ -1,6 +1,6 @@
 <app-page-header
-  [title]="point?.name || 'Optimization Point'"
-  description="Configure this point, write its brief, and manage variants (approve/disable/discard).">
+  [title]="isCreateMode ? 'Create Optimization Point' : (point?.name || 'Optimization Point')"
+  [description]="isCreateMode ? 'Configure your new optimization point and write its brief.' : 'Configure this point, write its brief, and manage variants (approve/disable/discard).'">
   <button mat-raised-button color="primary" (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
     Back to Points
@@ -323,7 +323,18 @@
 
     <mat-tab label="Variants">
       <div class="tab-content variants-tab-content">
-        <div class="two-column-layout">
+        <div *ngIf="isCreateMode" class="create-mode-message">
+          <mat-card>
+            <mat-card-content>
+              <div style="text-align: center; padding: 40px;">
+                <mat-icon style="font-size: 48px; width: 48px; height: 48px; color: #666; margin-bottom: 16px;">info</mat-icon>
+                <h3>Save the point first</h3>
+                <p>Please save the Point Setup to create this optimization point before you can generate variants.</p>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+        <div *ngIf="!isCreateMode" class="two-column-layout">
           <div class="left-column">
             <div class="variants-header">
               <mat-form-field appearance="outline" floatLabel="always" class="filter-field">
@@ -418,7 +429,7 @@
     </mat-tab-group>
   </mat-card>
 
-  <div class="bottom-actions">
+  <div class="bottom-actions" *ngIf="!isCreateMode">
     <button mat-raised-button color="primary" (click)="toggleStatus()">
       <mat-icon>{{ point?.status === 'Excluded' ? 'play_arrow' : 'pause' }}</mat-icon>
       {{ point?.status === 'Excluded' ? 'Include Point' : 'Exclude Point' }}

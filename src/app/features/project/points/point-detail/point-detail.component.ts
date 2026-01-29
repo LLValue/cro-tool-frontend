@@ -70,6 +70,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   pointId: string = '';
   projectId: string = '';
   point: OptimizationPoint | null = null;
+  isCreateMode: boolean = false;
   variants: Variant[] = [];
   filteredVariants: Variant[] = [];
   variantFilter: string = 'all';
@@ -143,12 +144,23 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
-      this.pointId = params['pointId'];
+      this.pointId = params['pointId'] || '';
       this.projectId = params['projectId'] || this.route.snapshot.parent?.params['projectId'] || '';
-      this.loadPoint();
-      this.loadVariants();
-      this.loadPreview();
-      this.loadProjectPreview();
+      
+      // Check if we're in create mode
+      this.isCreateMode = this.pointId === 'new' || !this.pointId;
+      
+      if (this.isCreateMode) {
+        // In create mode, don't load point or variants
+        this.loadPreview();
+        this.loadProjectPreview();
+      } else {
+        // In edit mode, load existing point data
+        this.loadPoint();
+        this.loadVariants();
+        this.loadPreview();
+        this.loadProjectPreview();
+      }
     });
   }
 
@@ -245,30 +257,91 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   saveSetup(): void {
-    if (this.setupForm.invalid || !this.point) return;
+    if (this.setupForm.invalid) return;
 
     const status = this.setupForm.get('status')?.value ? 'Included' : 'Excluded';
     
-    this.store.updatePoint(this.pointId, {
+    // Map elementType string to the expected type
+    const elementTypeValue = this.setupForm.get('elementType')?.value;
+    let elementType: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other' | undefined;
+    if (elementTypeValue) {
+      if (elementTypeValue.includes('H1') || elementTypeValue.includes('Headline')) {
+        elementType = 'Title';
+      } else if (elementTypeValue.includes('CTA') || elementTypeValue.includes('Call to Action')) {
+        elementType = 'CTA';
+      } else if (elementTypeValue.includes('H2') || elementTypeValue.includes('Subheadline') || elementTypeValue.includes('Subheader')) {
+        elementType = 'Subheadline';
+      } else if (elementTypeValue.includes('Form Labels') || elementTypeValue.includes('Helper Text') || elementTypeValue.includes('Trust & Assurance') || elementTypeValue.includes('Supporting Copy')) {
+        elementType = 'Microcopy';
+      } else {
+        elementType = 'Other';
+      }
+    }
+
+    // Get brief data if available
+    // Ensure arrays are always defined (not undefined) to avoid backend errors
+    const generationRules = {
+      goodIdeas: Array.isArray(this.goodIdeas) ? this.goodIdeas : [],
+      thingsToAvoid: Array.isArray(this.thingsToAvoid) ? this.thingsToAvoid : [],
+      mustIncludeKeywords: Array.isArray(this.mustIncludeKeywords) ? this.mustIncludeKeywords : [],
+      mustAvoidTerms: Array.isArray(this.mustAvoidTerms) ? this.mustAvoidTerms : [],
+      minChars: this.briefForm.get('minChars')?.value || 0,
+      maxChars: this.briefForm.get('maxChars')?.value || 0,
+      maxWords: this.briefForm.get('maxWords')?.value || 0
+    };
+
+    const pointData: Partial<OptimizationPoint> = {
       name: this.setupForm.get('name')?.value,
-      elementType: this.setupForm.get('elementType')?.value,
+      elementType: elementType,
       selector: this.setupForm.get('selector')?.value,
       deviceScope: this.setupForm.get('deviceScope')?.value,
       status: status,
-      updatedAt: new Date()
-    });
+      objective: this.briefForm.get('objective')?.value || '',
+      context: this.briefForm.get('context')?.value || '',
+      generationRules: JSON.stringify(generationRules)
+    };
 
-    this.toast.showSuccess('Point setup saved');
+    if (this.isCreateMode) {
+      // Create new point
+      this.store.addPoint(this.projectId, pointData).subscribe({
+        next: (newPoint) => {
+          this.toast.showSuccess('Point created successfully');
+          // Navigate to the newly created point
+          this.router.navigate(['/projects', this.projectId, 'points', newPoint.id]);
+        },
+        error: () => {
+          this.toast.showError('Failed to create point');
+        }
+      });
+    } else {
+      // Update existing point
+      if (!this.point) return;
+      
+      this.store.updatePoint(this.pointId, {
+        ...pointData,
+        updatedAt: new Date()
+      });
+
+      this.toast.showSuccess('Point setup saved');
+    }
   }
 
   saveBrief(): void {
+    // In create mode, save brief data but don't create point yet (only when saving setup)
+    if (this.isCreateMode) {
+      // Just show success message, the point will be created when saving setup
+      this.toast.showSuccess('Brief saved. Remember to save the Point Setup to create the point.');
+      return;
+    }
+    
     if (!this.point) return;
 
+    // Ensure arrays are always defined (not undefined) to avoid backend errors
     const generationRules = {
-      goodIdeas: this.goodIdeas,
-      thingsToAvoid: this.thingsToAvoid,
-      mustIncludeKeywords: this.mustIncludeKeywords,
-      mustAvoidTerms: this.mustAvoidTerms,
+      goodIdeas: Array.isArray(this.goodIdeas) ? this.goodIdeas : [],
+      thingsToAvoid: Array.isArray(this.thingsToAvoid) ? this.thingsToAvoid : [],
+      mustIncludeKeywords: Array.isArray(this.mustIncludeKeywords) ? this.mustIncludeKeywords : [],
+      mustAvoidTerms: Array.isArray(this.mustAvoidTerms) ? this.mustAvoidTerms : [],
       minChars: this.briefForm.get('minChars')?.value || 0,
       maxChars: this.briefForm.get('maxChars')?.value || 0,
       maxWords: this.briefForm.get('maxWords')?.value || 0

@@ -33,6 +33,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/project/points/points.component').then(m => m.PointsComponent)
       },
       {
+        path: 'points/new',
+        loadComponent: () => import('./features/project/points/point-detail/point-detail.component').then(m => m.PointDetailComponent)
+      },
+      {
         path: 'points/:pointId',
         loadComponent: () => import('./features/project/points/point-detail/point-detail.component').then(m => m.PointDetailComponent)
       },

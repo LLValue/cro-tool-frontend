@@ -9,7 +9,10 @@ export interface VariantDto {
   complianceRationale: string;
   status: 'pending' | 'approved' | 'discarded';
   createdAt: string; // ISO string
-  source: 'fallback' | 'manual';
+  source: 'ai' | 'fallback' | 'manual';
+  angle?: string; // e.g., 'clarity', 'urgency', etc.
+  reviewStatus?: string; // e.g., 'pass', 'review', etc.
+  riskFlags?: string[]; // e.g., ['none'], ['urgency'], etc.
 }
 
 export interface GenerateVariantsRequest {

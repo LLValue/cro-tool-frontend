@@ -68,7 +68,10 @@ export interface Variant {
   complianceRationale: string;
   status: 'pending' | 'approved' | 'discarded';
   createdAt: Date;
-  source: 'fallback' | 'manual';
+  source: 'ai' | 'fallback' | 'manual';
+  angle?: string; // e.g., 'clarity', 'urgency', etc.
+  reviewStatus?: string; // e.g., 'pass', 'review', etc.
+  riskFlags?: string[]; // e.g., ['none'], ['urgency'], etc.
 }
 
 export interface Goal {
