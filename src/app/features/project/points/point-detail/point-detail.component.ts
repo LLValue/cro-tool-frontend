@@ -19,6 +19,7 @@ import { PageHeaderComponent } from '../../../../shared/page-header/page-header.
 import { ChipsInputComponent } from '../../../../shared/chips-input/chips-input.component';
 import { InfoModalComponent } from '../../../../shared/info-modal/info-modal.component';
 import { GenerateVariantsProgressComponent, GenerateVariantsProgressData } from '../../../../shared/generate-variants-progress/generate-variants-progress.component';
+import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
 import { PreviewPanelComponent } from '../../../../shared/preview-panel/preview-panel.component';
 import { PreviewService } from '../../../../shared/preview.service';
 import { ProjectsStoreService } from '../../../../data/projects-store.service';
