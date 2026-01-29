@@ -208,23 +208,48 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     
     // If we haven't shown the modal for the minimum time, wait
     if (remainingTime > 0) {
-      // Continue showing progress until minimum time is reached
+      // Animate through all remaining steps during the wait
+      this.animateThroughAllSteps(remainingTime);
+      
+      // Complete after minimum time
       setTimeout(() => {
         this.finishProgress();
       }, remainingTime);
-      
-      // Continue progress simulation during the wait
-      const progressInterval = setInterval(() => {
-        if (this.progress < 95) {
-          this.progress = Math.min(this.progress + 2, 95);
-        }
-        if (Date.now() - this.startTime >= this.minDisplayTime) {
-          clearInterval(progressInterval);
-        }
-      }, 100);
     } else {
       // Already shown for minimum time, complete immediately
       this.finishProgress();
+    }
+  }
+
+  private animateThroughAllSteps(duration: number): void {
+    const totalSteps = this.steps.length;
+    const currentStepIndex = this.steps.findIndex(s => s.status === 'in-progress');
+    const startStepIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
+    const remainingSteps = totalSteps - startStepIndex;
+    
+    // Time per step (distribute remaining time across remaining steps)
+    const timePerStep = duration / Math.max(remainingSteps, 1);
+    
+    // Animate through each remaining step
+    for (let i = 0; i < remainingSteps; i++) {
+      const stepIndex = startStepIndex + i;
+      const stepDelay = i * timePerStep;
+      
+      setTimeout(() => {
+        // Mark previous step as done
+        if (stepIndex > 0) {
+          this.steps[stepIndex - 1].status = 'done';
+        }
+        
+        // Mark current step as in-progress
+        if (stepIndex < this.steps.length) {
+          this.steps[stepIndex].status = 'in-progress';
+        }
+        
+        // Update progress based on step completion
+        const progressPercent = Math.min(10 + (stepIndex + 1) * (85 / totalSteps), 95);
+        this.progress = progressPercent;
+      }, stepDelay);
     }
   }
 
