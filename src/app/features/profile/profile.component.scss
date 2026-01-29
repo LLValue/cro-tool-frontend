@@ -5,10 +5,14 @@ $primary-color: #673ab7;
   color: #666;
   margin-bottom: 24px;
   font-style: italic;
+
+  .asterisk-red {
+    color: #f44336;
+  }
 }
 
 .form-field-wrapper {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   max-width: 60%;
 }
 
@@ -16,7 +20,7 @@ $primary-color: #673ab7;
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: #000000;
   margin-bottom: 8px;
@@ -24,7 +28,7 @@ $primary-color: #673ab7;
   
   .required-asterisk {
     color: #f44336;
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1;
   }
 }

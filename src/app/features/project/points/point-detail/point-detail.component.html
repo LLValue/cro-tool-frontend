@@ -84,7 +84,7 @@
                 </label>
                 <p class="field-helper">Enter a descriptive name for this optimization point.</p>
                 <mat-form-field appearance="outline" class="brief-input">
-                  <input matInput formControlName="name" required placeholder="Enter point name">
+                  <input matInput formControlName="name" required>
                   <mat-error *ngIf="setupForm.get('name')?.hasError('required')">
                     Name is required
                   </mat-error>
@@ -110,7 +110,7 @@
                 </label>
                 <p class="field-helper">Enter the CSS selector for the element (e.g., .hero-title, #cta-button, h1).</p>
                 <mat-form-field appearance="outline" class="brief-input">
-                  <input matInput formControlName="selector" required placeholder="e.g., .hero-title, #cta-button, h1">
+                  <input matInput formControlName="selector" required>
                   <mat-hint *ngIf="selectedElement">Generated from selected element - you can edit it manually</mat-hint>
                   <mat-hint *ngIf="!selectedElement">Select an element or enter manually</mat-hint>
                   <mat-error *ngIf="setupForm.get('selector')?.hasError('required')">
@@ -146,7 +146,6 @@
 
               <div class="actions">
                 <button mat-raised-button color="primary" type="submit" [disabled]="setupForm.invalid">
-                  <mat-icon>save</mat-icon>
                   Save
                 </button>
               </div>
@@ -163,7 +162,7 @@
 
     <mat-tab label="Optimization Brief">
       <div class="tab-content">
-        <p class="mandatory-note">The mandatory fields are marked with an asterisk *</p>
+        <p class="mandatory-note">The mandatory fields are marked with an asterisk <span class="asterisk-red">*</span></p>
         <form [formGroup]="briefForm" (ngSubmit)="saveBrief()">
           <!-- Qualitative objective (mandatory) -->
           <div class="form-field-wrapper">
@@ -176,7 +175,7 @@
             </label>
             <p class="field-helper">State the outcome you want this element to drive (e.g., improve clarity, increase trust, drive clicks) in 1–2 sentences.</p>
             <mat-form-field appearance="outline" class="brief-input">
-              <textarea matInput formControlName="objective" rows="2" placeholder="e.g., Increase trust and reduce perceived risk"></textarea>
+              <textarea matInput formControlName="objective" rows="2"></textarea>
               <mat-error *ngIf="briefForm.get('objective')?.hasError('required')">
                 Qualitative objective is required
               </mat-error>
@@ -198,7 +197,7 @@
             </label>
             <p class="field-helper">Describe the user mindset and surrounding content so the AI can write copy that fits this exact spot on the page.</p>
             <mat-form-field appearance="outline" class="brief-input">
-              <textarea matInput formControlName="context" rows="2" placeholder="Add context about this optimization point" (input)="briefForm.get('context')?.updateValueAndValidity()"></textarea>
+              <textarea matInput formControlName="context" rows="2" (input)="briefForm.get('context')?.updateValueAndValidity()"></textarea>
               <mat-error *ngIf="briefForm.get('context')?.hasError('required')">
                 Element context is required
               </mat-error>
@@ -222,7 +221,7 @@
               [(ngModel)]="goodIdeas"
               [ngModelOptions]="{standalone: true}"
               label=""
-              placeholder="Add good idea">
+              >
             </app-chips-input>
           </div>
 
@@ -239,7 +238,7 @@
               [(ngModel)]="thingsToAvoid"
               [ngModelOptions]="{standalone: true}"
               label=""
-              placeholder="Add thing to avoid">
+              >
             </app-chips-input>
           </div>
 
@@ -256,7 +255,7 @@
               [(ngModel)]="mustIncludeKeywords"
               [ngModelOptions]="{standalone: true}"
               label=""
-              placeholder="Add keyword">
+              >
             </app-chips-input>
           </div>
 
@@ -273,7 +272,7 @@
               [(ngModel)]="mustAvoidTerms"
               [ngModelOptions]="{standalone: true}"
               label=""
-              placeholder="Add term to avoid">
+              >
             </app-chips-input>
           </div>
 
@@ -287,7 +286,7 @@
             </label>
             <p class="field-helper">Set the minimum character length for this element to fit the layout and UX.</p>
             <mat-form-field appearance="outline" class="brief-input-number">
-              <input matInput type="number" formControlName="minChars" min="0" placeholder="0">
+              <input matInput type="number" formControlName="minChars" min="0">
               <mat-error *ngIf="briefForm.get('minChars')?.hasError('pattern')">
                 Only numeric values are allowed
               </mat-error>
@@ -304,7 +303,7 @@
             </label>
             <p class="field-helper">Set the maximum character length for this element to fit the layout and UX.</p>
             <mat-form-field appearance="outline" class="brief-input-number">
-              <input matInput type="number" formControlName="maxChars" min="0" placeholder="0">
+              <input matInput type="number" formControlName="maxChars" min="0">
               <mat-error *ngIf="briefForm.get('maxChars')?.hasError('pattern')">
                 Only numeric values are allowed
               </mat-error>
@@ -313,7 +312,6 @@
 
           <div class="actions">
             <button mat-raised-button color="primary" type="submit" [disabled]="briefForm.invalid">
-              <mat-icon>save</mat-icon>
               Save
             </button>
           </div>

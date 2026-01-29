@@ -1,8 +1,8 @@
 .activation-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 12px;
 
   @media (max-width: 1200px) {
     grid-template-columns: 1fr;

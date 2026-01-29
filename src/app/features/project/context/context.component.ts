@@ -9,16 +9,20 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { ChipsInputComponent } from '../../../shared/chips-input/chips-input.component';
 import { InfoModalComponent } from '../../../shared/info-modal/info-modal.component';
+import { GenerateVariantsProgressComponent } from '../../../shared/generate-variants-progress/generate-variants-progress.component';
 
 @Component({
   selector: 'app-context',
@@ -32,6 +36,9 @@ import { InfoModalComponent } from '../../../shared/info-modal/info-modal.compon
     MatButtonModule,
     MatIconModule,
     MatCardModule,
+    MatChipsModule,
+    MatCheckboxModule,
+    MatExpansionModule,
     CommonModule,
     PageHeaderComponent,
     ChipsInputComponent,
@@ -43,12 +50,37 @@ import { InfoModalComponent } from '../../../shared/info-modal/info-modal.compon
 })
 export class ContextComponent implements OnInit, OnDestroy {
   globalForm: FormGroup;
+  aiAssistantForm: FormGroup;
   projectId: string = '';
   private subscriptions = new Subscription();
   private isUpdatingForm = false;
   businessContextSubmitted = false;
   journeyContextSubmitted = false;
   guardrailsSubmitted = false;
+
+  // AI Assistant state
+  aiAssistantExpanded = true; // Expanded by default
+  aiAssistantUsed = false; // Track if it has been used
+  urls: string[] = [];
+  uploadedFiles: { name: string; file: File }[] = [];
+  urlInputControl: any;
+
+  // Field states for badges
+  fieldStates: { [key: string]: { source: 'manual' | 'ai_draft'; reviewStatus: 'ok' | 'needs_review' | 'missing'; confidence: 'high' | 'medium' | 'low' } } = {};
+
+  // Locales for language selector
+  locales = [
+    { value: 'es-ES', label: 'Spanish (Spain) - es-ES' },
+    { value: 'es-MX', label: 'Spanish (Mexico) - es-MX' },
+    { value: 'en-GB', label: 'English (UK) - en-GB' },
+    { value: 'en-US', label: 'English (USA) - en-US' },
+    { value: 'fr-FR', label: 'French (France) - fr-FR' },
+    { value: 'de-DE', label: 'German (Germany) - de-DE' },
+    { value: 'it-IT', label: 'Italian (Italy) - it-IT' },
+    { value: 'pt-PT', label: 'Portuguese (Portugal) - pt-PT' },
+    { value: 'pt-BR', label: 'Portuguese (Brazil) - pt-BR' },
+    { value: 'nl-NL', label: 'Dutch (Netherlands) - nl-NL' }
+  ];
 
   constructor(
     private fb: FormBuilder,
@@ -74,6 +106,30 @@ export class ContextComponent implements OnInit, OnDestroy {
       allowedFacts: [''],
       forbiddenWordsAndClaims: [''],
       sensitiveClaims: ['']
+    });
+
+    this.aiAssistantForm = this.fb.group({
+      targetLanguage: ['es-ES'],
+      fillBusinessContext: [true],
+      fillJourneyContext: [true],
+      fillGuardrails: [true]
+    });
+
+    // Initialize URL input control
+    this.urlInputControl = this.fb.control('');
+
+    // Sync target language with journey context language
+    this.aiAssistantForm.get('targetLanguage')?.valueChanges.subscribe(value => {
+      if (!this.isUpdatingForm) {
+        this.globalForm.patchValue({ language: value }, { emitEvent: false });
+      }
+    });
+
+    // Sync journey context language with target language
+    this.globalForm.get('language')?.valueChanges.subscribe(value => {
+      if (!this.isUpdatingForm) {
+        this.aiAssistantForm.patchValue({ targetLanguage: value }, { emitEvent: false });
+      }
     });
   }
 
@@ -423,6 +479,243 @@ export class ContextComponent implements OnInit, OnDestroy {
         width: '600px',
         data: { title, content }
       });
+    }
+  }
+
+  // AI Assistant methods
+  toggleAiAssistant(): void {
+    this.aiAssistantExpanded = !this.aiAssistantExpanded;
+  }
+
+  openHowItWorksModal(event: Event): void {
+    event.stopPropagation();
+    const dialogRef = this.dialog.open(InfoModalComponent, {
+      width: '600px',
+      data: {
+        title: 'How AI Briefing Assistant Works',
+        content: `
+          <p><strong>The AI Briefing Assistant helps you quickly populate your brief by analyzing trusted sources.</strong></p>
+          <ol>
+            <li><strong>Add Sources:</strong> Paste up to 5 URLs or upload PDF documents containing product information, pricing, FAQs, or approved content.</li>
+            <li><strong>Select Language:</strong> Choose the target language for the drafted brief and generated variants.</li>
+            <li><strong>Choose Sections:</strong> Select which sections you want the assistant to draft (Business context, Journey context, Guardrails).</li>
+            <li><strong>Generate:</strong> Click "Generate draft brief" to let the AI analyze your sources and propose content.</li>
+            <li><strong>Review:</strong> Review the auto-filled content. Fields will be marked with badges indicating their source and review status.</li>
+            <li><strong>Edit:</strong> You can edit any field at any time. Manual edits will be marked accordingly.</li>
+          </ol>
+          <p><strong>Note:</strong> The assistant extracts information from your sources but you should always review and approve the content before using it.</p>
+        `
+      }
+    });
+  }
+
+  addUrl(event: Event): void {
+    event.preventDefault();
+    const url = this.urlInputControl.value?.trim();
+    if (url && this.urls.length < 5 && !this.urls.includes(url)) {
+      // Basic URL validation
+      try {
+        new URL(url);
+        this.urls.push(url);
+        this.urlInputControl.setValue('');
+      } catch {
+        this.toast.showError('Please enter a valid URL');
+      }
+    }
+  }
+
+  addUrlFromButton(): void {
+    const url = this.urlInputControl.value?.trim();
+    if (url && this.urls.length < 5 && !this.urls.includes(url)) {
+      try {
+        new URL(url);
+        this.urls.push(url);
+        this.urlInputControl.setValue('');
+      } catch {
+        this.toast.showError('Please enter a valid URL');
+      }
+    }
+  }
+
+  removeUrl(index: number): void {
+    this.urls.splice(index, 1);
+  }
+
+  uploadDocument(): void {
+    // Fake functionality for now
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf';
+    input.onchange = (event: any) => {
+      const file = event.target.files[0];
+      if (file && file.type === 'application/pdf') {
+        if (this.uploadedFiles.length < 5) {
+          this.uploadedFiles.push({ name: file.name, file: file });
+        } else {
+          this.toast.showError('Maximum 5 files allowed');
+        }
+      } else {
+        this.toast.showError('Please upload a PDF file');
+      }
+    };
+    input.click();
+  }
+
+  removeFile(index: number): void {
+    this.uploadedFiles.splice(index, 1);
+  }
+
+  clearSources(): void {
+    this.urls = [];
+    this.uploadedFiles = [];
+    this.urlInputControl.setValue('');
+  }
+
+  generateDraftBrief(): void {
+    if (this.urls.length === 0 && this.uploadedFiles.length === 0) {
+      this.toast.showError('Please add at least one source (URL or document)');
+      return;
+    }
+
+    // Show progress modal (reuse the generate variants progress component)
+    const generateObservable = this.simulateBriefGeneration();
+    
+    const dialogRef = this.dialog.open(GenerateVariantsProgressComponent, {
+      width: '600px',
+      disableClose: true,
+      data: {
+        generateObservable: generateObservable,
+        pointName: 'Brief Generation'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && result.success) {
+        this.applyGeneratedBrief(result.data);
+        this.aiAssistantUsed = true;
+        // Collapse after first use
+        if (this.aiAssistantUsed) {
+          this.aiAssistantExpanded = false;
+        }
+      }
+    });
+  }
+
+  private simulateBriefGeneration(): Observable<any> {
+    // Simulate API call - replace with actual API call later
+    return new Observable(observer => {
+      setTimeout(() => {
+        // Mock generated brief data
+        const mockBrief = {
+          productDescription: 'Credit card designed for everyday spending with flexible repayment options...',
+          targetAudiences: '"Young professionals: want convenience, digital-first management..."',
+          valueProps: '"Pay securely online and in-store with real-time card controls."',
+          language: this.aiAssistantForm.get('targetLanguage')?.value || 'es-ES',
+          toneAndStyle: 'Clear, calm, and trustworthy. Professional but not cold.',
+          pageContextAndGoal: 'This is a product landing page for a credit card...',
+          allowedFacts: '"Manage your card in the mobile app (freeze/unfreeze, notifications)."'
+        };
+        observer.next(mockBrief);
+        observer.complete();
+      }, 5000); // Minimum 5 seconds
+    });
+  }
+
+  private applyGeneratedBrief(data: any): void {
+    this.isUpdatingForm = true;
+
+    // Apply generated content based on selected sections
+    if (this.aiAssistantForm.get('fillBusinessContext')?.value) {
+      if (data.productDescription) {
+        this.globalForm.patchValue({ productDescription: data.productDescription });
+        this.setFieldState('productDescription', 'ai_draft', 'ok', 'high');
+        this.animateField('productDescription');
+      }
+      if (data.targetAudiences) {
+        this.globalForm.patchValue({ targetAudiences: data.targetAudiences });
+        this.setFieldState('targetAudiences', 'ai_draft', 'ok', 'high');
+        this.animateField('targetAudiences');
+      }
+      if (data.valueProps) {
+        this.globalForm.patchValue({ valueProps: data.valueProps });
+        this.setFieldState('valueProps', 'ai_draft', 'ok', 'high');
+        this.animateField('valueProps');
+      }
+    }
+
+    if (this.aiAssistantForm.get('fillJourneyContext')?.value) {
+      if (data.language) {
+        this.globalForm.patchValue({ language: data.language });
+        this.setFieldState('language', 'ai_draft', 'ok', 'high');
+        this.animateField('language');
+      }
+      if (data.toneAndStyle) {
+        this.globalForm.patchValue({ toneAndStyle: data.toneAndStyle });
+        this.setFieldState('toneAndStyle', 'ai_draft', 'ok', 'high');
+        this.animateField('toneAndStyle');
+      }
+      if (data.pageContextAndGoal) {
+        this.globalForm.patchValue({ pageContextAndGoal: data.pageContextAndGoal });
+        this.setFieldState('pageContextAndGoal', 'ai_draft', 'ok', 'high');
+        this.animateField('pageContextAndGoal');
+      }
+    }
+
+    if (this.aiAssistantForm.get('fillGuardrails')?.value) {
+      if (data.allowedFacts) {
+        this.globalForm.patchValue({ allowedFacts: data.allowedFacts });
+        this.setFieldState('allowedFacts', 'ai_draft', 'ok', 'high');
+        this.animateField('allowedFacts');
+      }
+    }
+
+    this.isUpdatingForm = false;
+    this.toast.showSuccess('Draft brief generated successfully. Please review the auto-filled fields.');
+  }
+
+  private setFieldState(fieldName: string, source: 'manual' | 'ai_draft', reviewStatus: 'ok' | 'needs_review' | 'missing', confidence: 'high' | 'medium' | 'low'): void {
+    this.fieldStates[fieldName] = { source, reviewStatus, confidence };
+  }
+
+  private animateField(fieldName: string): void {
+    // Add animation class to field
+    setTimeout(() => {
+      const fieldElement = document.querySelector(`[formControlName="${fieldName}"]`);
+      if (fieldElement) {
+        fieldElement.classList.add('ai-filled-animation');
+        setTimeout(() => {
+          fieldElement.classList.remove('ai-filled-animation');
+        }, 900);
+      }
+    }, 100);
+  }
+
+  getFieldBadge(fieldName: string): string | null {
+    const state = this.fieldStates[fieldName];
+    if (!state) return null;
+
+    if (state.source === 'ai_draft' && state.reviewStatus === 'ok') {
+      return 'Auto-filled (Draft)';
+    } else if (state.reviewStatus === 'needs_review') {
+      return 'Needs review';
+    } else if (state.source === 'manual') {
+      return 'Manual';
+    } else if (state.reviewStatus === 'missing') {
+      return 'Missing';
+    }
+    return null;
+  }
+
+  hasFieldBeenEdited(fieldName: string): boolean {
+    const state = this.fieldStates[fieldName];
+    return state?.source === 'manual';
+  }
+
+  onFieldEdit(fieldName: string): void {
+    // When user edits a field, mark it as manual
+    const state = this.fieldStates[fieldName];
+    if (state && state.source === 'ai_draft') {
+      this.setFieldState(fieldName, 'manual', state.reviewStatus, state.confidence);
     }
   }
 }

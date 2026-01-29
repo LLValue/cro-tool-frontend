@@ -2,6 +2,7 @@ $primary-color: #7EF473;
 
 .project-shell {
   height: calc(100vh - 64px);
+  padding: 12px;
 }
 
 .shell-container {
@@ -88,7 +89,7 @@ $primary-color: #7EF473;
 }
 
 .project-content {
-  padding: 24px;
+  padding: 12px;
   height: 100%;
   overflow-y: auto;
   background: #f5f5f5;
