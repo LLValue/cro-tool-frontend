@@ -325,10 +325,30 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   deleteVariant(variantId: string): void {
-    if (!confirm('Are you sure you want to delete this variant?')) return;
-    
-    this.store.deleteVariant(variantId);
-    this.toast.showSuccess('Variant deleted');
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Delete Variant',
+        message: 'Are you sure you want to delete this variant? This action cannot be undone.',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        confirmColor: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.deleteVariant(variantId).subscribe({
+          next: () => {
+            this.toast.showSuccess('Variant deleted successfully');
+            this.loadVariants();
+          },
+          error: () => {
+            this.toast.showError('Failed to delete variant');
+          }
+        });
+      }
+    });
   }
 
   updateVariant(variant: Variant): void {
