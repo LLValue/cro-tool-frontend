@@ -338,15 +338,13 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.store.deleteVariant(variantId).subscribe({
-          next: () => {
-            this.toast.showSuccess('Variant deleted successfully');
-            this.loadVariants();
-          },
-          error: () => {
-            this.toast.showError('Failed to delete variant');
-          }
-        });
+        try {
+          this.store.deleteVariant(variantId);
+          this.toast.showSuccess('Variant deleted successfully');
+          this.loadVariants();
+        } catch (error) {
+          this.toast.showError('Failed to delete variant');
+        }
       }
     });
   }
