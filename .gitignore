@@ -45,3 +45,5 @@ Thumbs.db
 
 # GCP credentials
 credentials.json
+
+tasks/
