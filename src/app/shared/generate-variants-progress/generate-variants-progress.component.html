@@ -64,9 +64,17 @@
     mat-raised-button 
     color="primary" 
     (click)="onReviewVariants()" 
-    *ngIf="isComplete && !error">
+    *ngIf="isComplete && !error && data.pointName !== 'Brief Generation'">
     <mat-icon>visibility</mat-icon>
     Review Variants
+  </button>
+  <button 
+    mat-raised-button 
+    color="primary" 
+    (click)="onClose()" 
+    *ngIf="isComplete && !error && data.pointName === 'Brief Generation'">
+    <mat-icon>check</mat-icon>
+    Close
   </button>
   <button 
     mat-button 

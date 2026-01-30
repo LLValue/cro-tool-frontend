@@ -11,7 +11,7 @@
       <p class="ai-assistant-subtitle">Auto-fill your brief from trusted sources (URLs or documents). Review and approve suggestions before using them.</p>
     </div>
     <div class="ai-assistant-actions">
-      <button mat-button color="primary" (click)="openHowItWorksModal($event)" type="button">
+      <button mat-raised-button color="primary" (click)="openHowItWorksModal($event)" type="button">
         How it works
       </button>
       <button mat-icon-button type="button" [attr.aria-label]="aiAssistantExpanded ? 'Collapse' : 'Expand'">
@@ -38,7 +38,7 @@
               (keydown.enter)="addUrl($event)"
               [disabled]="urls.length >= 5">
           </mat-form-field>
-          <button mat-stroked-button type="button" (click)="addUrlFromButton()" [disabled]="urls.length >= 5">
+          <button mat-raised-button color="primary" type="button" (click)="addUrlFromButton()" [disabled]="urls.length >= 5">
             Add URL
           </button>
         </div>
@@ -57,7 +57,7 @@
 
         <!-- Upload Button -->
         <div class="upload-section">
-          <button mat-stroked-button type="button" (click)="uploadDocument()">
+          <button mat-raised-button color="primary" type="button" (click)="uploadDocument()">
             <mat-icon>upload_file</mat-icon>
             Upload documents
           </button>
@@ -118,7 +118,7 @@
         <button mat-raised-button color="primary" type="button" (click)="generateDraftBrief()" [disabled]="urls.length === 0 && uploadedFiles.length === 0">
           Generate draft brief
         </button>
-        <button mat-button type="button" (click)="clearSources()">
+        <button mat-raised-button type="button" (click)="clearSources()">
           Clear sources
         </button>
       </div>
@@ -151,6 +151,7 @@
                 {{ getFieldBadge('productDescription') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('productDescription')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('productDescription')" matTooltip="Format issue detected">warning</mat-icon>
             </div>
           </div>
           <p class="field-helper">Describe what the product is, how it works at a high level, and the key features/benefits—avoid listing audience segments here.</p>
@@ -166,16 +167,28 @@
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Target audiences
-            <span class="required-asterisk">*</span>
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Target audiences', 'targetAudiences')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Target audiences
+              <span class="required-asterisk">*</span>
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Target audiences', 'targetAudiences')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('targetAudiences')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('targetAudiences') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('targetAudiences') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('targetAudiences') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('targetAudiences') === 'Missing'">
+                {{ getFieldBadge('targetAudiences') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('targetAudiences')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('targetAudiences')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">Describe 2–5 audience segments, their goals, and their main concerns—avoid repeating the product definition here.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="targetAudiences" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="targetAudiences" rows="4" maxlength="5000" (input)="onFieldEdit('targetAudiences')"></textarea>
             <mat-error *ngIf="(globalForm.get('targetAudiences')?.touched || businessContextSubmitted) && globalForm.get('targetAudiences')?.hasError('required')">
               Target audiences is required
             </mat-error>
@@ -186,16 +199,28 @@
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Top value props
-            <span class="required-asterisk">*</span>
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Top value props', 'valueProps')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Top value props
+              <span class="required-asterisk">*</span>
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Top value props', 'valueProps')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('valueProps')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('valueProps') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('valueProps') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('valueProps') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('valueProps') === 'Missing'">
+                {{ getFieldBadge('valueProps') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('valueProps')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('valueProps')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">List 3–6 key value propositions you want to emphasize.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="valueProps" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="valueProps" rows="4" maxlength="5000" (input)="onFieldEdit('valueProps')"></textarea>
             <mat-error *ngIf="(globalForm.get('valueProps')?.touched || businessContextSubmitted) && globalForm.get('valueProps')?.hasError('required')">
               Top value props is required
             </mat-error>
@@ -206,12 +231,24 @@
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">Top objections</label>
+          <div class="field-label-row">
+            <label class="field-label">Top objections</label>
+            <div class="field-badges" *ngIf="getFieldBadge('topObjections')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('topObjections') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('topObjections') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('topObjections') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('topObjections') === 'Missing'">
+                {{ getFieldBadge('topObjections') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('topObjections')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('topObjections')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">List the main concerns that stop users from applying or moving forward.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="typicalObjections" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="topObjections" rows="4" maxlength="5000" (input)="onFieldEdit('topObjections')"></textarea>
             <mat-hint align="end">
-              <span>{{ getCharacterCount('typicalObjections') }} / {{ getMaxLength('typicalObjections') }}</span>
+              <span>{{ getCharacterCount('topObjections') }} / {{ getMaxLength('topObjections') }}</span>
             </mat-hint>
           </mat-form-field>
         </div>
@@ -230,39 +267,28 @@
         <p class="mandatory-note">The mandatory fields are marked with an asterisk <span class="asterisk-red">*</span></p>
         
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Language (e.g., es-ES)
-            <span class="required-asterisk">*</span>
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Language', 'language')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
-          <p class="field-helper">Set the language and locale format for the copy (e.g., en-GB, es-ES).</p>
-          <mat-form-field appearance="outline" class="brief-input">
-            <input matInput formControlName="language" required maxlength="50">
-            <mat-error *ngIf="(globalForm.get('language')?.touched || journeyContextSubmitted) && globalForm.get('language')?.hasError('required')">
-              Language is required
-            </mat-error>
-            <mat-error *ngIf="(globalForm.get('language')?.touched || journeyContextSubmitted) && globalForm.get('language')?.hasError('maxlength')">
-              Language must be 50 characters or less
-            </mat-error>
-            <mat-hint align="end">
-              <span>{{ getCharacterCount('language') }} / {{ getMaxLength('language') }}</span>
-            </mat-hint>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field-wrapper">
-          <label class="field-label">
-            Tone and style
-            <span class="required-asterisk">*</span>
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Tone and style', 'toneAndStyle')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Tone and style
+              <span class="required-asterisk">*</span>
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Tone and style', 'toneAndStyle')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('toneAndStyle')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('toneAndStyle') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('toneAndStyle') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('toneAndStyle') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('toneAndStyle') === 'Missing'">
+                {{ getFieldBadge('toneAndStyle') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('toneAndStyle')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('toneAndStyle')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">Describe how the brand should sound, with do/don't guidance.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="toneAndStyle" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="toneAndStyle" rows="4" maxlength="5000" (input)="onFieldEdit('toneAndStyle')"></textarea>
             <mat-error *ngIf="(globalForm.get('toneAndStyle')?.touched || journeyContextSubmitted) && globalForm.get('toneAndStyle')?.hasError('required')">
               Tone and style is required
             </mat-error>
@@ -273,16 +299,28 @@
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Page context and goal
-            <span class="required-asterisk">*</span>
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Page context and goal', 'pageContextAndGoal')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Page context and goal
+              <span class="required-asterisk">*</span>
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Page context and goal', 'pageContextAndGoal')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('pageContextAndGoal')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('pageContextAndGoal') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('pageContextAndGoal') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('pageContextAndGoal') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('pageContextAndGoal') === 'Missing'">
+                {{ getFieldBadge('pageContextAndGoal') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('pageContextAndGoal')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('pageContextAndGoal')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">Explain what this page is, what comes before/after, and what action you want.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="pageContextAndGoal" rows="3" maxlength="5000"></textarea>
+            <textarea matInput formControlName="pageContextAndGoal" rows="3" maxlength="5000" (input)="onFieldEdit('pageContextAndGoal')"></textarea>
             <mat-error *ngIf="(globalForm.get('pageContextAndGoal')?.touched || journeyContextSubmitted) && globalForm.get('pageContextAndGoal')?.hasError('required')">
               Page context and goal is required
             </mat-error>
@@ -293,31 +331,30 @@
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">Funnel stage and next action</label>
-          <p class="field-helper">Choose where the user is in the journey and the single action you want them to take next (one short line).</p>
-          <div class="form-row">
-            <div class="form-field-wrapper half-width">
-              <mat-form-field appearance="outline" class="brief-input" floatLabel="always">
-                <mat-select formControlName="funnelStage">
-                  <mat-option value="discovery">Discovery</mat-option>
-                  <mat-option value="consideration">Consideration</mat-option>
-                  <mat-option value="conversion">Conversion</mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-            <div class="form-field-wrapper half-width">
-              <mat-form-field appearance="outline" class="brief-input">
-                <textarea matInput formControlName="nextAction" rows="2" maxlength="5000"></textarea>
-                <mat-hint align="end">
-                  <span>{{ getCharacterCount('nextAction') }} / {{ getMaxLength('nextAction') }}</span>
-                </mat-hint>
-              </mat-form-field>
+          <div class="field-label-row">
+            <label class="field-label">Funnel stage and next action</label>
+            <div class="field-badges" *ngIf="getFieldBadge('funnelStage') || getFieldBadge('nextAction')">
+              <span class="field-badge" *ngIf="getFieldBadge('funnelStage')" [class.badge-draft]="getFieldBadge('funnelStage') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('funnelStage') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('funnelStage') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('funnelStage') === 'Missing'">
+                {{ getFieldBadge('funnelStage') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('funnelStage')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('funnelStage')" matTooltip="Format issue detected">warning</mat-icon>
             </div>
           </div>
+          <p class="field-helper">Choose where the user is in the journey and the single action you want them to take next (one short line).</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <textarea matInput formControlName="funnelStage" rows="2" maxlength="5000" (input)="onFieldEdit('funnelStage')"></textarea>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('funnelStage') }} / {{ getMaxLength('funnelStage') }}</span>
+            </mat-hint>
+          </mat-form-field>
         </div>
         
         <div class="tab-actions">
-          <button mat-raised-button color="primary" (click)="saveJourneyContext()" [disabled]="globalForm.get('language')?.invalid || globalForm.get('toneAndStyle')?.invalid || globalForm.get('pageContextAndGoal')?.invalid">
+          <button mat-raised-button color="primary" (click)="saveJourneyContext()" [disabled]="globalForm.get('toneAndStyle')?.invalid || globalForm.get('pageContextAndGoal')?.invalid">
             Save
           </button>
         </div>
@@ -328,15 +365,27 @@
     <mat-tab label="Guardrails">
       <form [formGroup]="globalForm" class="form-container">
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Brand guidelines
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Brand guidelines', 'brandGuidelines')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Brand guidelines
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Brand guidelines', 'brandGuidelines')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('brandGuidelines')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('brandGuidelines') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('brandGuidelines') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('brandGuidelines') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('brandGuidelines') === 'Missing'">
+                {{ getFieldBadge('brandGuidelines') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('brandGuidelines')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('brandGuidelines')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">Add any brand rules the copy must follow (terminology, formatting, tone boundaries).</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="brandGuidelines" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="brandGuidelines" rows="4" maxlength="5000" (input)="onFieldEdit('brandGuidelines')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('brandGuidelines') }} / {{ getMaxLength('brandGuidelines') }}</span>
             </mat-hint>
@@ -344,15 +393,27 @@
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Allowed proof points / facts
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Allowed proof points', 'allowedFacts')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Allowed proof points / facts
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Allowed proof points', 'allowedFacts')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('allowedFacts')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('allowedFacts') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('allowedFacts') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('allowedFacts') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('allowedFacts') === 'Missing'">
+                {{ getFieldBadge('allowedFacts') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('allowedFacts')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('allowedFacts')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">List verified facts the AI is allowed to state as factual claims.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="allowedFacts" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="allowedFacts" rows="4" maxlength="5000" (input)="onFieldEdit('allowedFacts')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('allowedFacts') }} / {{ getMaxLength('allowedFacts') }}</span>
             </mat-hint>
@@ -360,31 +421,55 @@
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Forbidden words and claims
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Forbidden words and claims', 'forbiddenWordsAndClaims')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Forbidden words
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Forbidden words', 'forbiddenWords')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('forbiddenWords')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('forbiddenWords') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('forbiddenWords') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('forbiddenWords') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('forbiddenWords') === 'Missing'">
+                {{ getFieldBadge('forbiddenWords') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('forbiddenWords')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('forbiddenWords')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">Add words or claims the AI must never use in generated variants.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="forbiddenWordsAndClaims" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="forbiddenWords" rows="4" maxlength="5000" (input)="onFieldEdit('forbiddenWords')"></textarea>
             <mat-hint align="end">
-              <span>{{ getCharacterCount('forbiddenWordsAndClaims') }} / {{ getMaxLength('forbiddenWordsAndClaims') }}</span>
+              <span>{{ getCharacterCount('forbiddenWords') }} / {{ getMaxLength('forbiddenWords') }}</span>
             </mat-hint>
           </mat-form-field>
         </div>
 
         <div class="form-field-wrapper">
-          <label class="field-label">
-            Sensitive claims
-            <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Sensitive claims', 'sensitiveClaims')" matTooltip="More information">
-              <mat-icon>info</mat-icon>
-            </button>
-          </label>
+          <div class="field-label-row">
+            <label class="field-label">
+              Sensitive claims
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Sensitive claims', 'sensitiveClaims')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('sensitiveClaims')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('sensitiveClaims') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('sensitiveClaims') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('sensitiveClaims') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('sensitiveClaims') === 'Missing'">
+                {{ getFieldBadge('sensitiveClaims') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('sensitiveClaims')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('sensitiveClaims')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
           <p class="field-helper">List claim categories that require extra caution or manual review.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="sensitiveClaims" rows="4" maxlength="5000"></textarea>
+            <textarea matInput formControlName="sensitiveClaims" rows="4" maxlength="5000" (input)="onFieldEdit('sensitiveClaims')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('sensitiveClaims') }} / {{ getMaxLength('sensitiveClaims') }}</span>
             </mat-hint>

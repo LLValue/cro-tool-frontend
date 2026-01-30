@@ -198,25 +198,20 @@
 .two-column-layout {
   display: grid;
   grid-template-columns: 40% 60%;
-  gap: 0;
   min-height: calc(100vh - 200px);
-}
+  
+  .left-column {
+    overflow-y: auto;
+    max-height: calc(100vh - 70px);
+    min-width: 300px;
+  }
 
-.left-column {
-  padding: 24px;
-  overflow-y: auto;
-  max-height: calc(100vh - 70px);
-  min-width: 560px;
-}
-
-.right-column {
-  position: sticky;
-  top: 4px;
-  height: calc(100vh - 100px);
-  overflow: hidden;
-  padding-left: 24px;
-  padding-right: 24px;
-  min-width: 480px;
+  .right-column {
+    position: sticky;
+    top: 4px;
+    overflow: hidden;
+    min-width: 480px;
+  }
 }
 
 .variants-header {

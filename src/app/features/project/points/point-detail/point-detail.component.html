@@ -1,5 +1,5 @@
 <app-page-header
-  [title]="isCreateMode ? 'Create Optimization Point' : (point?.name || 'Optimization Point')"
+  [title]="isCreateMode ? 'Create Optimization Point' : ('Optimization Point: ' + (point?.name || 'Unknown'))"
   [description]="isCreateMode ? 'Configure your new optimization point and write its brief.' : 'Configure this point, write its brief, and manage variants (approve/disable/discard).'">
   <button mat-raised-button color="primary" (click)="goBack()">
     <mat-icon>arrow_back</mat-icon>
@@ -12,69 +12,9 @@
     <mat-tab-group>
     <mat-tab label="Point Setup">
       <div class="tab-content">
-        <div class="editor-layout" *ngIf="!loading">
-          <div class="preview-section" [class.preview-error]="!!error">
-            <div class="preview-header">
-              <h3>Page Preview</h3>
-              <div class="preview-actions">
-                <div class="view-mode-toggle">
-                  <button 
-                    mat-icon-button 
-                    [class.active]="viewMode === 'desktop'"
-                    (click)="viewMode = 'desktop'"
-                    matTooltip="Desktop view">
-                    <mat-icon>desktop_windows</mat-icon>
-                  </button>
-                  <button 
-                    mat-icon-button 
-                    [class.active]="viewMode === 'mobile'"
-                    (click)="viewMode = 'mobile'"
-                    matTooltip="Mobile view">
-                    <mat-icon>phone_android</mat-icon>
-                  </button>
-                </div>
-                <button 
-                  mat-raised-button 
-                  color="primary"
-                  [disabled]="!!error"
-                  (click)="selectionMode ? disableSelectionMode() : enableSelectionMode()">
-                  <mat-icon>{{ selectionMode ? 'close' : 'touch_app' }}</mat-icon>
-                  {{ selectionMode ? 'Cancel Selection' : 'Select Element' }}
-                </button>
-                <button mat-icon-button (click)="loadPreview()" matTooltip="Refresh preview">
-                  <mat-icon>refresh</mat-icon>
-                </button>
-              </div>
-            </div>
-            
-            <div class="preview-wrapper" *ngIf="!error && safeHtml" [class.mobile-view]="viewMode === 'mobile'">
-              <iframe 
-                #previewFrame
-                [srcdoc]="safeHtml"
-                class="preview-iframe"
-                [class.mobile-view]="viewMode === 'mobile'"
-                frameborder="0"
-                title="Page Preview">
-              </iframe>
-            </div>
-            
-            <div class="preview-error-state" *ngIf="error">
-              <mat-icon>error_outline</mat-icon>
-              <p class="error-message">{{ error }}</p>
-              <button mat-raised-button color="primary" (click)="loadPreview()" class="retry-button">
-                <mat-icon>refresh</mat-icon>
-                Retry
-              </button>
-              <p class="error-hint">You can still edit the point by entering the CSS selector manually in the form.</p>
-            </div>
-            
-            <p class="help-text" *ngIf="selectionMode && !error">
-              <mat-icon>info</mat-icon>
-              Hover over elements to highlight them, then click to select.
-            </p>
-          </div>
-
-          <div class="form-section">
+        <div class="two-column-layout" *ngIf="!loading">
+          <div class="left-column">
+            <div class="form-section">
             <h3>Point Details</h3>
             <form [formGroup]="setupForm" (ngSubmit)="saveSetup()">
               <div class="form-field-wrapper">
@@ -153,10 +93,22 @@
           </div>
         </div>
 
-        <div class="loading-overlay" *ngIf="loading">
-          <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-          <p>Loading page preview...</p>
+        <div class="right-column">
+          <app-preview-panel
+            [previewHtml]="html"
+            [previewUrl]="projectPageUrl"
+            [loading]="loading"
+            [useIframe]="true"
+            [showReset]="false"
+            (reload)="loadPreview()">
+          </app-preview-panel>
         </div>
+      </div>
+
+      <div class="loading-overlay" *ngIf="loading">
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        <p>Loading page preview...</p>
+      </div>
       </div>
     </mat-tab>
 

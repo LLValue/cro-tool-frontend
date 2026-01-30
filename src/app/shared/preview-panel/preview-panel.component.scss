@@ -5,14 +5,13 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 120px);
-  min-height: 400px;
+  max-height: 75vh;
+  min-height: 600px;
   min-width: 480px;
   overflow: hidden;
 
   &.sticky {
     position: sticky;
-    top: 80px;
   }
 }
 
@@ -76,13 +75,13 @@
 .preview-wrapper {
   flex: 1;
   position: relative;
-  max-height: calc(100vh - 200px);
-  min-height: 400px;
+  max-height: calc(75vh - 60px); // Account for header height
+  min-height: 500px;
   overflow-y: auto;
   overflow-x: hidden;
 
   &.loading {
-    min-height: 400px;
+    min-height: 500px;
   }
 
   &.mobile-view {
@@ -92,70 +91,22 @@
     padding: 20px;
     background: #f5f5f5;
     overflow-y: auto;
-    overflow-x: hidden;
+    // overflow-x is controlled dynamically by JavaScript based on zoom mode
   }
 
   // Zoom modes for mobile
-  &.mobile-view.zoom-fit {
+  // Note: Actual scaling and overflow are controlled by JavaScript in updateFitScale()
+  &.mobile-view {
     .iframe-container {
-      width: 100%;
       display: flex;
       justify-content: center;
       align-items: flex-start;
+      overflow-y: visible;
+      // Width and overflow-x are controlled by JavaScript based on zoom mode
       
       .preview-iframe {
-        max-width: 375px;
-        width: 100%;
-        transform: scale(1);
         transform-origin: top center;
-      }
-    }
-  }
-
-  &.mobile-view.zoom-100 {
-    .iframe-container {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      
-      .preview-iframe {
-        width: 375px;
-        max-width: none;
-        transform: scale(1);
-        transform-origin: top center;
-      }
-    }
-  }
-
-  &.mobile-view.zoom-75 {
-    .iframe-container {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      
-      .preview-iframe {
-        width: 375px;
-        max-width: none;
-        transform: scale(0.75);
-        transform-origin: top center;
-      }
-    }
-  }
-
-  &.mobile-view.zoom-125 {
-    .iframe-container {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      
-      .preview-iframe {
-        width: 375px;
-        max-width: none;
-        transform: scale(1.25);
-        transform-origin: top center;
+        // Width and transform are set by JavaScript
       }
     }
   }
@@ -201,7 +152,7 @@
 .preview-iframe {
   width: 100%;
   height: 100%;
-  min-height: 400px;
+  min-height: 500px;
   border: none;
   display: block;
   transition: transform 0.3s ease, max-width 0.3s ease;
@@ -215,7 +166,7 @@
 
 .preview-content {
   width: 100%;
-  min-height: 400px;
+  min-height: 500px;
   background: white;
   padding: 0;
   transition: transform 0.3s ease, max-width 0.3s ease;

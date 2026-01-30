@@ -6,20 +6,7 @@ $primary-color: #7EF473;
   overflow: hidden;
 }
 
-.create-button {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba($primary-color, 0.3);
-  transition: all 0.3s ease;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba($primary-color, 0.4);
-  }
-
-  mat-icon {
-    margin-right: 8px;
-  }
-}
 
 .table-container {
   padding: 0 !important;

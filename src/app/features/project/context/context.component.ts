@@ -94,17 +94,15 @@ export class ContextComponent implements OnInit, OnDestroy {
       productDescription: ['', Validators.required],
       targetAudiences: ['', Validators.required],
       valueProps: ['', Validators.required],
-      typicalObjections: [''],
+      topObjections: [''],
       // Journey context
-      language: ['es-ES', [Validators.required, Validators.maxLength(50)]],
       toneAndStyle: ['', Validators.required],
       pageContextAndGoal: ['', Validators.required],
       funnelStage: [''],
-      nextAction: [''],
       // Guardrails
       brandGuidelines: [''],
       allowedFacts: [''],
-      forbiddenWordsAndClaims: [''],
+      forbiddenWords: [''],
       sensitiveClaims: ['']
     });
 
@@ -118,19 +116,9 @@ export class ContextComponent implements OnInit, OnDestroy {
     // Initialize URL input control
     this.urlInputControl = this.fb.control('');
 
-    // Sync target language with journey context language
-    this.aiAssistantForm.get('targetLanguage')?.valueChanges.subscribe(value => {
-      if (!this.isUpdatingForm) {
-        this.globalForm.patchValue({ language: value }, { emitEvent: false });
-      }
-    });
+    // Note: Language is only in AI Assistant, not in main form
 
-    // Sync journey context language with target language
-    this.globalForm.get('language')?.valueChanges.subscribe(value => {
-      if (!this.isUpdatingForm) {
-        this.aiAssistantForm.patchValue({ targetLanguage: value }, { emitEvent: false });
-      }
-    });
+    // Note: Language is no longer in the form, it's only in the AI Assistant
   }
 
   ngOnInit(): void {
@@ -158,10 +146,10 @@ export class ContextComponent implements OnInit, OnDestroy {
     // Subscribe to params changes (both current and parent)
     const paramsSub = this.route.params.subscribe((params: any) => {
       const newProjectId = params['projectId'];
-        if (newProjectId && newProjectId !== this.projectId) {
-          this.projectId = newProjectId;
-          this.loadProjectData();
-        }
+      if (newProjectId && newProjectId !== this.projectId) {
+        this.projectId = newProjectId;
+        this.loadProjectData();
+      }
     });
     this.subscriptions.add(paramsSub);
 
@@ -209,57 +197,62 @@ export class ContextComponent implements OnInit, OnDestroy {
     if (project) {
       this.isUpdatingForm = true;
       // Map old fields to new structure for backward compatibility
-      const toneAndStyle = project.tone 
-        ? `${project.tone}${project.styleComplexity ? `, ${project.styleComplexity}` : ''}${project.styleLength ? `, ${project.styleLength}` : ''}`
-        : '';
+      // toneAndStyle is now stored directly in tone field (not split anymore)
+      const toneAndStyle = project.tone || '';
       
-      // Combine forbiddenWords and mustNotClaim into forbiddenWordsAndClaims
-      const forbiddenWordsAndClaims = [
+      // Combine forbiddenWords and mustNotClaim into forbiddenWords
+      const forbiddenWords = [
         ...(project.forbiddenWords || []),
         ...(project.mustNotClaim || [])
       ];
 
-      // Extract targetAudiences and nextAction from legacy fields
-      let targetAudiences = '';
-      try {
-        const pageContextData = project.pageContext ? JSON.parse(project.pageContext) : {};
-        if (Array.isArray(pageContextData.targetAudiences)) {
-          targetAudiences = pageContextData.targetAudiences.join('\n');
-        } else if (typeof pageContextData.targetAudiences === 'string') {
-          targetAudiences = pageContextData.targetAudiences;
+      // Extract targetAudiences from marketLocale (primary) or pageContext (legacy)
+      let targetAudiences = project.marketLocale || '';
+      // Fallback to legacy pageContext JSON format for backward compatibility
+      if (!targetAudiences) {
+        try {
+          const pageContextData = project.pageContext ? JSON.parse(project.pageContext) : {};
+          if (Array.isArray(pageContextData.targetAudiences)) {
+            targetAudiences = pageContextData.targetAudiences.join('\n');
+          } else if (typeof pageContextData.targetAudiences === 'string') {
+            targetAudiences = pageContextData.targetAudiences;
+          }
+        } catch {
+          // If parsing fails, use empty string
         }
-      } catch {
-        // If parsing fails, use empty string
       }
 
-      let nextAction = '';
+      // Extract funnelStage from croGuidelines (legacy storage)
+      let funnelStage = '';
       try {
         const croGuidelinesData = project.croGuidelines ? JSON.parse(project.croGuidelines) : {};
-        nextAction = croGuidelinesData.nextAction || '';
+        funnelStage = croGuidelinesData.funnelStage || croGuidelinesData.nextAction || '';
       } catch {
         // If parsing fails, use empty string
       }
+      
+      // Extract pageContextAndGoal - use pageIntent (primary field)
+      // pageContextAndGoal maps to pageIntent in the backend
+      const pageContextAndGoal = project.pageIntent || '';
 
       // Convert arrays to text (one item per line)
       const valuePropsText = Array.isArray(project.valueProps) ? project.valueProps.join('\n') : (project.valueProps || '');
-      const typicalObjectionsText = Array.isArray(project.typicalObjections) ? project.typicalObjections.join('\n') : (project.typicalObjections || '');
+      const topObjectionsText = Array.isArray(project.typicalObjections) ? project.typicalObjections.join('\n') : (project.typicalObjections || '');
       const allowedFactsText = Array.isArray(project.allowedFacts) ? project.allowedFacts.join('\n') : (project.allowedFacts || '');
-      const forbiddenWordsAndClaimsText = Array.isArray(forbiddenWordsAndClaims) ? forbiddenWordsAndClaims.join('\n') : (forbiddenWordsAndClaims || '');
+      const forbiddenWordsText = Array.isArray(forbiddenWords) ? forbiddenWords.join('\n') : (forbiddenWords || '');
       const sensitiveClaimsText = Array.isArray(project.prohibitedClaims) ? project.prohibitedClaims.join('\n') : (project.prohibitedClaims || '');
 
       this.globalForm.patchValue({
         productDescription: project.productSummary || '',
         targetAudiences: targetAudiences,
         valueProps: valuePropsText,
-        typicalObjections: typicalObjectionsText,
-        language: project.language || 'es-ES',
+        topObjections: topObjectionsText,
         toneAndStyle: toneAndStyle || '',
-        pageContextAndGoal: project.pageIntent || project.pageContext || '',
-        funnelStage: project.funnelStage || '',
-        nextAction: nextAction,
+        pageContextAndGoal: pageContextAndGoal,
+        funnelStage: funnelStage || project.funnelStage || '',
         brandGuidelines: project.brandGuardrails || '',
         allowedFacts: allowedFactsText,
-        forbiddenWordsAndClaims: forbiddenWordsAndClaimsText,
+        forbiddenWords: forbiddenWordsText,
         sensitiveClaims: sensitiveClaimsText
       }, { emitEvent: false });
       this.isUpdatingForm = false;
@@ -278,14 +271,13 @@ export class ContextComponent implements OnInit, OnDestroy {
     // Convert text to arrays (split by newlines, filter empty)
     const targetAudiencesArray = values.targetAudiences ? values.targetAudiences.split('\n').filter((line: string) => line.trim()) : [];
     const valuePropsArray = values.valueProps ? values.valueProps.split('\n').filter((line: string) => line.trim()) : [];
-    const typicalObjectionsArray = values.typicalObjections ? values.typicalObjections.split('\n').filter((line: string) => line.trim()) : [];
+    const topObjectionsArray = values.topObjections ? values.topObjections.split('\n').filter((line: string) => line.trim()) : [];
     
     this.store.updateProject(this.projectId, {
-      productSummary: values.productDescription,
+      productDescription: values.productDescription,
+      targetAudiences: values.targetAudiences,
       valueProps: valuePropsArray,
-      typicalObjections: typicalObjectionsArray,
-      // Store targetAudiences in legacy field for now
-      pageContext: JSON.stringify({ targetAudiences: values.targetAudiences })
+      topObjections: topObjectionsArray
     });
     this.toast.showSuccess('Business context saved');
     this.businessContextSubmitted = false;
@@ -293,21 +285,30 @@ export class ContextComponent implements OnInit, OnDestroy {
 
   saveJourneyContext(): void {
     this.journeyContextSubmitted = true;
-    if (this.globalForm.get('language')?.invalid || 
-        this.globalForm.get('toneAndStyle')?.invalid || 
+    if (this.globalForm.get('toneAndStyle')?.invalid || 
         this.globalForm.get('pageContextAndGoal')?.invalid) {
       return;
     }
     const values = this.globalForm.value;
+    
+    // Try to parse funnelStage as enum, otherwise store as text in croGuidelines
+    let funnelStageEnum: 'discovery' | 'consideration' | 'conversion' | undefined = undefined;
+    const funnelStageText = values.funnelStage?.trim() || '';
+    if (funnelStageText) {
+      const lowerText = funnelStageText.toLowerCase();
+      if (lowerText.includes('discovery')) {
+        funnelStageEnum = 'discovery';
+      } else if (lowerText.includes('consideration')) {
+        funnelStageEnum = 'consideration';
+      } else if (lowerText.includes('conversion')) {
+        funnelStageEnum = 'conversion';
+      }
+    }
+    
     this.store.updateProject(this.projectId, {
-      language: values.language,
-      pageIntent: values.pageContextAndGoal,
-      funnelStage: values.funnelStage,
-      // Store toneAndStyle and nextAction in legacy fields for backward compatibility
-      tone: values.toneAndStyle?.split(',')[0]?.trim() || '',
-      styleComplexity: values.toneAndStyle?.split(',')[1]?.trim() || '',
-      styleLength: values.toneAndStyle?.split(',')[2]?.trim() || '',
-      croGuidelines: JSON.stringify({ nextAction: values.nextAction })
+      toneAndStyle: values.toneAndStyle || '',
+      pageContextAndGoal: values.pageContextAndGoal,
+      funnelStage: funnelStageText || undefined
     });
     this.toast.showSuccess('Journey context saved');
     this.journeyContextSubmitted = false;
@@ -317,15 +318,14 @@ export class ContextComponent implements OnInit, OnDestroy {
     const values = this.globalForm.value;
     // Convert text to arrays (split by newlines, filter empty)
     const allowedFactsArray = values.allowedFacts ? values.allowedFacts.split('\n').filter((line: string) => line.trim()) : [];
-    const forbiddenWordsAndClaimsArray = values.forbiddenWordsAndClaims ? values.forbiddenWordsAndClaims.split('\n').filter((line: string) => line.trim()) : [];
+    const forbiddenWordsArray = values.forbiddenWords ? values.forbiddenWords.split('\n').filter((line: string) => line.trim()) : [];
     const sensitiveClaimsArray = values.sensitiveClaims ? values.sensitiveClaims.split('\n').filter((line: string) => line.trim()) : [];
     
     this.store.updateProject(this.projectId, {
-      brandGuardrails: values.brandGuidelines,
+      brandGuidelines: values.brandGuidelines,
       allowedFacts: allowedFactsArray,
-      forbiddenWords: forbiddenWordsAndClaimsArray,
-      mustNotClaim: [], // Empty as we're combining into forbiddenWordsAndClaims
-      prohibitedClaims: sensitiveClaimsArray
+      forbiddenWords: forbiddenWordsArray,
+      sensitiveClaims: sensitiveClaimsArray
     });
     this.toast.showSuccess('Guardrails saved');
   }
@@ -341,14 +341,13 @@ export class ContextComponent implements OnInit, OnDestroy {
       'productDescription': 5000,
       'targetAudiences': 5000,
       'valueProps': 5000,
-      'typicalObjections': 5000,
-      'language': 50,
+      'topObjections': 5000,
       'toneAndStyle': 5000,
       'pageContextAndGoal': 5000,
-      'nextAction': 5000,
+      'funnelStage': 5000,
       'brandGuidelines': 5000,
       'allowedFacts': 5000,
-      'forbiddenWordsAndClaims': 5000,
+      'forbiddenWords': 5000,
       'sensitiveClaims': 5000
     };
     return fieldsWithMaxLength[controlName] || 0;
@@ -357,12 +356,6 @@ export class ContextComponent implements OnInit, OnDestroy {
   // Info modal content
   getInfoModalContent(field: string): string {
     const contents: { [key: string]: string } = {
-      language: `
-        <p><strong>Set the language and locale format</strong> for the copy (e.g., en-GB, es-ES).</p>
-        <p>This controls spelling, phrasing, and locale conventions. Use standard locale codes (language-country) so the AI writes naturally for that market.</p>
-        <p><strong>Examples:</strong> es-ES (Spain), es-MX (Mexico), en-GB (UK), en-US (USA).</p>
-        <p><strong>Banking example (credit cards):</strong> "es-ES" (Spanish for Spain), so the AI uses local phrasing and tone expected on Spanish banking sites.</p>
-      `,
       productDescription: `
         <p><strong>Use this field to give the AI the "source narrative" for the product:</strong> what it is, what problem it solves, and the core benefits—without marketing fluff. Keep it accurate and high-level (no unverified numbers unless you will also include them in Allowed proof points).</p>
         <p><strong>Include:</strong> product type, key features, eligibility level (if relevant), and the main user needs it addresses.</p>
@@ -392,7 +385,7 @@ export class ContextComponent implements OnInit, OnDestroy {
           <li>"Fast, simple application experience with transparent steps."</li>
         </ul>
       `,
-      typicalObjections: `
+      topObjections: `
         <p><strong>Use this to help the AI proactively reduce friction.</strong> Include 3–8 objections commonly seen in banking journeys: trust, fees, eligibility, complexity, hidden conditions, and fear of rejection. Keep them in the user's voice.</p>
         <p><strong>Recommended format:</strong> bullets.</p>
         <p><strong>Banking example (credit cards):</strong></p>
@@ -443,7 +436,7 @@ export class ContextComponent implements OnInit, OnDestroy {
           <li>"Terms and conditions apply."</li>
         </ul>
       `,
-      forbiddenWordsAndClaims: `
+      forbiddenWords: `
         <p><strong>Use this to block risky or non-compliant language:</strong> "guaranteed", "no risk", "instant approval", or any internal red-flag terms. Include both single words and short phrases.</p>
         <p>This list should be treated as a hard filter during generation and review.</p>
         <p><strong>Banking example (credit cards):</strong></p>
@@ -602,18 +595,22 @@ export class ContextComponent implements OnInit, OnDestroy {
   }
 
   private simulateBriefGeneration(): Observable<any> {
-    // Simulate API call - replace with actual API call later
+    // Simulate API call - using example data for demonstration
     return new Observable(observer => {
       setTimeout(() => {
-        // Mock generated brief data
+        // Example brief data based on CaixaBank account example
         const mockBrief = {
-          productDescription: 'Credit card designed for everyday spending with flexible repayment options...',
-          targetAudiences: '"Young professionals: want convenience, digital-first management..."',
-          valueProps: '"Pay securely online and in-store with real-time card controls."',
-          language: this.aiAssistantForm.get('targetLanguage')?.value || 'es-ES',
-          toneAndStyle: 'Clear, calm, and trustworthy. Professional but not cold.',
-          pageContextAndGoal: 'This is a product landing page for a credit card...',
-          allowedFacts: '"Manage your card in the mobile app (freeze/unfreeze, notifications)."'
+          productDescription: 'CaixaBank ofrece una cuenta 100% online que permite abrir y gestionar una cuenta bancaria sin comisiones. Entre sus características destacadas se incluyen la ausencia de comisiones de mantenimiento o administración, una tarjeta de débito gratuita y un atractivo incentivo de hasta 250€ por domiciliar una nómina. El proceso es completamente digital y se puede completar en minutos, con verificación de identidad a través de vídeo. La cuenta permite realizar transacciones básicas como transferencias, pagos de recibos y recibir ingresos, todo desde la app o la web de CaixaBank, con acceso a más de 11.000 cajeros automáticos en España.',
+          targetAudiences: 'Jóvenes profesionales - Buscan una cuenta sin altas comisiones para empezar su camino financiero. Son usuarios que prefieren la banca online por su rapidez y comodidad.\n\nFamilias - Necesitan una cuenta confiable y económica para gestionar sus finanzas del hogar, con beneficios como una tarjeta de débito gratuita y un incentivo por domiciliar ingresos.\n\nEntusiastas de la tecnología - Prefieren servicios totalmente digitales y se sienten atraídos por la facilidad de apertura de la cuenta y la capacidad de gestionar sus finanzas online de manera continua.',
+          valueProps: 'Sin comisiones de mantenimiento a lo largo de toda la vida de la cuenta.\n\nTarjeta de débito gratuita sin cargos adicionales.\n\nIncentivos por domiciliar nóminas, hasta 250€.\n\nProceso 100% digital con verificación de identidad por vídeo de forma segura.\n\nAcceso a más de 11.000 cajeros automáticos en España para retirar efectivo.',
+          topObjections: 'Preocupaciones sobre la seguridad de la banca completamente online sin interacción presencial.\n\nDudas sobre la falta de intereses o recompensas en la cuenta.\n\nIncertidumbre sobre posibles comisiones ocultas a pesar de la promesa de no tener comisiones de mantenimiento.',
+          toneAndStyle: 'Tono: Cercano, profesional y directo. Se debe transmitir confianza y claridad, destacando los beneficios de la cuenta online y su fácil acceso.\n\nNo usar: Términos complicados o técnicos que puedan generar confusión.\n\nSí usar: Un lenguaje accesible, destacando la comodidad, seguridad y facilidad de uso de la cuenta online.',
+          pageContextAndGoal: 'Esta página tiene como objetivo ofrecer a los usuarios la posibilidad de abrir una cuenta bancaria 100% online, destacando las ventajas de su proceso sencillo y sin comisiones. El visitante llega aquí buscando información para tomar la decisión de abrir una cuenta con CaixaBank. El objetivo es que el usuario complete la apertura de su cuenta online a través del formulario disponible.',
+          funnelStage: 'El usuario se encuentra en la etapa de consideración y acción del embudo, buscando abrir una cuenta. La acción que se espera es que complete el formulario para abrir la cuenta online.',
+          brandGuidelines: 'Terminología: Se debe usar un lenguaje sencillo, accesible y sin jerga bancaria.\n\nFormato: El contenido debe estar bien estructurado, fácil de leer, y visualmente atractivo.\n\nTono: Cercano y confiable, evitando excesiva formalidad o términos complicados.',
+          allowedFacts: 'No se deben realizar afirmaciones sin respaldar con hechos verificables, como "más de 11.000 cajeros en España" y "incentivos de hasta 250€ por domiciliar una nómina."',
+          forbiddenWords: 'No se deben usar frases que sugieran costos ocultos o comisiones no explícitas.\n\nEvitar el uso de términos como "gratis" sin aclarar claramente los términos y condiciones.',
+          sensitiveClaims: 'Cualquier afirmación relacionada con la seguridad de los datos debe ser revisada manualmente, garantizando que se están usando términos que realmente cumplan con las normativas legales y de privacidad.'
         };
         observer.next(mockBrief);
         observer.complete();
@@ -624,49 +621,64 @@ export class ContextComponent implements OnInit, OnDestroy {
   private applyGeneratedBrief(data: any): void {
     this.isUpdatingForm = true;
 
+    // Helper function to check if content looks like corrupted JSON
+    const isCorruptedJson = (content: string): boolean => {
+      if (!content || typeof content !== 'string') return false;
+      const trimmed = content.trim();
+      // Check for JSON-like patterns
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        // Count braces/quotes - if too many, likely JSON
+        const braceCount = (trimmed.match(/[{}]/g) || []).length;
+        const quoteCount = (trimmed.match(/["']/g) || []).length;
+        if (braceCount > 5 || quoteCount > 10) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Helper function to apply field with validation
+    const applyField = (fieldName: string, value: any, isMandatory: boolean = false) => {
+      if (value && value.trim()) {
+        const cleanValue = value.trim();
+        const hasFormatIssue = isCorruptedJson(cleanValue);
+        
+        if (hasFormatIssue) {
+          // Mark as needs review if JSON corrupted
+          this.globalForm.patchValue({ [fieldName]: cleanValue });
+          this.setFieldState(fieldName, 'ai_draft', 'needs_review', 'low');
+          this.animateField(fieldName);
+        } else {
+          // Normal auto-fill
+          this.globalForm.patchValue({ [fieldName]: cleanValue });
+          this.setFieldState(fieldName, 'ai_draft', 'ok', 'high');
+          this.animateField(fieldName);
+        }
+      } else if (isMandatory) {
+        // Mandatory field is empty after generation
+        this.setFieldState(fieldName, 'ai_draft', 'missing', 'low');
+      }
+    };
+
     // Apply generated content based on selected sections
     if (this.aiAssistantForm.get('fillBusinessContext')?.value) {
-      if (data.productDescription) {
-        this.globalForm.patchValue({ productDescription: data.productDescription });
-        this.setFieldState('productDescription', 'ai_draft', 'ok', 'high');
-        this.animateField('productDescription');
-      }
-      if (data.targetAudiences) {
-        this.globalForm.patchValue({ targetAudiences: data.targetAudiences });
-        this.setFieldState('targetAudiences', 'ai_draft', 'ok', 'high');
-        this.animateField('targetAudiences');
-      }
-      if (data.valueProps) {
-        this.globalForm.patchValue({ valueProps: data.valueProps });
-        this.setFieldState('valueProps', 'ai_draft', 'ok', 'high');
-        this.animateField('valueProps');
-      }
+      applyField('productDescription', data.productDescription, true);
+      applyField('targetAudiences', data.targetAudiences, true);
+      applyField('valueProps', data.valueProps, true);
+      applyField('topObjections', data.topObjections, false);
     }
 
     if (this.aiAssistantForm.get('fillJourneyContext')?.value) {
-      if (data.language) {
-        this.globalForm.patchValue({ language: data.language });
-        this.setFieldState('language', 'ai_draft', 'ok', 'high');
-        this.animateField('language');
-      }
-      if (data.toneAndStyle) {
-        this.globalForm.patchValue({ toneAndStyle: data.toneAndStyle });
-        this.setFieldState('toneAndStyle', 'ai_draft', 'ok', 'high');
-        this.animateField('toneAndStyle');
-      }
-      if (data.pageContextAndGoal) {
-        this.globalForm.patchValue({ pageContextAndGoal: data.pageContextAndGoal });
-        this.setFieldState('pageContextAndGoal', 'ai_draft', 'ok', 'high');
-        this.animateField('pageContextAndGoal');
-      }
+      applyField('toneAndStyle', data.toneAndStyle, true);
+      applyField('pageContextAndGoal', data.pageContextAndGoal, true);
+      applyField('funnelStage', data.funnelStage, false);
     }
 
     if (this.aiAssistantForm.get('fillGuardrails')?.value) {
-      if (data.allowedFacts) {
-        this.globalForm.patchValue({ allowedFacts: data.allowedFacts });
-        this.setFieldState('allowedFacts', 'ai_draft', 'ok', 'high');
-        this.animateField('allowedFacts');
-      }
+      applyField('brandGuidelines', data.brandGuidelines, false);
+      applyField('allowedFacts', data.allowedFacts, false);
+      applyField('forbiddenWords', data.forbiddenWords, false);
+      applyField('sensitiveClaims', data.sensitiveClaims, false);
     }
 
     this.isUpdatingForm = false;
@@ -716,7 +728,44 @@ export class ContextComponent implements OnInit, OnDestroy {
     const state = this.fieldStates[fieldName];
     if (state && state.source === 'ai_draft') {
       this.setFieldState(fieldName, 'manual', state.reviewStatus, state.confidence);
+    } else if (!state) {
+      // Field was never auto-filled, mark as manual
+      this.setFieldState(fieldName, 'manual', 'ok', 'high');
     }
+    
+    // Check if field is cleared
+    const fieldValue = this.globalForm.get(fieldName)?.value;
+    if (!fieldValue || !fieldValue.trim()) {
+      // Check if field is mandatory
+      const isMandatory = this.globalForm.get(fieldName)?.hasError('required') || 
+                         ['productDescription', 'targetAudiences', 'valueProps', 'toneAndStyle', 'pageContextAndGoal'].includes(fieldName);
+      if (isMandatory) {
+        this.setFieldState(fieldName, 'ai_draft', 'missing', 'low');
+      } else {
+        // Optional field cleared - remove badge or keep as manual
+        delete this.fieldStates[fieldName];
+      }
+    }
+  }
+
+  hasFormatIssue(fieldName: string): boolean {
+    const state = this.fieldStates[fieldName];
+    if (!state) return false;
+    
+    // Check if content looks like corrupted JSON
+    const fieldValue = this.globalForm.get(fieldName)?.value;
+    if (!fieldValue || typeof fieldValue !== 'string') return false;
+    
+    const trimmed = fieldValue.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      const braceCount = (trimmed.match(/[{}]/g) || []).length;
+      const quoteCount = (trimmed.match(/["']/g) || []).length;
+      if (braceCount > 5 || quoteCount > 10) {
+        return true;
+      }
+    }
+    
+    return state.reviewStatus === 'needs_review' && state.confidence === 'low';
   }
 }
 

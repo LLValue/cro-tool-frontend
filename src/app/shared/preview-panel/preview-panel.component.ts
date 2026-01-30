@@ -8,7 +8,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 export interface HighlightElement {
   selector: string;
-  duration?: number; // milliseconds, default 1000
+  duration?: number;
 }
 
 @Component({
@@ -57,10 +57,8 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (this.highlightSelector) {
       setTimeout(() => this.highlightElement(this.highlightSelector), 100);
     }
-    // Calculate fit scale for mobile view
     setTimeout(() => this.updateFitScale(), 200);
     
-    // Add resize listener to recalculate fit scale
     this.resizeListener = () => {
       if (this.viewMode === 'mobile' && this.zoomMode === 'fit') {
         this.updateFitScale();
@@ -77,19 +75,8 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log('[PreviewPanel] ngOnChanges called', {
-      hasPreviewHtmlChange: !!changes['previewHtml'],
-      hasPreviewUrlChange: !!changes['previewUrl'],
-      hasHighlightSelectorChange: !!changes['highlightSelector'],
-      previewHtml: this.previewHtml?.substring(0, 100),
-      previewUrl: this.previewUrl,
-      highlightSelector: this.highlightSelector
-    });
-
     if (changes['previewHtml'] || changes['previewUrl']) {
-      console.log('[PreviewPanel] Updating safe HTML');
       this.updateSafeHtml();
-      // Update fit scale after content loads
       setTimeout(() => this.updateFitScale(), 200);
     }
     if (changes['zoomMode'] || changes['viewMode']) {
@@ -101,19 +88,11 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         previous: changes['highlightSelector'].previousValue
       });
       if (this.highlightSelector && this.highlightSelector.trim() !== '') {
-        // Wait for iframe/content to be ready
         setTimeout(() => {
           console.log('[PreviewPanel] Attempting to highlight element:', this.highlightSelector);
           if (this.useIframe && this.previewIframe?.nativeElement?.contentWindow) {
             console.log('[PreviewPanel] Using iframe highlight');
-            // Determine if this is a hover (temporary) or click (with fade-out)
-            // Hover: previous value was empty, current is set, and will be cleared soon
-            // Click: previous value might exist or this is a deliberate preview action
-            // For now, we'll use persistent=false (with fade-out) for all cases except hover
-            // Hover detection: if previous was empty and this is a quick change, it's likely hover
             const previousWasEmpty = !changes['highlightSelector'].previousValue || changes['highlightSelector'].previousValue.trim() === '';
-            // Use persistent highlight only if we detect it's a hover (previous was empty)
-            // For clicks/preview actions, use fade-out (persistent=false)
             const isHover = previousWasEmpty;
             console.log('[PreviewPanel] Highlight type:', isHover ? 'HOVER (persistent)' : 'CLICK (with fade-out)');
             this.highlightElementInIframe(this.highlightSelector, 1000, isHover);
@@ -177,12 +156,10 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   private updateFitScale(): void {
     console.log('[PreviewPanel] updateFitScale called', { viewMode: this.viewMode, zoomMode: this.zoomMode });
     
-    // Try to find iframe using ViewChild first, then fallback to querySelector
     let iframe: HTMLIFrameElement | null = null;
     if (this.previewIframe?.nativeElement) {
       iframe = this.previewIframe.nativeElement;
     } else {
-      // Fallback: find iframe in the DOM
       const container = document.querySelector('.iframe-container');
       if (container) {
         iframe = container.querySelector('.preview-iframe') as HTMLIFrameElement;
@@ -191,7 +168,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
 
     if (!iframe) {
       console.log('[PreviewPanel] No iframe found, will retry');
-      // Retry after a short delay if iframe is not ready
       setTimeout(() => this.updateFitScale(), 100);
       return;
     }
@@ -199,47 +175,81 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     console.log('[PreviewPanel] Iframe found, updating scale', { zoomMode: this.zoomMode });
 
     if (this.viewMode === 'mobile') {
+      iframe.style.width = '375px';
+      iframe.style.height = '100%';
+      iframe.style.display = 'block';
+      iframe.style.transformOrigin = 'top center';
+      
+      const container = iframe.parentElement;
+      const wrapper = container?.parentElement;
+      
+      if (!wrapper || !container) {
+        console.warn('[PreviewPanel] No container/wrapper found');
+        return;
+      }
+      
+      const wrapperWidth = wrapper.clientWidth;
+      const containerWidth = wrapperWidth - 40;
+      const iframeWidth = 375;
+      
+      console.log('[PreviewPanel] Container dimensions', {
+        wrapperWidth,
+        containerWidth,
+        iframeWidth,
+        zoomMode: this.zoomMode,
+        willScale: containerWidth < iframeWidth
+      });
+      
       if (this.zoomMode === 'fit') {
-        // Fit: scale to fit available width
-        const container = iframe.parentElement;
-        if (container) {
-          const containerWidth = container.clientWidth - 40; // Account for padding
-          const iframeWidth = 375; // Mobile width
-          const scale = Math.min(1, Math.max(0.1, containerWidth / iframeWidth));
-          console.log('[PreviewPanel] Fit scale calculated', { containerWidth, iframeWidth, scale });
-          iframe.style.width = '375px';
-          iframe.style.height = '100%';
-          iframe.style.maxWidth = '100%';
-          iframe.style.transform = `scale(${scale})`;
-          iframe.style.transformOrigin = 'top center';
-          iframe.style.display = 'block';
-        }
-      } else {
-        // Fixed scale modes
+        // FIT: Scale to fit available width in the container
+        // Key behavior: ALWAYS ensures content fits completely, NO horizontal scroll
+        // - If container >= 375px: show 375px at scale 1 (fits perfectly, no scroll)
+        // - If container < 375px: scale down to fit exactly (no scroll)
+        const scale = Math.min(1, containerWidth / iframeWidth);
         iframe.style.width = '375px';
-        iframe.style.height = '100%';
-        iframe.style.maxWidth = 'none';
-        let scale = 1;
-        if (this.zoomMode === '100%') {
-          scale = 1;
-        } else if (this.zoomMode === '75%') {
-          scale = 0.75;
-        } else if (this.zoomMode === '125%') {
-          scale = 1.25;
-        }
-        console.log('[PreviewPanel] Fixed scale applied', { zoomMode: this.zoomMode, scale });
+        iframe.style.maxWidth = '100%';
         iframe.style.transform = `scale(${scale})`;
-        iframe.style.transformOrigin = 'top center';
-        iframe.style.display = 'block';
+        // CRITICAL: No horizontal scroll in Fit mode - content always fits
+        wrapper.style.overflowX = 'hidden';
+        container.style.overflowX = 'hidden';
+        container.style.width = '100%';
+        console.log('[PreviewPanel] Fit: Container=' + containerWidth + 'px, iframe=375px, scale=' + scale.toFixed(3) + ' (' + (scale * 100).toFixed(1) + '%), visual width=' + (375 * scale).toFixed(1) + 'px, overflowX=hidden (NO scroll)');
+      } else if (this.zoomMode === '100%') {
+        // 100%: Always show at actual size (375px), NO scaling, ALLOWS scroll for detail inspection
+        // Key behavior: NEVER scales, always 375px, allows horizontal scroll for inspection
+        // This is the key difference: 100% allows scroll even when container is wider
+        iframe.style.width = '375px';
+        iframe.style.maxWidth = 'none';
+        iframe.style.transform = 'scale(1)';
+        // CRITICAL: Allow horizontal scroll in 100% mode for detail inspection
+        // Even if container is wider, scroll is enabled to allow inspecting content inside iframe
+        wrapper.style.overflowX = 'auto';
+        container.style.overflowX = 'auto';
+        container.style.width = 'auto';
+        container.style.minWidth = '375px';
+        const needsScroll = containerWidth < iframeWidth;
+        console.log('[PreviewPanel] 100%: Always 375px at scale 1 (NO scaling), container=' + containerWidth + 'px, overflowX=auto (scroll enabled, needs scroll: ' + needsScroll + ')');
+      } else if (this.zoomMode === '75%') {
+        iframe.style.width = '375px';
+        iframe.style.maxWidth = 'none';
+        iframe.style.transform = 'scale(0.75)';
+        wrapper.style.overflowX = 'auto';
+        container.style.overflowX = 'auto';
+        console.log('[PreviewPanel] 75%: 375px scaled to 75% = 281.25px visually');
+      } else if (this.zoomMode === '125%') {
+        iframe.style.width = '375px';
+        iframe.style.maxWidth = 'none';
+        iframe.style.transform = 'scale(1.25)';
+        wrapper.style.overflowX = 'auto';
+        container.style.overflowX = 'auto';
+        console.log('[PreviewPanel] 125%: 375px scaled to 125% = 468.75px visually');
       }
     } else {
-      // Desktop mode: reset transforms
       console.log('[PreviewPanel] Resetting to desktop mode');
       iframe.style.transform = 'none';
       iframe.style.width = '100%';
       iframe.style.height = '100%';
       iframe.style.maxWidth = '100%';
-      iframe.style.display = 'block';
     }
   }
 
@@ -265,7 +275,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       return;
     }
 
-    // Clean selector: remove temporary classes
     const cleanSelector = this.cleanSelector(selector);
     console.log('[PreviewPanel] Cleaned selector for highlight:', { original: selector, clean: cleanSelector });
 
@@ -279,7 +288,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         return;
       }
 
-      // Clear any existing highlight first
       this.clearHighlight();
 
       elements.forEach((element: Element) => {
@@ -288,12 +296,10 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         const originalBoxShadow = htmlElement.style.boxShadow;
         const originalTransition = htmlElement.style.transition;
 
-        // Store original styles for cleanup
         (htmlElement as any).__originalOutline = originalOutline;
         (htmlElement as any).__originalBoxShadow = originalBoxShadow;
         (htmlElement as any).__originalTransition = originalTransition;
 
-        // Apply highlight
         htmlElement.style.outline = '3px solid #673ab7';
         htmlElement.style.outlineOffset = '2px';
         htmlElement.style.boxShadow = '0 0 0 4px rgba(103, 58, 183, 0.2)';
@@ -301,10 +307,7 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         htmlElement.style.zIndex = '9999';
         htmlElement.style.position = 'relative';
 
-        // Only fade out if not persistent (for hover, keep it visible)
-        // For click/preview actions, fade out after duration
         if (!persistent && duration > 0) {
-          // Fade out after showing the highlight for a bit
           this.highlightTimeout = window.setTimeout(() => {
             htmlElement.style.transition = 'all 0.8s ease-out';
             htmlElement.style.outline = originalOutline;
@@ -315,12 +318,11 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
               htmlElement.style.transition = originalTransition;
               htmlElement.style.zIndex = '';
               htmlElement.style.position = '';
-              // Clean up stored values
               delete (htmlElement as any).__originalOutline;
               delete (htmlElement as any).__originalBoxShadow;
               delete (htmlElement as any).__originalTransition;
             }, 800);
-          }, Math.max(200, duration - 200)); // Start fading out slightly before the full duration, but at least 200ms
+          }, Math.max(200, duration - 200));
         }
       });
     } catch (error) {
@@ -343,7 +345,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         const originalBoxShadow = htmlElement.style.boxShadow;
         const originalTransition = htmlElement.style.transition;
 
-        // Apply highlight
         htmlElement.style.outline = '3px solid #673ab7';
         htmlElement.style.outlineOffset = '2px';
         htmlElement.style.boxShadow = '0 0 0 4px rgba(103, 58, 183, 0.2)';
@@ -351,7 +352,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         htmlElement.style.zIndex = '9999';
         htmlElement.style.position = 'relative';
 
-        // Fade out
         this.highlightTimeout = window.setTimeout(() => {
           htmlElement.style.transition = 'all 0.8s ease-out';
           htmlElement.style.outline = originalOutline;
@@ -382,11 +382,9 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       this.highlightStyleElement = undefined;
     }
 
-    // Clear any highlighted elements in iframe
     if (this.useIframe && this.previewIframe?.nativeElement?.contentDocument) {
       try {
         const doc = this.previewIframe.nativeElement.contentDocument;
-        // Find all elements with the purple outline (highlight style)
         const allElements = doc.querySelectorAll('*');
         let clearedCount = 0;
         
@@ -394,7 +392,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
           const htmlElement = element as HTMLElement;
           const style = htmlElement.style;
           
-          // Check if element has the highlight outline
           if (style.outline && style.outline.includes('rgb(103, 58, 183)')) {
             const originalOutline = (htmlElement as any).__originalOutline || '';
             const originalBoxShadow = (htmlElement as any).__originalBoxShadow || '';
@@ -407,7 +404,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
             htmlElement.style.zIndex = '';
             htmlElement.style.position = '';
             
-            // Clean up stored original values
             delete (htmlElement as any).__originalOutline;
             delete (htmlElement as any).__originalBoxShadow;
             delete (htmlElement as any).__originalTransition;
@@ -422,7 +418,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       }
     }
     
-    // Also clear in div content if used
     if (this.previewContent?.nativeElement) {
       try {
         const container = this.previewContent.nativeElement;
@@ -461,7 +456,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   private cleanSelector(selector: string): string {
     if (!selector) return selector;
     
-    // Remove temporary classes used during element selection/highlighting
     const temporaryClasses = [
       '.point-editor-selected',
       '.point-editor-highlight',
@@ -473,7 +467,6 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       cleanedSelector = cleanedSelector.replace(tempClass, '');
     });
     
-    // Clean up any double dots or trailing dots
     cleanedSelector = cleanedSelector.replace(/\.{2,}/g, '.');
     cleanedSelector = cleanedSelector.replace(/\.$/, '');
     

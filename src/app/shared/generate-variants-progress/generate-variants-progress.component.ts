@@ -34,6 +34,7 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   currentMessage = '';
   variantCount = 0;
   error: string | null = null;
+  generatedData: any = null; // Store the generated data
   isComplete = false;
   Math = Math; // Expose Math to template
   
@@ -93,8 +94,10 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     
     // Subscribe to the actual generation observable
     this.data.generateObservable.subscribe({
-      next: (variants) => {
-        this.variantCount = Array.isArray(variants) ? variants.length : 10;
+      next: (result) => {
+        // Store the generated data (could be variants array or brief data object)
+        this.generatedData = result;
+        this.variantCount = Array.isArray(result) ? result.length : (result?.variantCount || 10);
         this.responseReceived = true;
         this.completeProgress();
       },
@@ -292,7 +295,11 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   }
 
   onReviewVariants(): void {
-    this.dialogRef.close({ action: 'review' });
+    this.dialogRef.close({ 
+      action: 'review',
+      success: true,
+      data: this.generatedData
+    });
   }
 
   onRetry(): void {
@@ -300,7 +307,16 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   }
 
   onClose(): void {
-    this.dialogRef.close({ action: 'close' });
+    // If completed successfully, return the data
+    if (this.isComplete && !this.error && this.generatedData) {
+      this.dialogRef.close({ 
+        action: 'close',
+        success: true,
+        data: this.generatedData
+      });
+    } else {
+      this.dialogRef.close({ action: 'close' });
+    }
   }
 
   onGenerateFallback(): void {

@@ -109,6 +109,7 @@
 
 // Field badges
 .field-label-row {
+  max-width: 60%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -119,6 +120,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+
+  .warning-icon {
+    color: #ff9800;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .field-badge {

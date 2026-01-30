@@ -103,6 +103,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   selectedElement: SelectedElement | null = null;
   viewMode: 'mobile' | 'desktop' = 'desktop';
   private highlightStyle: HTMLStyleElement | null = null;
+  projectPageUrl: string = '';
   
   private subscriptions = new Subscription();
 
@@ -127,7 +128,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   ) {
     this.setupForm = this.fb.group({
       name: ['', Validators.required],
-      elementType: [this.elementTypes[0]], // First option as default
+      elementType: [this.elementTypes[0]],
       selector: ['', Validators.required],
       deviceScope: ['All'],
       status: ['Included']
@@ -147,15 +148,12 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       this.pointId = params['pointId'] || '';
       this.projectId = params['projectId'] || this.route.snapshot.parent?.params['projectId'] || '';
       
-      // Check if we're in create mode
       this.isCreateMode = this.pointId === 'new' || !this.pointId;
       
       if (this.isCreateMode) {
-        // In create mode, don't load point or variants
         this.loadPreview();
         this.loadProjectPreview();
       } else {
-        // In edit mode, load existing point data
         this.loadPoint();
         this.loadVariants();
         this.loadPreview();
@@ -177,9 +175,9 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       if (this.point) {
         this.setupForm.patchValue({
           name: this.point.name || '',
-          elementType: this.point.elementType || this.elementTypes[0], // First option
+          elementType: this.point.elementType || this.elementTypes[0],
           selector: this.point.selector || '',
-          deviceScope: this.point.deviceScope || 'All', // First option
+          deviceScope: this.point.deviceScope || 'All',
           status: this.point.status || 'Included'
         });
         this.briefForm.patchValue({
@@ -198,7 +196,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
           maxWords: generationRules.maxWords || 0
         });
       } else {
-        // No point data, ensure defaults are set
         if (!this.setupForm.get('elementType')?.value) {
           this.setupForm.patchValue({ elementType: this.elementTypes[0] });
         }
@@ -217,11 +214,9 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       this.variants = variants
         .filter(v => v.optimizationPointId === this.pointId)
         .sort((a, b) => {
-          // First sort by UX score (descending)
           if (b.uxScore !== a.uxScore) {
             return b.uxScore - a.uxScore;
           }
-          // Then sort by status (approved first)
           if (a.status === 'approved' && b.status !== 'approved') return -1;
           if (a.status !== 'approved' && b.status === 'approved') return 1;
           return 0;
@@ -245,11 +240,9 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       });
     }
     this.filteredVariants = filtered.sort((a, b) => {
-      // First sort by UX score (descending)
       if (b.uxScore !== a.uxScore) {
         return b.uxScore - a.uxScore;
       }
-      // Then sort by status (approved first)
       if (a.status === 'approved' && b.status !== 'approved') return -1;
       if (a.status !== 'approved' && b.status === 'approved') return 1;
       return 0;
@@ -261,7 +254,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     const status = this.setupForm.get('status')?.value ? 'Included' : 'Excluded';
     
-    // Map elementType string to the expected type
     const elementTypeValue = this.setupForm.get('elementType')?.value;
     let elementType: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other' | undefined;
     if (elementTypeValue) {
@@ -278,8 +270,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Get brief data if available
-    // Ensure arrays are always defined (not undefined) to avoid backend errors
     const generationRules = {
       goodIdeas: Array.isArray(this.goodIdeas) ? this.goodIdeas : [],
       thingsToAvoid: Array.isArray(this.thingsToAvoid) ? this.thingsToAvoid : [],
@@ -302,11 +292,9 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     };
 
     if (this.isCreateMode) {
-      // Create new point
       this.store.addPoint(this.projectId, pointData).subscribe({
         next: (newPoint) => {
           this.toast.showSuccess('Point created successfully');
-          // Navigate to the newly created point
           this.router.navigate(['/projects', this.projectId, 'points', newPoint.id]);
         },
         error: () => {
@@ -314,7 +302,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      // Update existing point
       if (!this.point) return;
       
       this.store.updatePoint(this.pointId, {
@@ -327,16 +314,13 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   saveBrief(): void {
-    // In create mode, save brief data but don't create point yet (only when saving setup)
     if (this.isCreateMode) {
-      // Just show success message, the point will be created when saving setup
       this.toast.showSuccess('Brief saved. Remember to save the Point Setup to create the point.');
       return;
     }
     
     if (!this.point) return;
 
-    // Ensure arrays are always defined (not undefined) to avoid backend errors
     const generationRules = {
       goodIdeas: Array.isArray(this.goodIdeas) ? this.goodIdeas : [],
       thingsToAvoid: Array.isArray(this.thingsToAvoid) ? this.thingsToAvoid : [],
@@ -372,17 +356,12 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result?.action === 'review') {
-        // Navigate to variants tab or refresh
         this.loadVariants();
       } else if (result?.action === 'retry') {
-        // Retry generation
         this.generateVariants();
       } else if (result?.action === 'fallback') {
-        // Generate fallback variants (if backend supports it)
-        // For now, just retry
         this.generateVariants();
       }
-      // Refresh variants list
       this.loadVariants();
     });
   }
@@ -469,19 +448,16 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     this.router.navigate(['/projects', this.projectId, 'points']);
   }
 
-  // Preview and selection methods
   loadPreview(): void {
     if (!this.projectId) return;
     
     this.loading = true;
     this.error = null;
 
-    // First, get the project to obtain its pageUrl
     const projectSub = this.store.listProjects().pipe(take(1)).subscribe({
       next: (projects) => {
         let project = projects.find(p => p.id === this.projectId);
         
-        // If not in store, try API
         if (!project) {
           this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
             next: (p) => {
@@ -499,7 +475,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
-        // Try API directly
         this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
           next: (project) => {
             this.fetchPageHtml(project?.pageUrl);
@@ -519,11 +494,12 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     if (!pageUrl || !pageUrl.trim()) {
       this.error = 'Project does not have a page URL configured. Please set it in Project Setup.';
       this.loading = false;
+      this.projectPageUrl = '';
       this.toast.showError(this.error);
       return;
     }
 
-    // Use proxyFetch to get HTML directly (returns text/html, not JSON)
+    this.projectPageUrl = pageUrl;
     const sub = this.apiClient.proxyFetch(pageUrl).subscribe({
       next: (response) => {
         if (!response.html || response.html.trim().length === 0) {
@@ -533,12 +509,10 @@ export class PointDetailComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // Process HTML to remove cookie pop-ups before displaying
         this.html = this.removeCookiePopupsFromHtml(response.html);
         this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(this.html);
         this.loading = false;
         
-        // Wait for iframe to load, then inject selection script
         setTimeout(() => {
           this.injectSelectionScript();
         }, 500);
@@ -546,7 +520,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       error: (err: any) => {
         this.loading = false;
         
-        // Extract error message from response
         let errorMessage = 'Failed to load page preview.';
         if (err.error?.message) {
           errorMessage = `Failed to load page preview: ${err.error.message}`;
@@ -571,7 +544,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     const iframe = this.previewFrame?.nativeElement;
     if (!iframe) return;
 
-    // Wait for iframe to load
     iframe.onload = () => {
       try {
         const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
@@ -580,10 +552,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // Remove existing highlight style if any
         this.removeHighlightStyle();
 
-        // Create highlight style
         const style = iframeDoc.createElement('style');
         style.id = 'point-editor-highlight';
         style.textContent = `
@@ -644,7 +614,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
         iframeDoc.head.appendChild(style);
         this.highlightStyle = style;
         
-        // Inject script to auto-close cookie pop-ups
         const cookieScript = iframeDoc.createElement('script');
         cookieScript.textContent = `
           (function() {
@@ -681,7 +650,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
         `;
         iframeDoc.head.appendChild(cookieScript);
 
-        // Add event listeners for element selection
         iframeDoc.addEventListener('mouseover', this.onElementHover.bind(this), true);
         iframeDoc.addEventListener('mouseout', this.onElementOut.bind(this), true);
         iframeDoc.addEventListener('click', this.onElementClick.bind(this), true);
@@ -698,13 +666,11 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLElement;
     if (!target || target === this.selectedElement?.element) return;
 
-    // Remove previous highlight
     const prevHighlight = this.previewFrame?.nativeElement?.contentDocument?.querySelector('.point-editor-highlight');
     if (prevHighlight) {
       prevHighlight.classList.remove('point-editor-highlight');
     }
 
-    // Add highlight to current element
     target.classList.add('point-editor-highlight');
   }
 
@@ -726,17 +692,14 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     const target = event.target as HTMLElement;
     if (!target) return;
 
-    // Remove previous selection
     const prevSelected = this.previewFrame?.nativeElement?.contentDocument?.querySelector('.point-editor-selected');
     if (prevSelected) {
       prevSelected.classList.remove('point-editor-selected');
     }
 
-    // Add selection to current element
     target.classList.add('point-editor-selected');
     target.classList.remove('point-editor-highlight');
 
-    // Generate selector and extract text
     const selector = this.generateSelector(target);
     const text = this.extractText(target);
 
@@ -746,29 +709,24 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       text
     };
 
-    // Update form
     this.setupForm.patchValue({
       selector,
       name: this.generateDefaultName(target, text)
     });
 
-    // Disable selection mode
     this.selectionMode = false;
     this.toast.showSuccess('Element selected! Review the details below.');
   }
 
   generateSelector(element: HTMLElement): string {
-    // Try ID first
     if (element.id) {
       return `#${element.id}`;
     }
 
-    // Try class
     if (element.className && typeof element.className === 'string') {
       const classes = element.className.split(' ').filter(c => c.trim());
       if (classes.length > 0) {
         const classSelector = '.' + classes.join('.');
-        // Check if this selector is unique
         const iframeDoc = this.previewFrame?.nativeElement?.contentDocument;
         if (iframeDoc && iframeDoc.querySelectorAll(classSelector).length === 1) {
           return classSelector;
@@ -776,7 +734,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Try data attributes
     for (let i = 0; i < element.attributes.length; i++) {
       const attr = element.attributes[i];
       if (attr.name.startsWith('data-')) {
@@ -788,7 +745,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Build path
     const path: string[] = [];
     let current: HTMLElement | null = element;
 
@@ -808,7 +764,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Add nth-child if needed
       const parent: HTMLElement | null = current.parentElement;
       if (parent) {
         const siblings = Array.from(parent.children).filter(
@@ -828,7 +783,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   extractText(element: HTMLElement): string {
-    // Get text content, but exclude nested interactive elements
     const clone = element.cloneNode(true) as HTMLElement;
     const interactiveElements = clone.querySelectorAll('button, a, input, textarea, select');
     interactiveElements.forEach(el => el.remove());
@@ -860,7 +814,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   disableSelectionMode(): void {
     this.selectionMode = false;
     
-    // Remove all highlights
     const iframeDoc = this.previewFrame?.nativeElement?.contentDocument;
     if (iframeDoc) {
       const highlights = iframeDoc.querySelectorAll('.point-editor-highlight');
@@ -875,7 +828,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Character counter helpers
   getCharacterCount(controlName: string): number {
     const value = this.briefForm.get(controlName)?.value || '';
     return value.length;
@@ -885,7 +837,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     return this.briefForm.get('maxChars')?.value || 0;
   }
 
-  // Info modal content
   getInfoModalContent(field: string): string {
     const contents: { [key: string]: string } = {
       objective: `
@@ -974,7 +925,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     return contents[field] || '';
   }
 
-  // Info modal
   openInfoModal(title: string, field: string): void {
     const content = this.getInfoModalContent(field);
     this.dialog.open(InfoModalComponent, {
@@ -983,7 +933,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Variants tab preview methods
   loadProjectPreview(): void {
     console.log('[PointDetail] loadProjectPreview called', { projectId: this.projectId });
     if (!this.projectId) {
@@ -996,7 +945,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       next: (project) => {
         console.log('[PointDetail] Project loaded', { pageUrl: project.pageUrl, hasPreviewHtml: !!project.previewHtml });
         if (project.pageUrl) {
-          // Fetch HTML from URL using proxy
           console.log('[PointDetail] Fetching HTML from proxy', project.pageUrl);
           this.apiClient.proxyFetch(project.pageUrl).subscribe({
             next: (response) => {
@@ -1057,7 +1005,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     console.log('[PointDetail] Using base HTML:', baseHtml.substring(0, 200));
     console.log('[PointDetail] Applying variant with selector:', this.point.selector, 'and text:', variant.text);
 
-    // Apply variant to HTML
     const modifiedHtml = this.previewService.applyVariantsToHtml(
       baseHtml,
       [variant],
@@ -1071,18 +1018,12 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     console.log('[PointDetail] Setting previewHtml (this should trigger ngOnChanges in PreviewPanel)');
     this.previewHtml = modifiedHtml;
     
-    // Clear any existing highlight first
     this.highlightSelector = '';
     
-    // Use setTimeout to ensure change detection picks up the change
     setTimeout(() => {
       if (this.point && this.point.selector) {
         console.log('[PointDetail] Setting highlightSelector:', this.point.selector);
-        // Set the highlight selector to trigger the highlight animation
         this.highlightSelector = this.point.selector;
-        
-        // Don't clear the highlight immediately - let it fade out naturally
-        // The PreviewPanel will handle the fade-out after ~1 second
         
         console.log('[PointDetail] Current state after update:', {
           previewHtmlLength: this.previewHtml.length,
@@ -1119,7 +1060,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      // List of common cookie pop-up selectors
       const cookieSelectors = [
         '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
         '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
@@ -1143,13 +1083,11 @@ export class PointDetailComponent implements OnInit, OnDestroy {
             }
           });
         } catch (e) {
-          // Ignore selector errors
         }
       });
 
       return doc.documentElement.outerHTML;
     } catch (error) {
-      // If parsing fails, return original HTML
       return html;
     }
   }

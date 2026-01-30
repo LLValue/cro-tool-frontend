@@ -77,7 +77,8 @@
          [class.zoom-fit]="zoomMode === 'fit' && viewMode === 'mobile'"
          [class.zoom-100]="zoomMode === '100%' && viewMode === 'mobile'"
          [class.zoom-75]="zoomMode === '75%' && viewMode === 'mobile'"
-         [class.zoom-125]="zoomMode === '125%' && viewMode === 'mobile'">
+         [class.zoom-125]="zoomMode === '125%' && viewMode === 'mobile'"
+         [style.overflow-x]="viewMode === 'mobile' && zoomMode === 'fit' ? 'hidden' : 'auto'">
       <iframe 
         *ngIf="useIframe && safeIframeHtml && !loading" 
         #previewIframe

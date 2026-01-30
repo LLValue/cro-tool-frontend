@@ -152,6 +152,8 @@ mat-dialog-content {
   align-items: center;
   text-align: center;
   padding: 32px 16px;
+  max-width: 100%;
+  overflow: hidden;
   gap: 16px;
   
   .success-icon,
@@ -199,6 +201,11 @@ mat-dialog-content {
     font-size: 14px;
     color: #424242;
     line-height: 1.5;
+    word-wrap: break-word;
+    word-break: break-all;
+    overflow-wrap: break-word;
+    max-width: 100%;
+    width: 100%;
   }
   
   .error-message {

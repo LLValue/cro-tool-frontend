@@ -134,21 +134,48 @@ export class ProjectsStoreService {
     };
   }
 
-  updateProject(id: string, updates: Partial<Project>): void {
+  updateProject(id: string, updates: Partial<Project> | any): void {
     const req: any = {};
+    // Standard project fields
     if (updates.name !== undefined) req.name = updates.name;
     if (updates.pageUrl !== undefined) req.pageUrl = updates.pageUrl;
     if (updates.notes !== undefined) req.notes = updates.notes;
     if (updates.status !== undefined) req.status = updates.status;
     if (updates.previewHtml !== undefined) req.previewHtml = updates.previewHtml;
     if (updates.language !== undefined) req.language = updates.language;
-    if (updates.pageContext !== undefined) req.pageContext = updates.pageContext;
-    if (updates.croGuidelines !== undefined) req.croGuidelines = updates.croGuidelines;
-    if (updates.brandGuardrails !== undefined) req.brandGuardrails = updates.brandGuardrails;
+    if (updates.tone !== undefined) req.tone = updates.tone;
+    if (updates.styleComplexity !== undefined) req.styleComplexity = updates.styleComplexity;
+    if (updates.styleLength !== undefined) req.styleLength = updates.styleLength;
+    // Form field names (Business Context) - primary fields sent to backend
+    if (updates.productDescription !== undefined) req.productDescription = updates.productDescription;
+    if (updates.targetAudiences !== undefined) req.targetAudiences = updates.targetAudiences;
+    if (updates.valueProps !== undefined) req.valueProps = updates.valueProps;
+    if (updates.topObjections !== undefined) req.topObjections = updates.topObjections;
+    // Form field names (Journey Context) - primary fields sent to backend
+    if (updates.toneAndStyle !== undefined) req.toneAndStyle = updates.toneAndStyle;
+    if (updates.pageContextAndGoal !== undefined) req.pageContextAndGoal = updates.pageContextAndGoal;
+    if (updates.funnelStage !== undefined) req.funnelStage = updates.funnelStage;
+    // Form field names (Guardrails) - primary fields sent to backend
+    if (updates.brandGuidelines !== undefined) req.brandGuidelines = updates.brandGuidelines;
+    if (updates.allowedFacts !== undefined) req.allowedFacts = updates.allowedFacts;
     if (updates.forbiddenWords !== undefined) req.forbiddenWords = updates.forbiddenWords;
+    if (updates.sensitiveClaims !== undefined) req.sensitiveClaims = updates.sensitiveClaims;
+    // Legacy/Backend field names (for backward compatibility - only used when reading from backend)
+    if (updates.productSummary !== undefined) req.productSummary = updates.productSummary;
+    if (updates.pageIntent !== undefined) req.pageIntent = updates.pageIntent;
+    if (updates.typicalObjections !== undefined) req.typicalObjections = updates.typicalObjections;
+    if (updates.marketLocale !== undefined) req.marketLocale = updates.marketLocale;
+    if (updates.prohibitedClaims !== undefined) req.prohibitedClaims = updates.prohibitedClaims;
+    if (updates.brandGuardrails !== undefined) req.brandGuardrails = updates.brandGuardrails;
+    // Other backend fields (may be used by other parts of the system)
+    if (updates.mustNotClaim !== undefined) req.mustNotClaim = updates.mustNotClaim;
+    if (updates.riskLevel !== undefined) req.riskLevel = updates.riskLevel;
     if (updates.mandatoryClaims !== undefined) req.mandatoryClaims = updates.mandatoryClaims;
+    if (updates.requiredDisclaimer !== undefined) req.requiredDisclaimer = updates.requiredDisclaimer;
     if (updates.toneAllowed !== undefined) req.toneAllowed = updates.toneAllowed;
     if (updates.toneDisallowed !== undefined) req.toneDisallowed = updates.toneDisallowed;
+    if (updates.pageContext !== undefined) req.pageContext = updates.pageContext;
+    if (updates.croGuidelines !== undefined) req.croGuidelines = updates.croGuidelines;
 
     this.projectsApi.updateProject(id, req).subscribe({
       next: () => this.loadProjects(),

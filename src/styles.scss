@@ -454,6 +454,12 @@ body.dark-mode {
   }
 }
 
+.mat-mdc-raised-button[disabled].mat-mdc-button-disabled, .mat-mdc-raised-button.mat-mdc-button-disabled.mat-mdc-button-disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
 .mat-mdc-button,
 .mat-mdc-raised-button,
 .mat-mdc-outlined-button {
