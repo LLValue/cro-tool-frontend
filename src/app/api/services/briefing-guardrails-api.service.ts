@@ -42,6 +42,7 @@ export class BriefingGuardrailsApiService {
       targetAudiences: dto.targetAudiences,
       valueProps: dto.valueProps,
       topObjections: dto.topObjections,
+      language: dto.language,
       toneAndStyle: dto.toneAndStyle,
       pageContextAndGoal: dto.pageContextAndGoal,
       nextAction: dto.nextAction,

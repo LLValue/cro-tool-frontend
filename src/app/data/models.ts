@@ -6,7 +6,6 @@ export interface Project {
   notes: string;
   status: 'live' | 'paused' | 'preview';
   previewHtml: string;
-  language: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +17,7 @@ export interface BriefingGuardrails {
   targetAudiences?: string;
   valueProps?: string[];
   topObjections?: string[];
+  language?: string;
   toneAndStyle?: string;
   pageContextAndGoal?: string;
   nextAction?: string;

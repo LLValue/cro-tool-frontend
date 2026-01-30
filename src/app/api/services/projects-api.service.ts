@@ -80,7 +80,6 @@ export class ProjectsApiService {
       notes: dto.notes,
       status: dto.status,
       previewHtml: dto.previewHtml,
-      language: dto.language,
       createdAt: new Date(dto.createdAt),
       updatedAt: new Date(dto.updatedAt)
     };

@@ -6,7 +6,6 @@ export interface ProjectDto {
   notes: string;
   status: 'live' | 'paused' | 'preview';
   previewHtml: string;
-  language: string;
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
 }
@@ -18,6 +17,7 @@ export interface BriefingGuardrailsDto {
   targetAudiences?: string;
   valueProps?: string[];
   topObjections?: string[];
+  language?: string;
   toneAndStyle?: string;
   pageContextAndGoal?: string;
   nextAction?: string;
@@ -42,7 +42,6 @@ export interface UpdateProjectRequest {
   notes?: string;
   status?: 'live' | 'paused' | 'preview';
   previewHtml?: string;
-  language?: string;
 }
 
 export interface CreateBriefingGuardrailsRequest {
@@ -51,6 +50,7 @@ export interface CreateBriefingGuardrailsRequest {
   targetAudiences?: string;
   valueProps?: string[];
   topObjections?: string[];
+  language?: string;
   toneAndStyle?: string;
   pageContextAndGoal?: string;
   nextAction?: string;
@@ -66,6 +66,7 @@ export interface UpdateBriefingGuardrailsRequest {
   targetAudiences?: string;
   valueProps?: string[];
   topObjections?: string[];
+  language?: string;
   toneAndStyle?: string;
   pageContextAndGoal?: string;
   nextAction?: string;

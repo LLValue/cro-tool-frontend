@@ -195,12 +195,8 @@ export class PreviewComponent implements OnInit, OnDestroy {
       notes: 'Main conversion page',
       status: 'live',
       previewHtml: '',
-      language: 'en',
       createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-10'),
-      mandatoryClaims: [],
-      toneAllowed: ['professional', 'friendly'],
-      toneDisallowed: ['casual', 'slang']
+      updatedAt: new Date('2024-01-10')
     };
     this.pageUrl = this.project.pageUrl;
     this.loadPagePreview();

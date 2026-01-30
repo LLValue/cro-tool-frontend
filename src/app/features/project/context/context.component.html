@@ -269,6 +269,38 @@
         <div class="form-field-wrapper">
           <div class="field-label-row">
             <label class="field-label">
+              Language (e.g., es-ES)
+              <span class="required-asterisk">*</span>
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Language', 'language')" matTooltip="More information">
+                <mat-icon>info</mat-icon>
+              </button>
+            </label>
+            <div class="field-badges" *ngIf="getFieldBadge('language')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('language') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('language') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('language') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('language') === 'Missing'">
+                {{ getFieldBadge('language') }}
+              </span>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('language')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('language')" matTooltip="Format issue detected">warning</mat-icon>
+            </div>
+          </div>
+          <p class="field-helper">Set the language and locale format for the copy (e.g., en-GB, es-ES).</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <input matInput formControlName="language" maxlength="50" (input)="onFieldEdit('language')">
+            <mat-error *ngIf="(globalForm.get('language')?.touched || journeyContextSubmitted) && globalForm.get('language')?.hasError('required')">
+              Language is required
+            </mat-error>
+            <mat-hint align="end">
+              <span>{{ getCharacterCount('language') }} / {{ getMaxLength('language') }}</span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <div class="field-label-row">
+            <label class="field-label">
               Tone and style
               <span class="required-asterisk">*</span>
               <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Tone and style', 'toneAndStyle')" matTooltip="More information">
@@ -389,7 +421,7 @@
         </div>
         
         <div class="tab-actions">
-          <button mat-raised-button color="primary" (click)="saveJourneyContext()" [disabled]="globalForm.get('toneAndStyle')?.invalid || globalForm.get('pageContextAndGoal')?.invalid">
+          <button mat-raised-button color="primary" (click)="saveJourneyContext()" [disabled]="globalForm.get('language')?.invalid || globalForm.get('toneAndStyle')?.invalid || globalForm.get('pageContextAndGoal')?.invalid">
             Save
           </button>
         </div>

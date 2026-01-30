@@ -96,6 +96,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       valueProps: ['', Validators.required],
       topObjections: [''],
       // Journey context
+      language: ['', Validators.required],
       toneAndStyle: ['', Validators.required],
       pageContextAndGoal: ['', Validators.required],
       funnelStage: [''],
@@ -211,6 +212,7 @@ export class ContextComponent implements OnInit, OnDestroy {
             targetAudiences: bg.targetAudiences || '',
             valueProps: valuePropsText,
             topObjections: topObjectionsText,
+            language: bg.language || '',
             toneAndStyle: bg.toneAndStyle || '',
             pageContextAndGoal: bg.pageContextAndGoal || '',
             funnelStage: bg.funnelStage || '',
@@ -256,7 +258,8 @@ export class ContextComponent implements OnInit, OnDestroy {
 
   saveJourneyContext(): void {
     this.journeyContextSubmitted = true;
-    if (this.globalForm.get('toneAndStyle')?.invalid || 
+    if (this.globalForm.get('language')?.invalid || 
+        this.globalForm.get('toneAndStyle')?.invalid || 
         this.globalForm.get('pageContextAndGoal')?.invalid) {
       return;
     }
@@ -273,6 +276,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     const nextActionText = values.nextAction?.trim() || '';
     
     this.store.updateBriefingGuardrails(this.projectId, {
+      language: values.language || '',
       toneAndStyle: values.toneAndStyle || '',
       pageContextAndGoal: values.pageContextAndGoal,
       funnelStage: funnelStageEnum,
@@ -724,7 +728,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     if (!fieldValue || !fieldValue.trim()) {
       // Check if field is mandatory
       const isMandatory = this.globalForm.get(fieldName)?.hasError('required') || 
-                         ['productDescription', 'targetAudiences', 'valueProps', 'toneAndStyle', 'pageContextAndGoal'].includes(fieldName);
+                         ['productDescription', 'targetAudiences', 'valueProps', 'language', 'toneAndStyle', 'pageContextAndGoal'].includes(fieldName);
       if (isMandatory) {
         this.setFieldState(fieldName, 'ai_draft', 'missing', 'low');
       } else {

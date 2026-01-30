@@ -51,7 +51,6 @@ export class ProjectsStoreService {
             notes: 'Main conversion page',
             status: 'live',
             previewHtml: '',
-            language: 'en',
             createdAt: new Date('2024-01-01'),
             updatedAt: new Date('2024-01-10')
           };
@@ -70,7 +69,6 @@ export class ProjectsStoreService {
           notes: 'Main conversion page',
           status: 'live',
           previewHtml: '',
-          language: 'en',
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-10')
         };
@@ -113,7 +111,6 @@ export class ProjectsStoreService {
       notes: req.notes || '',
       status: 'paused',
       previewHtml: '',
-      language: 'en',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -128,7 +125,6 @@ export class ProjectsStoreService {
     if (updates.notes !== undefined) req.notes = updates.notes;
     if (updates.status !== undefined) req.status = updates.status;
     if (updates.previewHtml !== undefined) req.previewHtml = updates.previewHtml;
-    if (updates.language !== undefined) req.language = updates.language;
 
     this.projectsApi.updateProject(id, req).subscribe({
       next: () => this.loadProjects(),
@@ -149,6 +145,7 @@ export class ProjectsStoreService {
     if (updates.targetAudiences !== undefined) req.targetAudiences = updates.targetAudiences;
     if (updates.valueProps !== undefined) req.valueProps = updates.valueProps;
     if (updates.topObjections !== undefined) req.topObjections = updates.topObjections;
+    if (updates.language !== undefined) req.language = updates.language;
     if (updates.toneAndStyle !== undefined) req.toneAndStyle = updates.toneAndStyle;
     if (updates.pageContextAndGoal !== undefined) req.pageContextAndGoal = updates.pageContextAndGoal;
     if (updates.nextAction !== undefined) req.nextAction = updates.nextAction;
