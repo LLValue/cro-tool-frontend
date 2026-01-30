@@ -6,7 +6,7 @@ set -e
 # ============================================
 
 # Configuration - modify these values
-PROJECT_ID="${GCP_PROJECT_ID:-your-project-id}"
+PROJECT_ID="stone-notch-483715-k4"
 REGION="${GCP_REGION:-europe-west1}"
 SERVICE_NAME="cro-tool-frontend"
 REPO_NAME="cro-tool-frontend"
