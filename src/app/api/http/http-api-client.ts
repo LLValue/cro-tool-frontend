@@ -12,7 +12,10 @@ import {
   ProjectDto,
   CreateProjectRequest,
   UpdateProjectRequest,
-  ProjectsListResponse
+  ProjectsListResponse,
+  BriefingGuardrailsDto,
+  CreateBriefingGuardrailsRequest,
+  UpdateBriefingGuardrailsRequest
 } from '../../api-contracts/projects.contracts';
 import {
   OptimizationPointDto,
@@ -84,6 +87,19 @@ export class HttpApiClient implements ApiClient {
 
   previewLoad(projectId: string): Observable<{ previewHtml: string }> {
     return this.http.get<{ previewHtml: string }>(`${this.baseUrl}/projects/${projectId}/preview`);
+  }
+
+  // Briefing Guardrails
+  briefingGuardrailsGet(projectId: string): Observable<BriefingGuardrailsDto> {
+    return this.http.get<BriefingGuardrailsDto>(`${this.baseUrl}/projects/${projectId}/briefing-guardrails`);
+  }
+
+  briefingGuardrailsCreate(req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto> {
+    return this.http.post<BriefingGuardrailsDto>(`${this.baseUrl}/projects/${req.projectId}/briefing-guardrails`, req);
+  }
+
+  briefingGuardrailsUpdate(projectId: string, req: UpdateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto> {
+    return this.http.patch<BriefingGuardrailsDto>(`${this.baseUrl}/projects/${projectId}/briefing-guardrails`, req);
   }
 
   // Points

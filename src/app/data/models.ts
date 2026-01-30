@@ -3,39 +3,29 @@ export interface Project {
   name: string;
   pageUrl: string;
   industry?: string;
-  elementType?: string;
   notes: string;
   status: 'live' | 'paused' | 'preview';
+  previewHtml: string;
+  language: string;
   createdAt: Date;
   updatedAt: Date;
-  previewHtml: string;
-  // Language & Voice
-  language: string;
-  tone?: string;
-  styleComplexity?: 'simple' | 'technical';
-  styleLength?: 'short' | 'med' | 'long';
-  // Business & Page Context
-  productSummary?: string;
-  pageIntent?: string;
-  funnelStage?: 'discovery' | 'consideration' | 'conversion';
+}
+
+export interface BriefingGuardrails {
+  id: string;
+  projectId: string;
+  productDescription?: string;
+  targetAudiences?: string;
   valueProps?: string[];
-  typicalObjections?: string[];
-  marketLocale?: string;
-  // Proof & Source of Truth
+  topObjections?: string[];
+  toneAndStyle?: string;
+  pageContextAndGoal?: string;
+  nextAction?: string;
+  funnelStage?: 'discovery' | 'consideration' | 'conversion';
+  brandGuidelines?: string;
   allowedFacts?: string[];
-  mustNotClaim?: string[];
-  // Legal & Brand Guardrails
-  riskLevel?: 'Conservative' | 'Standard' | 'Exploratory';
-  forbiddenWords: string[];
-  mandatoryClaims: string[];
-  prohibitedClaims?: string[];
-  requiredDisclaimer?: string;
-  toneAllowed: string[];
-  toneDisallowed: string[];
-  // Legacy fields (keeping for backward compatibility)
-  pageContext: string;
-  croGuidelines: string;
-  brandGuardrails: string;
+  forbiddenWords?: string[];
+  sensitiveClaims?: string[];
 }
 
 export interface OptimizationPoint {
@@ -114,4 +104,3 @@ export interface ActivityLog {
   timestamp: Date;
   userId?: string;
 }
-

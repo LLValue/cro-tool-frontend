@@ -76,19 +76,13 @@ export class ProjectsApiService {
       id: dto.id,
       name: dto.name,
       pageUrl: dto.pageUrl,
+      industry: dto.industry,
       notes: dto.notes,
       status: dto.status,
-      createdAt: new Date(dto.createdAt),
-      updatedAt: new Date(dto.updatedAt),
       previewHtml: dto.previewHtml,
       language: dto.language,
-      pageContext: dto.pageContext,
-      croGuidelines: dto.croGuidelines,
-      brandGuardrails: dto.brandGuardrails,
-      forbiddenWords: dto.forbiddenWords,
-      mandatoryClaims: dto.mandatoryClaims,
-      toneAllowed: dto.toneAllowed,
-      toneDisallowed: dto.toneDisallowed
+      createdAt: new Date(dto.createdAt),
+      updatedAt: new Date(dto.updatedAt)
     };
   }
 }

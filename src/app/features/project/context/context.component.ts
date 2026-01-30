@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 import { Subscription, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
-import { OptimizationPoint } from '../../../data/models';
+import { OptimizationPoint, BriefingGuardrails } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -99,6 +99,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       toneAndStyle: ['', Validators.required],
       pageContextAndGoal: ['', Validators.required],
       funnelStage: [''],
+      nextAction: [''],
       // Guardrails
       brandGuidelines: [''],
       allowedFacts: [''],
@@ -193,70 +194,40 @@ export class ContextComponent implements OnInit, OnDestroy {
     }
     this.projectId = projectId; // Update instance variable
 
-    const project = this.store.getProject(this.projectId);
-    if (project) {
-      this.isUpdatingForm = true;
-      // Map old fields to new structure for backward compatibility
-      // toneAndStyle is now stored directly in tone field (not split anymore)
-      const toneAndStyle = project.tone || '';
-      
-      // Combine forbiddenWords and mustNotClaim into forbiddenWords
-      const forbiddenWords = [
-        ...(project.forbiddenWords || []),
-        ...(project.mustNotClaim || [])
-      ];
+    this.store.getBriefingGuardrails(this.projectId).subscribe({
+      next: (bg: BriefingGuardrails | undefined) => {
+        if (bg) {
+          this.isUpdatingForm = true;
+          
+          // Convert arrays to text (one item per line)
+          const valuePropsText = Array.isArray(bg.valueProps) ? bg.valueProps.join('\n') : (bg.valueProps || '');
+          const topObjectionsText = Array.isArray(bg.topObjections) ? bg.topObjections.join('\n') : (bg.topObjections || '');
+          const allowedFactsText = Array.isArray(bg.allowedFacts) ? bg.allowedFacts.join('\n') : (bg.allowedFacts || '');
+          const forbiddenWordsText = Array.isArray(bg.forbiddenWords) ? bg.forbiddenWords.join('\n') : (bg.forbiddenWords || '');
+          const sensitiveClaimsText = Array.isArray(bg.sensitiveClaims) ? bg.sensitiveClaims.join('\n') : (bg.sensitiveClaims || '');
 
-      // Extract targetAudiences from marketLocale (primary) or pageContext (legacy)
-      let targetAudiences = project.marketLocale || '';
-      // Fallback to legacy pageContext JSON format for backward compatibility
-      if (!targetAudiences) {
-        try {
-          const pageContextData = project.pageContext ? JSON.parse(project.pageContext) : {};
-          if (Array.isArray(pageContextData.targetAudiences)) {
-            targetAudiences = pageContextData.targetAudiences.join('\n');
-          } else if (typeof pageContextData.targetAudiences === 'string') {
-            targetAudiences = pageContextData.targetAudiences;
-          }
-        } catch {
-          // If parsing fails, use empty string
+          this.globalForm.patchValue({
+            productDescription: bg.productDescription || '',
+            targetAudiences: bg.targetAudiences || '',
+            valueProps: valuePropsText,
+            topObjections: topObjectionsText,
+            toneAndStyle: bg.toneAndStyle || '',
+            pageContextAndGoal: bg.pageContextAndGoal || '',
+            funnelStage: bg.funnelStage || '',
+            nextAction: bg.nextAction || '',
+            brandGuidelines: bg.brandGuidelines || '',
+            allowedFacts: allowedFactsText,
+            forbiddenWords: forbiddenWordsText,
+            sensitiveClaims: sensitiveClaimsText
+          }, { emitEvent: false });
+          this.isUpdatingForm = false;
         }
+      },
+      error: () => {
+        // If briefing_guardrails doesn't exist yet, form stays empty
+        this.isUpdatingForm = false;
       }
-
-      // Extract funnelStage from croGuidelines (legacy storage)
-      let funnelStage = '';
-      try {
-        const croGuidelinesData = project.croGuidelines ? JSON.parse(project.croGuidelines) : {};
-        funnelStage = croGuidelinesData.funnelStage || croGuidelinesData.nextAction || '';
-      } catch {
-        // If parsing fails, use empty string
-      }
-      
-      // Extract pageContextAndGoal - use pageIntent (primary field)
-      // pageContextAndGoal maps to pageIntent in the backend
-      const pageContextAndGoal = project.pageIntent || '';
-
-      // Convert arrays to text (one item per line)
-      const valuePropsText = Array.isArray(project.valueProps) ? project.valueProps.join('\n') : (project.valueProps || '');
-      const topObjectionsText = Array.isArray(project.typicalObjections) ? project.typicalObjections.join('\n') : (project.typicalObjections || '');
-      const allowedFactsText = Array.isArray(project.allowedFacts) ? project.allowedFacts.join('\n') : (project.allowedFacts || '');
-      const forbiddenWordsText = Array.isArray(forbiddenWords) ? forbiddenWords.join('\n') : (forbiddenWords || '');
-      const sensitiveClaimsText = Array.isArray(project.prohibitedClaims) ? project.prohibitedClaims.join('\n') : (project.prohibitedClaims || '');
-
-      this.globalForm.patchValue({
-        productDescription: project.productSummary || '',
-        targetAudiences: targetAudiences,
-        valueProps: valuePropsText,
-        topObjections: topObjectionsText,
-        toneAndStyle: toneAndStyle || '',
-        pageContextAndGoal: pageContextAndGoal,
-        funnelStage: funnelStage || project.funnelStage || '',
-        brandGuidelines: project.brandGuardrails || '',
-        allowedFacts: allowedFactsText,
-        forbiddenWords: forbiddenWordsText,
-        sensitiveClaims: sensitiveClaimsText
-      }, { emitEvent: false });
-      this.isUpdatingForm = false;
-    }
+    });
   }
 
 
@@ -273,7 +244,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     const valuePropsArray = values.valueProps ? values.valueProps.split('\n').filter((line: string) => line.trim()) : [];
     const topObjectionsArray = values.topObjections ? values.topObjections.split('\n').filter((line: string) => line.trim()) : [];
     
-    this.store.updateProject(this.projectId, {
+    this.store.updateBriefingGuardrails(this.projectId, {
       productDescription: values.productDescription,
       targetAudiences: values.targetAudiences,
       valueProps: valuePropsArray,
@@ -291,24 +262,21 @@ export class ContextComponent implements OnInit, OnDestroy {
     }
     const values = this.globalForm.value;
     
-    // Try to parse funnelStage as enum, otherwise store as text in croGuidelines
+    // Store funnelStage as enum if it's one of the valid values
     let funnelStageEnum: 'discovery' | 'consideration' | 'conversion' | undefined = undefined;
-    const funnelStageText = values.funnelStage?.trim() || '';
-    if (funnelStageText) {
-      const lowerText = funnelStageText.toLowerCase();
-      if (lowerText.includes('discovery')) {
-        funnelStageEnum = 'discovery';
-      } else if (lowerText.includes('consideration')) {
-        funnelStageEnum = 'consideration';
-      } else if (lowerText.includes('conversion')) {
-        funnelStageEnum = 'conversion';
-      }
+    const funnelStageValue = values.funnelStage?.trim() || '';
+    if (funnelStageValue === 'discovery' || funnelStageValue === 'consideration' || funnelStageValue === 'conversion') {
+      funnelStageEnum = funnelStageValue;
     }
     
-    this.store.updateProject(this.projectId, {
+    // Store nextAction as text
+    const nextActionText = values.nextAction?.trim() || '';
+    
+    this.store.updateBriefingGuardrails(this.projectId, {
       toneAndStyle: values.toneAndStyle || '',
       pageContextAndGoal: values.pageContextAndGoal,
-      funnelStage: funnelStageText || undefined
+      funnelStage: funnelStageEnum,
+      nextAction: nextActionText || undefined
     });
     this.toast.showSuccess('Journey context saved');
     this.journeyContextSubmitted = false;
@@ -321,7 +289,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     const forbiddenWordsArray = values.forbiddenWords ? values.forbiddenWords.split('\n').filter((line: string) => line.trim()) : [];
     const sensitiveClaimsArray = values.sensitiveClaims ? values.sensitiveClaims.split('\n').filter((line: string) => line.trim()) : [];
     
-    this.store.updateProject(this.projectId, {
+    this.store.updateBriefingGuardrails(this.projectId, {
       brandGuidelines: values.brandGuidelines,
       allowedFacts: allowedFactsArray,
       forbiddenWords: forbiddenWordsArray,
@@ -411,6 +379,22 @@ export class ContextComponent implements OnInit, OnDestroy {
         <p>This helps the AI write copy that matches intent, not just product marketing.</p>
         <p><strong>Banking example (credit cards):</strong></p>
         <p>"This is a product landing page for a credit card. Users arrive from paid search and comparison pages. The goal is to encourage them to start an application or eligibility check. The page should reduce fear of hidden fees and help users feel in control of spending and repayments."</p>
+      `,
+      funnelStage: `
+        <p><strong>Choose where the user is in the journey.</strong> This helps the AI calibrate messaging density and CTA strength.</p>
+        <p><strong>Examples:</strong></p>
+        <ul>
+          <li><strong>Discovery (learn):</strong> User is exploring and learning about the product</li>
+          <li><strong>Consideration (compare):</strong> User is comparing options and evaluating</li>
+          <li><strong>Conversion (apply):</strong> User is ready to take action</li>
+        </ul>
+        <p><strong>Banking example (credit cards):</strong> "Consideration"</p>
+      `,
+      nextAction: `
+        <p><strong>The single action you want them to take next (one short line).</strong></p>
+        <p><strong>Next action examples:</strong> "Start application", "Check eligibility", "Get a quote", "Compare plans".</p>
+        <p><strong>Banking example (credit cards):</strong></p>
+        <p><strong>Next action:</strong> "Start application" (secondary: "Check eligibility")</p>
       `,
       brandGuidelines: `
         <p><strong>Use this for concrete, enforceable rules:</strong> preferred terms, banned phrasing, capitalization rules, naming conventions, and how to refer to the product. This complements tone/style by making rules explicit.</p>
@@ -606,7 +590,8 @@ export class ContextComponent implements OnInit, OnDestroy {
           topObjections: 'Preocupaciones sobre la seguridad de la banca completamente online sin interacción presencial.\n\nDudas sobre la falta de intereses o recompensas en la cuenta.\n\nIncertidumbre sobre posibles comisiones ocultas a pesar de la promesa de no tener comisiones de mantenimiento.',
           toneAndStyle: 'Tono: Cercano, profesional y directo. Se debe transmitir confianza y claridad, destacando los beneficios de la cuenta online y su fácil acceso.\n\nNo usar: Términos complicados o técnicos que puedan generar confusión.\n\nSí usar: Un lenguaje accesible, destacando la comodidad, seguridad y facilidad de uso de la cuenta online.',
           pageContextAndGoal: 'Esta página tiene como objetivo ofrecer a los usuarios la posibilidad de abrir una cuenta bancaria 100% online, destacando las ventajas de su proceso sencillo y sin comisiones. El visitante llega aquí buscando información para tomar la decisión de abrir una cuenta con CaixaBank. El objetivo es que el usuario complete la apertura de su cuenta online a través del formulario disponible.',
-          funnelStage: 'El usuario se encuentra en la etapa de consideración y acción del embudo, buscando abrir una cuenta. La acción que se espera es que complete el formulario para abrir la cuenta online.',
+          funnelStage: 'consideration',
+          nextAction: 'Start application (secondary: Check eligibility)',
           brandGuidelines: 'Terminología: Se debe usar un lenguaje sencillo, accesible y sin jerga bancaria.\n\nFormato: El contenido debe estar bien estructurado, fácil de leer, y visualmente atractivo.\n\nTono: Cercano y confiable, evitando excesiva formalidad o términos complicados.',
           allowedFacts: 'No se deben realizar afirmaciones sin respaldar con hechos verificables, como "más de 11.000 cajeros en España" y "incentivos de hasta 250€ por domiciliar una nómina."',
           forbiddenWords: 'No se deben usar frases que sugieran costos ocultos o comisiones no explícitas.\n\nEvitar el uso de términos como "gratis" sin aclarar claramente los términos y condiciones.',
@@ -672,6 +657,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       applyField('toneAndStyle', data.toneAndStyle, true);
       applyField('pageContextAndGoal', data.pageContextAndGoal, true);
       applyField('funnelStage', data.funnelStage, false);
+      applyField('nextAction', data.nextAction, false);
     }
 
     if (this.aiAssistantForm.get('fillGuardrails')?.value) {

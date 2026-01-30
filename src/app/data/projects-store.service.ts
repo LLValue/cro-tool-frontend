@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { map, catchError, tap, switchMap, shareReplay } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Project, OptimizationPoint, Variant, Goal, ReportingMetrics } from './models';
+import { Project, BriefingGuardrails, OptimizationPoint, Variant, Goal, ReportingMetrics } from './models';
 import { ProjectsApiService } from '../api/services/projects-api.service';
+import { BriefingGuardrailsApiService } from '../api/services/briefing-guardrails-api.service';
 import { PointsApiService } from '../api/services/points-api.service';
 import { VariantsApiService } from '../api/services/variants-api.service';
 import { GoalsApiService } from '../api/services/goals-api.service';
@@ -27,6 +28,7 @@ export class ProjectsStoreService {
 
   constructor(
     private projectsApi: ProjectsApiService,
+    private briefingGuardrailsApi: BriefingGuardrailsApiService,
     private pointsApi: PointsApiService,
     private variantsApi: VariantsApiService,
     private goalsApi: GoalsApiService,
@@ -45,19 +47,13 @@ export class ProjectsStoreService {
             id: '1',
             name: 'Landing Page A',
             pageUrl: 'https://pack.stage.es',
+            industry: undefined,
             notes: 'Main conversion page',
             status: 'live',
-            createdAt: new Date('2024-01-01'),
-            updatedAt: new Date('2024-01-10'),
             previewHtml: '',
             language: 'en',
-            pageContext: 'E-commerce landing page',
-            croGuidelines: 'Focus on clarity and urgency',
-            brandGuardrails: 'Maintain professional tone',
-            forbiddenWords: [],
-            mandatoryClaims: [],
-            toneAllowed: ['professional', 'friendly'],
-            toneDisallowed: ['casual', 'slang']
+            createdAt: new Date('2024-01-01'),
+            updatedAt: new Date('2024-01-10')
           };
           this.projectsSubject.next([defaultProject]);
         } else {
@@ -70,19 +66,13 @@ export class ProjectsStoreService {
           id: '1',
           name: 'Landing Page A',
           pageUrl: 'https://pack.stage.es',
+          industry: undefined,
           notes: 'Main conversion page',
           status: 'live',
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-10'),
           previewHtml: '',
           language: 'en',
-          pageContext: 'E-commerce landing page',
-          croGuidelines: 'Focus on clarity and urgency',
-          brandGuardrails: 'Maintain professional tone',
-          forbiddenWords: [],
-          mandatoryClaims: [],
-          toneAllowed: ['professional', 'friendly'],
-          toneDisallowed: ['casual', 'slang']
+          createdAt: new Date('2024-01-01'),
+          updatedAt: new Date('2024-01-10')
         };
         this.projectsSubject.next([defaultProject]);
       }
@@ -98,6 +88,7 @@ export class ProjectsStoreService {
     const req = {
       name: project.name || 'New Project',
       pageUrl: project.pageUrl || '',
+      industry: project.industry,
       notes: project.notes || ''
     };
 
@@ -118,68 +109,68 @@ export class ProjectsStoreService {
       id: '',
       name: req.name,
       pageUrl: req.pageUrl,
-      notes: req.notes,
+      industry: req.industry,
+      notes: req.notes || '',
       status: 'paused',
-      createdAt: new Date(),
-      updatedAt: new Date(),
       previewHtml: '',
       language: 'en',
-      pageContext: '',
-      croGuidelines: '',
-      brandGuardrails: '',
-      forbiddenWords: [],
-      mandatoryClaims: [],
-      toneAllowed: [],
-      toneDisallowed: []
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
   }
 
-  updateProject(id: string, updates: Partial<Project> | any): void {
+  updateProject(id: string, updates: Partial<Project>): void {
     const req: any = {};
-    // Standard project fields
+    // Only project table fields
     if (updates.name !== undefined) req.name = updates.name;
     if (updates.pageUrl !== undefined) req.pageUrl = updates.pageUrl;
+    if (updates.industry !== undefined) req.industry = updates.industry;
     if (updates.notes !== undefined) req.notes = updates.notes;
     if (updates.status !== undefined) req.status = updates.status;
     if (updates.previewHtml !== undefined) req.previewHtml = updates.previewHtml;
     if (updates.language !== undefined) req.language = updates.language;
-    if (updates.tone !== undefined) req.tone = updates.tone;
-    if (updates.styleComplexity !== undefined) req.styleComplexity = updates.styleComplexity;
-    if (updates.styleLength !== undefined) req.styleLength = updates.styleLength;
-    // Form field names (Business Context) - primary fields sent to backend
-    if (updates.productDescription !== undefined) req.productDescription = updates.productDescription;
-    if (updates.targetAudiences !== undefined) req.targetAudiences = updates.targetAudiences;
-    if (updates.valueProps !== undefined) req.valueProps = updates.valueProps;
-    if (updates.topObjections !== undefined) req.topObjections = updates.topObjections;
-    // Form field names (Journey Context) - primary fields sent to backend
-    if (updates.toneAndStyle !== undefined) req.toneAndStyle = updates.toneAndStyle;
-    if (updates.pageContextAndGoal !== undefined) req.pageContextAndGoal = updates.pageContextAndGoal;
-    if (updates.funnelStage !== undefined) req.funnelStage = updates.funnelStage;
-    // Form field names (Guardrails) - primary fields sent to backend
-    if (updates.brandGuidelines !== undefined) req.brandGuidelines = updates.brandGuidelines;
-    if (updates.allowedFacts !== undefined) req.allowedFacts = updates.allowedFacts;
-    if (updates.forbiddenWords !== undefined) req.forbiddenWords = updates.forbiddenWords;
-    if (updates.sensitiveClaims !== undefined) req.sensitiveClaims = updates.sensitiveClaims;
-    // Legacy/Backend field names (for backward compatibility - only used when reading from backend)
-    if (updates.productSummary !== undefined) req.productSummary = updates.productSummary;
-    if (updates.pageIntent !== undefined) req.pageIntent = updates.pageIntent;
-    if (updates.typicalObjections !== undefined) req.typicalObjections = updates.typicalObjections;
-    if (updates.marketLocale !== undefined) req.marketLocale = updates.marketLocale;
-    if (updates.prohibitedClaims !== undefined) req.prohibitedClaims = updates.prohibitedClaims;
-    if (updates.brandGuardrails !== undefined) req.brandGuardrails = updates.brandGuardrails;
-    // Other backend fields (may be used by other parts of the system)
-    if (updates.mustNotClaim !== undefined) req.mustNotClaim = updates.mustNotClaim;
-    if (updates.riskLevel !== undefined) req.riskLevel = updates.riskLevel;
-    if (updates.mandatoryClaims !== undefined) req.mandatoryClaims = updates.mandatoryClaims;
-    if (updates.requiredDisclaimer !== undefined) req.requiredDisclaimer = updates.requiredDisclaimer;
-    if (updates.toneAllowed !== undefined) req.toneAllowed = updates.toneAllowed;
-    if (updates.toneDisallowed !== undefined) req.toneDisallowed = updates.toneDisallowed;
-    if (updates.pageContext !== undefined) req.pageContext = updates.pageContext;
-    if (updates.croGuidelines !== undefined) req.croGuidelines = updates.croGuidelines;
 
     this.projectsApi.updateProject(id, req).subscribe({
       next: () => this.loadProjects(),
       error: () => {} // Error handling done in components
+    });
+  }
+
+  getBriefingGuardrails(projectId: string): Observable<BriefingGuardrails | undefined> {
+    return this.briefingGuardrailsApi.getBriefingGuardrails(projectId).pipe(
+      catchError(() => of(undefined)) // Return undefined if not found
+    );
+  }
+
+  updateBriefingGuardrails(projectId: string, updates: Partial<BriefingGuardrails>): void {
+    const req: any = {};
+    // Only briefing_guardrails table fields
+    if (updates.productDescription !== undefined) req.productDescription = updates.productDescription;
+    if (updates.targetAudiences !== undefined) req.targetAudiences = updates.targetAudiences;
+    if (updates.valueProps !== undefined) req.valueProps = updates.valueProps;
+    if (updates.topObjections !== undefined) req.topObjections = updates.topObjections;
+    if (updates.toneAndStyle !== undefined) req.toneAndStyle = updates.toneAndStyle;
+    if (updates.pageContextAndGoal !== undefined) req.pageContextAndGoal = updates.pageContextAndGoal;
+    if (updates.nextAction !== undefined) req.nextAction = updates.nextAction;
+    if (updates.funnelStage !== undefined) req.funnelStage = updates.funnelStage;
+    if (updates.brandGuidelines !== undefined) req.brandGuidelines = updates.brandGuidelines;
+    if (updates.allowedFacts !== undefined) req.allowedFacts = updates.allowedFacts;
+    if (updates.forbiddenWords !== undefined) req.forbiddenWords = updates.forbiddenWords;
+    if (updates.sensitiveClaims !== undefined) req.sensitiveClaims = updates.sensitiveClaims;
+
+    // Try to update, if it doesn't exist (404), try to create
+    this.briefingGuardrailsApi.updateBriefingGuardrails(projectId, req).subscribe({
+      next: () => {},
+      error: () => {
+        // If update fails (404), try to create
+        this.briefingGuardrailsApi.createBriefingGuardrails({
+          projectId: projectId,
+          ...req
+        }).subscribe({
+          next: () => {},
+          error: () => {} // Error handling done in components
+        });
+      }
     });
   }
 

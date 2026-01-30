@@ -8,7 +8,10 @@ import {
   ProjectDto,
   CreateProjectRequest,
   UpdateProjectRequest,
-  ProjectsListResponse
+  ProjectsListResponse,
+  BriefingGuardrailsDto,
+  CreateBriefingGuardrailsRequest,
+  UpdateBriefingGuardrailsRequest
 } from '../api-contracts/projects.contracts';
 import {
   OptimizationPointDto,
@@ -42,6 +45,11 @@ export interface ApiClient {
   projectsDelete(id: string): Observable<void>;
   projectsDuplicate(id: string): Observable<ProjectDto>;
   previewLoad(projectId: string): Observable<{ previewHtml: string }>;
+
+  // Briefing Guardrails
+  briefingGuardrailsGet(projectId: string): Observable<BriefingGuardrailsDto>;
+  briefingGuardrailsCreate(req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto>;
+  briefingGuardrailsUpdate(projectId: string, req: UpdateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto>;
 
   // Points
   pointsList(projectId: string): Observable<OptimizationPointDto[]>;
