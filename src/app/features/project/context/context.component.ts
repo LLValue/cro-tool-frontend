@@ -370,6 +370,12 @@ export class ContextComponent implements OnInit, OnDestroy {
           <li>"What happens if I miss a payment?"</li>
         </ul>
       `,
+      language: `
+        <p><strong>Set the language and locale format for the copy (e.g., en-GB, es-ES).</strong></p>
+        <p>This controls spelling, phrasing, and locale conventions. Use standard locale codes (language-country) so the AI writes naturally for that market.</p>
+        <p><strong>Examples:</strong> es-ES (Spain), es-MX (Mexico), en-GB (UK), en-US (USA).</p>
+        <p><strong>Banking example (credit cards):</strong> "es-ES" (Spanish for Spain), so the AI uses local phrasing and tone expected on Spanish banking sites.</p>
+      `,
       toneAndStyle: `
         <p><strong>Define the voice in practical terms.</strong> Include tone (e.g., confident, reassuring), formality level, and wording preferences (simple vs technical). Add 2–3 "do" and "don't" examples to anchor the style.</p>
         <p>If the industry is regulated, keep urgency and claims conservative unless explicitly allowed.</p>
