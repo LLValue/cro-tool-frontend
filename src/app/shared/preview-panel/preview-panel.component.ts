@@ -32,8 +32,10 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   @Input() showReset: boolean = true;
   @Input() originalHtml: string = '';
   @Input() highlightSelector: string = '';
+  @Input() selectionMode: boolean = false;
   @Output() reset = new EventEmitter<void>();
   @Output() reload = new EventEmitter<void>();
+  @Output() elementSelected = new EventEmitter<{ selector: string; text: string }>();
 
   @ViewChild('previewIframe', { static: false }) previewIframe?: ElementRef<HTMLIFrameElement>;
   @ViewChild('previewContent', { static: false }) previewContent?: ElementRef<HTMLDivElement>;
@@ -46,6 +48,8 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   private highlightTimeout?: number;
   private highlightStyleElement?: HTMLStyleElement;
   private resizeListener?: () => void;
+  private selectionStyleElement?: HTMLStyleElement;
+  private selectionEventListeners: { type: string; listener: (e: Event) => void }[] = [];
 
   constructor(private sanitizer: DomSanitizer) {}
 
@@ -69,6 +73,7 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
 
   ngOnDestroy(): void {
     this.clearHighlight();
+    this.disableSelectionMode();
     if (this.resizeListener) {
       window.removeEventListener('resize', this.resizeListener);
     }
@@ -81,6 +86,13 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     }
     if (changes['zoomMode'] || changes['viewMode']) {
       setTimeout(() => this.updateFitScale(), 100);
+    }
+    if (changes['selectionMode']) {
+      if (this.selectionMode) {
+        this.setupSelectionMode();
+      } else {
+        this.disableSelectionMode();
+      }
     }
     if (changes['highlightSelector']) {
       console.log('[PreviewPanel] Highlight selector changed:', {
@@ -150,7 +162,237 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (this.highlightSelector && this.previewIframe?.nativeElement?.contentWindow) {
       setTimeout(() => this.highlightElementInIframe(this.highlightSelector), 100);
     }
+    if (this.selectionMode) {
+      setTimeout(() => this.setupSelectionMode(), 200);
+    }
     setTimeout(() => this.updateFitScale(), 100);
+  }
+
+  private setupSelectionMode(): void {
+    if (!this.useIframe || !this.previewIframe?.nativeElement) {
+      console.warn('[PreviewPanel] Cannot setup selection mode: no iframe');
+      return;
+    }
+
+    const iframe = this.previewIframe.nativeElement;
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      console.warn('[PreviewPanel] Cannot access iframe document (CORS restriction)');
+      // Retry after a short delay if iframe is not ready
+      setTimeout(() => {
+        if (this.selectionMode) {
+          this.setupSelectionMode();
+        }
+      }, 200);
+      return;
+    }
+
+    // Remove existing selection styles and listeners first
+    this.disableSelectionMode();
+    
+    // Small delay to ensure cleanup is complete
+    setTimeout(() => {
+      if (!this.selectionMode) return; // Check if still in selection mode
+      
+      const currentIframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!currentIframeDoc) return;
+
+      // Add selection styles
+      const style = currentIframeDoc.createElement('style');
+      style.id = 'point-editor-selection';
+      style.textContent = `
+        .point-editor-highlight {
+          outline: 3px solid #2196F3 !important;
+          outline-offset: 2px !important;
+          background-color: rgba(33, 150, 243, 0.1) !important;
+          cursor: pointer !important;
+        }
+        .point-editor-selected {
+          outline: 3px solid #4CAF50 !important;
+          outline-offset: 2px !important;
+          background-color: rgba(76, 175, 80, 0.2) !important;
+        }
+      `;
+      currentIframeDoc.head.appendChild(style);
+      this.selectionStyleElement = style;
+
+      // Add event listeners
+      const hoverListener = (e: Event) => this.onElementHover(e as MouseEvent);
+      const outListener = (e: Event) => this.onElementOut(e as MouseEvent);
+      const clickListener = (e: Event) => this.onElementClick(e as MouseEvent);
+
+      currentIframeDoc.addEventListener('mouseover', hoverListener, true);
+      currentIframeDoc.addEventListener('mouseout', outListener, true);
+      currentIframeDoc.addEventListener('click', clickListener, true);
+
+      this.selectionEventListeners = [
+        { type: 'mouseover', listener: hoverListener },
+        { type: 'mouseout', listener: outListener },
+        { type: 'click', listener: clickListener }
+      ];
+    }, 50);
+  }
+
+  private disableSelectionMode(): void {
+    if (!this.useIframe || !this.previewIframe?.nativeElement) return;
+
+    const iframe = this.previewIframe.nativeElement;
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    // Remove event listeners
+    this.selectionEventListeners.forEach(({ type, listener }) => {
+      iframeDoc.removeEventListener(type, listener, true);
+    });
+    this.selectionEventListeners = [];
+
+    // Remove highlight classes
+    const highlights = iframeDoc.querySelectorAll('.point-editor-highlight, .point-editor-selected');
+    highlights.forEach(el => {
+      el.classList.remove('point-editor-highlight', 'point-editor-selected');
+    });
+
+    // Remove style element
+    if (this.selectionStyleElement) {
+      try {
+        const parent = this.selectionStyleElement.parentNode;
+        if (parent) {
+          parent.removeChild(this.selectionStyleElement);
+        }
+      } catch (e) {
+        // Element may have been removed already
+      }
+      this.selectionStyleElement = undefined;
+    }
+  }
+
+  private onElementHover(event: MouseEvent): void {
+    if (!this.selectionMode) return;
+    
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    const iframeDoc = this.previewIframe?.nativeElement?.contentDocument;
+    if (!iframeDoc) return;
+
+    const prevHighlight = iframeDoc.querySelector('.point-editor-highlight');
+    if (prevHighlight && prevHighlight !== target) {
+      prevHighlight.classList.remove('point-editor-highlight');
+    }
+
+    if (!target.classList.contains('point-editor-selected')) {
+      target.classList.add('point-editor-highlight');
+    }
+  }
+
+  private onElementOut(event: MouseEvent): void {
+    if (!this.selectionMode) return;
+    
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    if (!target.classList.contains('point-editor-selected')) {
+      target.classList.remove('point-editor-highlight');
+    }
+  }
+
+  private onElementClick(event: MouseEvent): void {
+    if (!this.selectionMode) return;
+    
+    event.preventDefault();
+    event.stopPropagation();
+
+    const target = event.target as HTMLElement;
+    if (!target) return;
+
+    const iframeDoc = this.previewIframe?.nativeElement?.contentDocument;
+    if (!iframeDoc) return;
+
+    // Remove previous selection
+    const prevSelected = iframeDoc.querySelector('.point-editor-selected');
+    if (prevSelected) {
+      prevSelected.classList.remove('point-editor-selected');
+    }
+
+    // Mark as selected
+    target.classList.add('point-editor-selected');
+    target.classList.remove('point-editor-highlight');
+
+    // Generate selector and extract text
+    const selector = this.generateSelectorForElement(target);
+    const text = this.extractTextFromElement(target);
+
+    // Emit selection event
+    this.elementSelected.emit({ selector, text });
+
+    // Disable selection mode
+    this.selectionMode = false;
+  }
+
+  private generateSelectorForElement(element: HTMLElement): string {
+    const iframeDoc = this.previewIframe?.nativeElement?.contentDocument;
+    if (!iframeDoc) return '';
+
+    // Try ID first
+    if (element.id) {
+      const idSelector = `#${element.id}`;
+      if (iframeDoc.querySelectorAll(idSelector).length === 1) {
+        return idSelector;
+      }
+    }
+
+    // Try classes
+    if (element.className && typeof element.className === 'string') {
+      const classes = element.className.split(/\s+/).filter(c => c);
+      if (classes.length > 0) {
+        const classSelector = '.' + classes.join('.');
+        if (iframeDoc.querySelectorAll(classSelector).length === 1) {
+          return classSelector;
+        }
+      }
+    }
+
+    // Build path
+    const path: string[] = [];
+    let current: HTMLElement | null = element;
+
+    while (current && current !== iframeDoc.body) {
+      let selector = current.tagName.toLowerCase();
+      
+      if (current.id) {
+        selector += `#${current.id}`;
+        path.unshift(selector);
+        break;
+      }
+      
+      if (current.className && typeof current.className === 'string') {
+        const classes = current.className.split(/\s+/).filter(c => c);
+        if (classes.length > 0) {
+          selector += '.' + classes.join('.');
+        }
+      }
+
+      if (current.parentElement) {
+        const siblings = Array.from(current.parentElement.children);
+        const index = siblings.indexOf(current) + 1;
+        if (siblings.length > 1) {
+          selector += `:nth-of-type(${index})`;
+        }
+      }
+
+      path.unshift(selector);
+      current = current.parentElement;
+    }
+
+    return path.join(' > ');
+  }
+
+  private extractTextFromElement(element: HTMLElement): string {
+    // Get text content, excluding script and style tags
+    const clone = element.cloneNode(true) as HTMLElement;
+    const scripts = clone.querySelectorAll('script, style');
+    scripts.forEach(s => s.remove());
+    return (clone.textContent || '').trim();
   }
 
   private updateFitScale(): void {

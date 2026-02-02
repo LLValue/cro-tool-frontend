@@ -33,7 +33,7 @@ import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 
 interface SelectedElement {
-  element: HTMLElement;
+  element: HTMLElement | null;
   selector: string;
   text: string;
 }
@@ -789,9 +789,18 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     return clone.textContent?.trim() || '';
   }
 
-  generateDefaultName(element: HTMLElement, text: string): string {
-    const tagName = element.tagName.toLowerCase();
+  generateDefaultName(element: HTMLElement | null, text: string): string {
     const shortText = text.substring(0, 30).replace(/\s+/g, ' ');
+    
+    if (!element) {
+      // If no element, try to infer from text or selector
+      if (text.length > 0) {
+        return `Element: ${shortText}`;
+      }
+      return 'New Optimization Point';
+    }
+    
+    const tagName = element.tagName.toLowerCase();
     
     if (tagName === 'h1' || tagName === 'h2' || tagName === 'h3') {
       return `Title: ${shortText}`;
@@ -813,12 +822,31 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
   disableSelectionMode(): void {
     this.selectionMode = false;
-    
-    const iframeDoc = this.previewFrame?.nativeElement?.contentDocument;
-    if (iframeDoc) {
-      const highlights = iframeDoc.querySelectorAll('.point-editor-highlight');
-      highlights.forEach(el => el.classList.remove('point-editor-highlight'));
+  }
+
+  toggleSelectionMode(): void {
+    if (this.selectionMode) {
+      this.disableSelectionMode();
+      this.toast.showInfo('Selection mode cancelled');
+    } else {
+      this.enableSelectionMode();
     }
+  }
+
+  onElementSelected(event: { selector: string; text: string }): void {
+    this.selectedElement = {
+      element: null, // Not needed anymore
+      selector: event.selector,
+      text: event.text
+    };
+
+    this.setupForm.patchValue({
+      selector: event.selector,
+      name: this.generateDefaultName(null, event.text)
+    });
+
+    this.selectionMode = false;
+    this.toast.showSuccess('Element selected! Review the details below.');
   }
 
   removeHighlightStyle(): void {

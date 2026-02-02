@@ -15,7 +15,20 @@
         <div class="two-column-layout" *ngIf="!loading">
           <div class="left-column">
             <div class="form-section">
-            <h3>Point Details</h3>
+              <div class="field-label-row">
+                <h3>Point Details</h3>
+                <div class="selector-actions">
+                  <button 
+                    mat-raised-button 
+                    color="primary" 
+                    type="button" 
+                    (click)="toggleSelectionMode()" 
+                    [class.active]="selectionMode">
+                    <mat-icon>{{ selectionMode ? 'close' : 'touch_app' }}</mat-icon>
+                    {{ selectionMode ? 'Cancel Selection' : 'Select Element' }}
+                  </button>
+                </div>
+              </div>
             <form [formGroup]="setupForm" (ngSubmit)="saveSetup()">
               <div class="form-field-wrapper">
                 <label class="field-label">
@@ -100,7 +113,9 @@
             [loading]="loading"
             [useIframe]="true"
             [showReset]="false"
-            (reload)="loadPreview()">
+            [selectionMode]="selectionMode"
+            (reload)="loadPreview()"
+            (elementSelected)="onElementSelected($event)">
           </app-preview-panel>
         </div>
       </div>
