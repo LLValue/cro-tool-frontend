@@ -291,6 +291,8 @@ $primary-color: var(--theme-primary, #7EF473);
   padding: 12px;
   min-height: calc(100vh - 64px);
   background: #f5f5f5;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 // Dark mode

@@ -1,16 +1,19 @@
 $primary-color: #7EF473;
 
+.projects-container {
+  padding: 24px;
+}
+
 .projects-card {
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: visible;
 }
-
-
 
 .table-container {
   padding: 0 !important;
   overflow-x: auto;
+  overflow-y: visible;
 }
 
 .projects-table {

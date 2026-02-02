@@ -52,7 +52,7 @@
     </mat-nav-list>
   </mat-sidenav>
 
-  <mat-sidenav-content style="overflow: clip;">
+  <mat-sidenav-content>
     <mat-toolbar class="main-toolbar" color="primary">
       <button mat-icon-button (click)="sidenav.toggle()" class="menu-toggle" *ngIf="authService.isLoggedIn$ | async">
         <mat-icon>menu</mat-icon>
