@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, Inject } from '@angular/core';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
@@ -26,7 +26,6 @@ import { ProjectsApiService } from '../../../api/services/projects-api.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { API_CLIENT } from '../../../api/api-client.token';
 import { ApiClient } from '../../../api/api-client';
-import { Inject } from '@angular/core';
 import { take } from 'rxjs/operators';
 
 @Component({
@@ -97,6 +96,11 @@ export class ReportingComponent implements OnInit, OnDestroy {
   expandedRows: Set<string> = new Set();
   variantPreviewHtml: Map<string, string> = new Map();
   variantHighlightSelector: Map<string, string> = new Map();
+  variantLoading: Map<string, boolean> = new Map();
+  
+  // Track current expanded variant for change detection
+  currentExpandedVariantId: string | null = null;
+  currentExpandedVariantHtml: string = '';
   private subscriptions = new Subscription();
 
   // Chart configurations
@@ -644,8 +648,12 @@ export class ReportingComponent implements OnInit, OnDestroy {
   toggleRowExpansion(variantId: string): void {
     if (this.expandedRows.has(variantId)) {
       this.expandedRows.delete(variantId);
+      this.currentExpandedVariantId = null;
+      this.currentExpandedVariantHtml = '';
+      this.cdr.detectChanges();
     } else {
       this.expandedRows.add(variantId);
+      this.currentExpandedVariantId = variantId;
       // Load preview when expanding
       this.previewVariant(variantId);
     }
@@ -657,12 +665,30 @@ export class ReportingComponent implements OnInit, OnDestroy {
     return isExpanded;
   }
 
+  isRowExpandedPredicate = (row: ReportingMetrics): boolean => {
+    return this.isRowExpanded(row.variantId);
+  }
+
   getPreviewHtmlForVariant(variantId: string): string {
-    return this.variantPreviewHtml.get(variantId) || this.previewHtml;
+    const variantHtml = this.variantPreviewHtml.get(variantId);
+    if (variantHtml && variantHtml.trim().length > 0) {
+      return variantHtml;
+    }
+    // If variant preview not ready, return original or main preview
+    const fallback = this.originalPreviewHtml || this.previewHtml || '';
+    return fallback;
   }
 
   getHighlightSelectorForVariant(variantId: string): string {
     return this.variantHighlightSelector.get(variantId) || this.highlightSelector;
+  }
+
+  isLoadingVariant(variantId: string): boolean {
+    return this.variantLoading.get(variantId) || false;
+  }
+
+  trackByVariantId(index: number, row: ReportingMetrics): string {
+    return row.variantId;
   }
 
   previewVariant(variantId: string): void {
@@ -678,15 +704,114 @@ export class ReportingComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.previewHtml && !this.originalPreviewHtml) {
-      this.toast.showError('No preview available. Please wait for the preview to load.');
+    // If preview is already loaded for this variant, just show it
+    if (this.variantPreviewHtml.has(variantId)) {
       return;
     }
 
+    // If original preview is not loaded, load it first
+    if (!this.originalPreviewHtml && !this.previewHtml) {
+      this.variantLoading.set(variantId, true);
+      this.loadPreviewForVariant(variantId, variant, point);
+      return;
+    }
+
+    // If we have preview but not original, use current preview as original
     if (!this.originalPreviewHtml && this.previewHtml) {
       this.originalPreviewHtml = this.previewHtml;
     }
 
+    // Apply variant to HTML
+    this.applyVariantToPreview(variantId, variant, point);
+  }
+
+  private loadPreviewForVariant(variantId: string, variant: Variant, point: OptimizationPoint): void {
+    if (!this.projectId) {
+      this.variantLoading.set(variantId, false);
+      this.toast.showError('Project ID not found');
+      return;
+    }
+
+    this.loadingPreview = true;
+    this.store.listProjects().pipe(take(1)).subscribe({
+      next: (projects) => {
+        const project = projects.find(p => p.id === this.projectId);
+        if (project?.pageUrl) {
+          this.apiClient.proxyFetch(project.pageUrl).subscribe({
+            next: (response) => {
+              if (response.html && response.html.trim().length > 0) {
+                this.previewHtml = response.html;
+                this.originalPreviewHtml = response.html;
+                this.useIframe = true;
+                this.previewUrl = project.pageUrl;
+                
+                // Now apply the variant
+                this.applyVariantToPreview(variantId, variant, point);
+              } else {
+                console.error('[Reporting] Empty HTML response');
+                this.variantLoading.set(variantId, false);
+                this.toast.showError('Could not load page preview');
+              }
+              this.loadingPreview = false;
+            },
+            error: (err) => {
+              console.error('[Reporting] Error loading preview:', err);
+              this.variantLoading.set(variantId, false);
+              this.toast.showError('Could not load page preview');
+              this.loadingPreview = false;
+            }
+          });
+        } else {
+          this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
+            next: (project) => {
+              if (project?.pageUrl) {
+                this.apiClient.proxyFetch(project.pageUrl).subscribe({
+                  next: (response) => {
+                    if (response.html && response.html.trim().length > 0) {
+                      this.previewHtml = response.html;
+                      this.originalPreviewHtml = response.html;
+                      this.useIframe = true;
+                      this.previewUrl = project.pageUrl;
+                      
+                      // Now apply the variant
+                      this.applyVariantToPreview(variantId, variant, point);
+                    } else {
+                      console.error('[Reporting] Empty HTML response');
+                      this.variantLoading.set(variantId, false);
+                      this.toast.showError('Could not load page preview');
+                    }
+                    this.loadingPreview = false;
+                  },
+                  error: (err) => {
+                    console.error('[Reporting] Error loading preview:', err);
+                    this.variantLoading.set(variantId, false);
+                    this.toast.showError('Could not load page preview');
+                    this.loadingPreview = false;
+                  }
+                });
+              } else {
+                console.error('[Reporting] No pageUrl in project');
+                this.variantLoading.set(variantId, false);
+                this.loadingPreview = false;
+              }
+            },
+            error: (err) => {
+              console.error('[Reporting] Error getting project:', err);
+              this.variantLoading.set(variantId, false);
+              this.loadingPreview = false;
+            }
+          });
+        }
+      },
+      error: (err) => {
+        console.error('[Reporting] Error listing projects:', err);
+        this.variantLoading.set(variantId, false);
+        this.loadingPreview = false;
+      }
+    });
+  }
+
+  private applyVariantToPreview(variantId: string, variant: Variant, point: OptimizationPoint): void {
     // Apply variant to HTML
     const modifiedHtml = this.previewService.applyVariantsToHtml(
       this.originalPreviewHtml || this.previewHtml,
@@ -700,6 +825,12 @@ export class ReportingComponent implements OnInit, OnDestroy {
     // Store preview for this variant
     this.variantPreviewHtml.set(variantId, previewHtml);
     this.variantHighlightSelector.set(variantId, highlightSelector);
+    this.variantLoading.set(variantId, false);
+    
+    // Update tracked property for change detection
+    if (this.currentExpandedVariantId === variantId) {
+      this.currentExpandedVariantHtml = previewHtml;
+    }
     
     // Also update main preview for backward compatibility
     this.previewHtml = previewHtml;
@@ -707,10 +838,17 @@ export class ReportingComponent implements OnInit, OnDestroy {
     // Clear any existing highlight first
     this.highlightSelector = '';
     
+    // Force change detection to update the view
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+    
     // Use setTimeout to ensure change detection picks up the change
     setTimeout(() => {
       // Set the highlight selector to trigger the highlight animation
       this.highlightSelector = highlightSelector;
+      
+      // Force change detection again after setting highlight
+      this.cdr.detectChanges();
       
       // Don't clear the highlight immediately - let it fade out naturally
       // The PreviewPanel will handle the fade-out after ~1 second

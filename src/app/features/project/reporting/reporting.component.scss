@@ -5,20 +5,23 @@
   margin-top: 12px;
 }
 
-.expanded-preview-container {
-  margin-top: 0;
+.expanded-preview-row {
+  margin-top: 8px;
   margin-bottom: 16px;
-}
-
-.expanded-row-content {
-  padding: 24px;
+  padding: 16px;
   background: #f9f9f9;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 4px;
-  margin-top: 8px;
   
   app-preview-panel {
     display: block;
+  }
+}
+
+:host-context(body.dark-mode) {
+  .expanded-preview-row {
+    background: #2a2a2a;
+    border-color: #444;
   }
 }
 

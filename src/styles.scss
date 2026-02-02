@@ -1271,6 +1271,10 @@ body.dark-mode {
   padding: 12px !important;
 }
 
+.mat-drawer-content {
+  overflow: hidden !important;
+}
+
 // Dialog styles for dark mode - overlay container is a child of body
 body.dark-mode .cdk-overlay-container {
   .mat-mdc-dialog-container .mdc-dialog__surface,

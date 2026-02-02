@@ -114,9 +114,12 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   private updateSafeHtml(): void {
-    if (this.previewHtml) {
+    if (this.previewHtml && this.previewHtml.trim().length > 0) {
       this.safePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(this.previewHtml);
       this.safeIframeHtml = this.sanitizer.bypassSecurityTrustHtml(this.previewHtml);
+    } else {
+      this.safePreviewHtml = '';
+      this.safeIframeHtml = '';
     }
     if (this.previewUrl) {
       this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.previewUrl);

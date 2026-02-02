@@ -119,13 +119,13 @@
                   [@slideInOut]="animatingMetrics">
               </tr>
             </table>
-            <!-- Preview panels outside table for expanded rows -->
-            <div *ngFor="let row of goalEntry.value.metrics" class="expanded-preview-container">
-              <div *ngIf="isRowExpanded(row.variantId)" class="expanded-row-content">
+            <!-- Preview panels below table for expanded rows -->
+            <div *ngFor="let row of goalEntry.value.metrics; trackBy: trackByVariantId">
+              <div *ngIf="isRowExpanded(row.variantId)" class="expanded-preview-row">
                 <app-preview-panel
                   [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
                   [previewUrl]="previewUrl"
-                  [loading]="loadingPreview"
+                  [loading]="loadingPreview || isLoadingVariant(row.variantId)"
                   [useIframe]="useIframe"
                   [showReset]="true"
                   [originalHtml]="originalPreviewHtml"
@@ -178,13 +178,13 @@
             [@slideInOut]="animatingMetrics">
         </tr>
       </table>
-      <!-- Preview panels outside table for expanded rows -->
-      <div *ngFor="let row of globalMetrics" class="expanded-preview-container">
-        <div *ngIf="isRowExpanded(row.variantId)" class="expanded-row-content">
+      <!-- Preview panels below table for expanded rows -->
+      <div *ngFor="let row of globalMetrics; trackBy: trackByVariantId">
+        <div *ngIf="isRowExpanded(row.variantId)" class="expanded-preview-row">
           <app-preview-panel
             [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
             [previewUrl]="previewUrl"
-            [loading]="loadingPreview"
+            [loading]="loadingPreview || isLoadingVariant(row.variantId)"
             [useIframe]="useIframe"
             [showReset]="true"
             [originalHtml]="originalPreviewHtml"
@@ -297,6 +297,23 @@
           </td>
         </ng-container>
 
+        <ng-container matColumnDef="expandedDetail">
+          <td mat-cell *matCellDef="let row" [attr.colspan]="displayedColumnsWithExpand.length" class="expanded-detail-cell">
+            <div class="expanded-row-content">
+              <app-preview-panel
+                [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
+                [previewUrl]="previewUrl"
+                [loading]="loadingPreview"
+                [useIframe]="useIframe"
+                [showReset]="true"
+                [originalHtml]="originalPreviewHtml"
+                [highlightSelector]="getHighlightSelectorForVariant(row.variantId)"
+                (reload)="onPreviewReload()"
+                (reset)="onPreviewReset()">
+              </app-preview-panel>
+            </div>
+          </td>
+        </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumnsWithExpand"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumnsWithExpand;"
             [class.winner]="isWinner(row)"
@@ -305,13 +322,13 @@
             [@slideInOut]="animatingMetrics">
         </tr>
       </table>
-      <!-- Preview panels outside table for expanded rows -->
-      <div *ngFor="let row of pointMetrics" class="expanded-preview-container">
-        <div *ngIf="isRowExpanded(row.variantId)" class="expanded-row-content">
+      <!-- Preview panels below table for expanded rows -->
+      <div *ngFor="let row of pointMetrics; trackBy: trackByVariantId">
+        <div *ngIf="isRowExpanded(row.variantId)" class="expanded-preview-row">
           <app-preview-panel
             [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
             [previewUrl]="previewUrl"
-            [loading]="loadingPreview"
+            [loading]="loadingPreview || isLoadingVariant(row.variantId)"
             [useIframe]="useIframe"
             [showReset]="true"
             [originalHtml]="originalPreviewHtml"
