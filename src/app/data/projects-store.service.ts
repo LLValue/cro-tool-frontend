@@ -134,7 +134,13 @@ export class ProjectsStoreService {
 
   getBriefingGuardrails(projectId: string): Observable<BriefingGuardrails | undefined> {
     return this.briefingGuardrailsApi.getBriefingGuardrails(projectId).pipe(
-      catchError(() => of(undefined)) // Return undefined if not found
+      catchError((error: any) => {
+        // Log error for debugging
+        console.error('Error fetching briefing guardrails:', error);
+        // Return undefined if not found (404) or server error (500)
+        // The component will handle the undefined case
+        return of(undefined);
+      })
     );
   }
 
@@ -160,10 +166,7 @@ export class ProjectsStoreService {
       next: () => {},
       error: () => {
         // If update fails (404), try to create
-        this.briefingGuardrailsApi.createBriefingGuardrails({
-          projectId: projectId,
-          ...req
-        }).subscribe({
+        this.briefingGuardrailsApi.createBriefingGuardrails(projectId, req).subscribe({
           next: () => {},
           error: () => {} // Error handling done in components
         });

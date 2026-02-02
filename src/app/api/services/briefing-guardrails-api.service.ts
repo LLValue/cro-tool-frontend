@@ -22,8 +22,8 @@ export class BriefingGuardrailsApiService {
     );
   }
 
-  createBriefingGuardrails(req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrails> {
-    return this.apiClient.briefingGuardrailsCreate(req).pipe(
+  createBriefingGuardrails(projectId: string, req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrails> {
+    return this.apiClient.briefingGuardrailsCreate(projectId, req).pipe(
       map(dto => this.dtoToModel(dto))
     );
   }

@@ -91,7 +91,12 @@ export class ReportingComponent implements OnInit, OnDestroy {
     metrics: ReportingMetrics[];
   }> = new Map();
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
-  displayedColumnsWithActions: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence', 'actions'];
+  displayedColumnsWithExpand: string[] = ['expand', 'variant', 'users', 'conversions', 'conversionRate', 'confidence'];
+  
+  // Track expanded rows
+  expandedRows: Set<string> = new Set();
+  variantPreviewHtml: Map<string, string> = new Map();
+  variantHighlightSelector: Map<string, string> = new Map();
   private subscriptions = new Subscription();
 
   // Chart configurations
@@ -558,7 +563,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
     this.animatingMetrics = true;
     this.previousMetrics = [...this.globalMetrics];
     
-    const sub = this.store.simulateTraffic(this.projectId, 7 * 24 * 60 * 60 * 1000, 200).subscribe({
+    // Backend limit: durationMs must be <= 60000 (60 seconds)
+    const sub = this.store.simulateTraffic(this.projectId, 60000, 200).subscribe({
       next: () => {
         setTimeout(() => {
           this.animateMetricsUpdate();
@@ -635,6 +641,30 @@ export class ReportingComponent implements OnInit, OnDestroy {
     return variant?.status === 'discarded' || false;
   }
 
+  toggleRowExpansion(variantId: string): void {
+    if (this.expandedRows.has(variantId)) {
+      this.expandedRows.delete(variantId);
+    } else {
+      this.expandedRows.add(variantId);
+      // Load preview when expanding
+      this.previewVariant(variantId);
+    }
+  }
+
+  isRowExpanded(variantId: string): boolean {
+    // Use a simple check to avoid change detection loops
+    const isExpanded = this.expandedRows.has(variantId);
+    return isExpanded;
+  }
+
+  getPreviewHtmlForVariant(variantId: string): string {
+    return this.variantPreviewHtml.get(variantId) || this.previewHtml;
+  }
+
+  getHighlightSelectorForVariant(variantId: string): string {
+    return this.variantHighlightSelector.get(variantId) || this.highlightSelector;
+  }
+
   previewVariant(variantId: string): void {
     const variant = this.variants.find(v => v.id === variantId);
     if (!variant) {
@@ -664,7 +694,15 @@ export class ReportingComponent implements OnInit, OnDestroy {
       [point]
     );
 
-    this.previewHtml = modifiedHtml;
+    const previewHtml = modifiedHtml;
+    const highlightSelector = point.selector || '';
+    
+    // Store preview for this variant
+    this.variantPreviewHtml.set(variantId, previewHtml);
+    this.variantHighlightSelector.set(variantId, highlightSelector);
+    
+    // Also update main preview for backward compatibility
+    this.previewHtml = previewHtml;
     
     // Clear any existing highlight first
     this.highlightSelector = '';
@@ -672,7 +710,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
     // Use setTimeout to ensure change detection picks up the change
     setTimeout(() => {
       // Set the highlight selector to trigger the highlight animation
-      this.highlightSelector = point.selector;
+      this.highlightSelector = highlightSelector;
       
       // Don't clear the highlight immediately - let it fade out naturally
       // The PreviewPanel will handle the fade-out after ~1 second

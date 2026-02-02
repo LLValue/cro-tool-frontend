@@ -15,7 +15,11 @@ import {
   ProjectsListResponse,
   BriefingGuardrailsDto,
   CreateBriefingGuardrailsRequest,
-  UpdateBriefingGuardrailsRequest
+  UpdateBriefingGuardrailsRequest,
+  BriefingAssistantGenerateRequest,
+  BriefingAssistantGenerateResponse,
+  BriefingAssistantApproveProofPointsRequest,
+  BriefingAssistantApproveProofPointsResponse
 } from '../../api-contracts/projects.contracts';
 import {
   OptimizationPointDto,
@@ -94,12 +98,21 @@ export class HttpApiClient implements ApiClient {
     return this.http.get<BriefingGuardrailsDto>(`${this.baseUrl}/projects/${projectId}/briefing-guardrails`);
   }
 
-  briefingGuardrailsCreate(req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto> {
-    return this.http.post<BriefingGuardrailsDto>(`${this.baseUrl}/projects/${req.projectId}/briefing-guardrails`, req);
+  briefingGuardrailsCreate(projectId: string, req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto> {
+    return this.http.post<BriefingGuardrailsDto>(`${this.baseUrl}/projects/${projectId}/briefing-guardrails`, req);
   }
 
   briefingGuardrailsUpdate(projectId: string, req: UpdateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto> {
     return this.http.patch<BriefingGuardrailsDto>(`${this.baseUrl}/projects/${projectId}/briefing-guardrails`, req);
+  }
+
+  // Briefing Assistant
+  briefingAssistantGenerate(projectId: string, req: BriefingAssistantGenerateRequest): Observable<BriefingAssistantGenerateResponse> {
+    return this.http.post<BriefingAssistantGenerateResponse>(`${this.baseUrl}/projects/${projectId}/briefing-assistant/generate`, req);
+  }
+
+  briefingAssistantApproveProofPoints(projectId: string, req: BriefingAssistantApproveProofPointsRequest): Observable<BriefingAssistantApproveProofPointsResponse> {
+    return this.http.post<BriefingAssistantApproveProofPointsResponse>(`${this.baseUrl}/projects/${projectId}/briefing-assistant/approve-proof-points`, req);
   }
 
   // Points

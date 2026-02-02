@@ -23,6 +23,10 @@ import { PageHeaderComponent } from '../../../shared/page-header/page-header.com
 import { ChipsInputComponent } from '../../../shared/chips-input/chips-input.component';
 import { InfoModalComponent } from '../../../shared/info-modal/info-modal.component';
 import { GenerateVariantsProgressComponent } from '../../../shared/generate-variants-progress/generate-variants-progress.component';
+import { API_CLIENT } from '../../../api/api-client.token';
+import { ApiClient } from '../../../api/api-client';
+import { Inject } from '@angular/core';
+import { BriefingAssistantGenerateRequest, BriefingAssistantGenerateResponse } from '../../../api-contracts/projects.contracts';
 
 @Component({
   selector: 'app-context',
@@ -87,7 +91,8 @@ export class ContextComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private store: ProjectsStoreService,
     private toast: ToastHelperService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    @Inject(API_CLIENT) private apiClient: ApiClient
   ) {
     this.globalForm = this.fb.group({
       // Business context
@@ -121,6 +126,14 @@ export class ContextComponent implements OnInit, OnDestroy {
     // Note: Language is only in AI Assistant, not in main form
 
     // Note: Language is no longer in the form, it's only in the AI Assistant
+  }
+
+  private updateUrlInputDisabledState(): void {
+    if (this.urls.length >= 5) {
+      this.urlInputControl.disable();
+    } else {
+      this.urlInputControl.enable();
+    }
   }
 
   ngOnInit(): void {
@@ -505,6 +518,7 @@ export class ContextComponent implements OnInit, OnDestroy {
         new URL(url);
         this.urls.push(url);
         this.urlInputControl.setValue('');
+        this.updateUrlInputDisabledState();
       } catch {
         this.toast.showError('Please enter a valid URL');
       }
@@ -518,6 +532,7 @@ export class ContextComponent implements OnInit, OnDestroy {
         new URL(url);
         this.urls.push(url);
         this.urlInputControl.setValue('');
+        this.updateUrlInputDisabledState();
       } catch {
         this.toast.showError('Please enter a valid URL');
       }
@@ -526,6 +541,7 @@ export class ContextComponent implements OnInit, OnDestroy {
 
   removeUrl(index: number): void {
     this.urls.splice(index, 1);
+    this.updateUrlInputDisabledState();
   }
 
   uploadDocument(): void {
@@ -564,8 +580,29 @@ export class ContextComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.projectId) {
+      this.toast.showError('Project ID is required');
+      return;
+    }
+
+    // Prepare request
+    const targetLanguage = this.aiAssistantForm.get('targetLanguage')?.value || 'en';
+    const fillSections = {
+      business_context: this.aiAssistantForm.get('fillBusinessContext')?.value ?? true,
+      journey_context: this.aiAssistantForm.get('fillJourneyContext')?.value ?? true,
+      guardrails: this.aiAssistantForm.get('fillGuardrails')?.value ?? true
+    };
+
+    const request: BriefingAssistantGenerateRequest = {
+      sources: {
+        urls: this.urls
+      },
+      target_language: targetLanguage,
+      fill_sections: fillSections
+    };
+
     // Show progress modal (reuse the generate variants progress component)
-    const generateObservable = this.simulateBriefGeneration();
+    const generateObservable = this.apiClient.briefingAssistantGenerate(this.projectId, request);
     
     const dialogRef = this.dialog.open(GenerateVariantsProgressComponent, {
       width: '600px',
@@ -578,107 +615,121 @@ export class ContextComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result && result.success) {
-        this.applyGeneratedBrief(result.data);
+        this.applyGeneratedBrief(result.data as BriefingAssistantGenerateResponse);
         this.aiAssistantUsed = true;
         // Collapse after first use
         if (this.aiAssistantUsed) {
           this.aiAssistantExpanded = false;
         }
+      } else if (result && result.error) {
+        const errorMessage = result.error?.error?.message || result.error?.message || 'Unknown error';
+        this.toast.showError('Failed to generate draft brief: ' + errorMessage);
       }
     });
   }
 
-  private simulateBriefGeneration(): Observable<any> {
-    // Simulate API call - using example data for demonstration
-    return new Observable(observer => {
-      setTimeout(() => {
-        // Example brief data based on CaixaBank account example
-        const mockBrief = {
-          productDescription: 'CaixaBank ofrece una cuenta 100% online que permite abrir y gestionar una cuenta bancaria sin comisiones. Entre sus características destacadas se incluyen la ausencia de comisiones de mantenimiento o administración, una tarjeta de débito gratuita y un atractivo incentivo de hasta 250€ por domiciliar una nómina. El proceso es completamente digital y se puede completar en minutos, con verificación de identidad a través de vídeo. La cuenta permite realizar transacciones básicas como transferencias, pagos de recibos y recibir ingresos, todo desde la app o la web de CaixaBank, con acceso a más de 11.000 cajeros automáticos en España.',
-          targetAudiences: 'Jóvenes profesionales - Buscan una cuenta sin altas comisiones para empezar su camino financiero. Son usuarios que prefieren la banca online por su rapidez y comodidad.\n\nFamilias - Necesitan una cuenta confiable y económica para gestionar sus finanzas del hogar, con beneficios como una tarjeta de débito gratuita y un incentivo por domiciliar ingresos.\n\nEntusiastas de la tecnología - Prefieren servicios totalmente digitales y se sienten atraídos por la facilidad de apertura de la cuenta y la capacidad de gestionar sus finanzas online de manera continua.',
-          valueProps: 'Sin comisiones de mantenimiento a lo largo de toda la vida de la cuenta.\n\nTarjeta de débito gratuita sin cargos adicionales.\n\nIncentivos por domiciliar nóminas, hasta 250€.\n\nProceso 100% digital con verificación de identidad por vídeo de forma segura.\n\nAcceso a más de 11.000 cajeros automáticos en España para retirar efectivo.',
-          topObjections: 'Preocupaciones sobre la seguridad de la banca completamente online sin interacción presencial.\n\nDudas sobre la falta de intereses o recompensas en la cuenta.\n\nIncertidumbre sobre posibles comisiones ocultas a pesar de la promesa de no tener comisiones de mantenimiento.',
-          toneAndStyle: 'Tono: Cercano, profesional y directo. Se debe transmitir confianza y claridad, destacando los beneficios de la cuenta online y su fácil acceso.\n\nNo usar: Términos complicados o técnicos que puedan generar confusión.\n\nSí usar: Un lenguaje accesible, destacando la comodidad, seguridad y facilidad de uso de la cuenta online.',
-          pageContextAndGoal: 'Esta página tiene como objetivo ofrecer a los usuarios la posibilidad de abrir una cuenta bancaria 100% online, destacando las ventajas de su proceso sencillo y sin comisiones. El visitante llega aquí buscando información para tomar la decisión de abrir una cuenta con CaixaBank. El objetivo es que el usuario complete la apertura de su cuenta online a través del formulario disponible.',
-          funnelStage: 'consideration',
-          nextAction: 'Start application (secondary: Check eligibility)',
-          brandGuidelines: 'Terminología: Se debe usar un lenguaje sencillo, accesible y sin jerga bancaria.\n\nFormato: El contenido debe estar bien estructurado, fácil de leer, y visualmente atractivo.\n\nTono: Cercano y confiable, evitando excesiva formalidad o términos complicados.',
-          allowedFacts: 'No se deben realizar afirmaciones sin respaldar con hechos verificables, como "más de 11.000 cajeros en España" y "incentivos de hasta 250€ por domiciliar una nómina."',
-          forbiddenWords: 'No se deben usar frases que sugieran costos ocultos o comisiones no explícitas.\n\nEvitar el uso de términos como "gratis" sin aclarar claramente los términos y condiciones.',
-          sensitiveClaims: 'Cualquier afirmación relacionada con la seguridad de los datos debe ser revisada manualmente, garantizando que se están usando términos que realmente cumplan con las normativas legales y de privacidad.'
-        };
-        observer.next(mockBrief);
-        observer.complete();
-      }, 5000); // Minimum 5 seconds
-    });
-  }
-
-  private applyGeneratedBrief(data: any): void {
+  private applyGeneratedBrief(response: BriefingAssistantGenerateResponse): void {
     this.isUpdatingForm = true;
 
-    // Helper function to check if content looks like corrupted JSON
-    const isCorruptedJson = (content: string): boolean => {
-      if (!content || typeof content !== 'string') return false;
-      const trimmed = content.trim();
-      // Check for JSON-like patterns
-      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-        // Count braces/quotes - if too many, likely JSON
-        const braceCount = (trimmed.match(/[{}]/g) || []).length;
-        const quoteCount = (trimmed.match(/["']/g) || []).length;
-        if (braceCount > 5 || quoteCount > 10) {
-          return true;
+    // Field mapping from API response keys to form field names
+    const fieldMapping: { [key: string]: string } = {
+      'business.product_description': 'productDescription',
+      'business.target_audiences': 'targetAudiences',
+      'business.value_props': 'valueProps',
+      'business.top_objections': 'topObjections',
+      'journey.page_context_and_goal': 'pageContextAndGoal',
+      'journey.next_action': 'nextAction',
+      'journey.funnel_stage': 'funnelStage',
+      'journey.tone_and_style': 'toneAndStyle',
+      'guardrails.brand_guidelines': 'brandGuidelines',
+      'guardrails.allowed_facts': 'allowedFacts',
+      'guardrails.forbidden_words': 'forbiddenWords',
+      'guardrails.sensitive_claims': 'sensitiveClaims'
+    };
+
+    // Helper function to parse array fields (valueProps, topObjections, etc.)
+    const parseArrayField = (text: string): string => {
+      if (!text) return '';
+      try {
+        // Try to parse as JSON array
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed)) {
+          return parsed.join('\n');
         }
+      } catch (e) {
+        // Not JSON, return as is
       }
-      return false;
+      return text;
     };
 
     // Helper function to apply field with validation
-    const applyField = (fieldName: string, value: any, isMandatory: boolean = false) => {
-      if (value && value.trim()) {
-        const cleanValue = value.trim();
-        const hasFormatIssue = isCorruptedJson(cleanValue);
-        
-        if (hasFormatIssue) {
-          // Mark as needs review if JSON corrupted
-          this.globalForm.patchValue({ [fieldName]: cleanValue });
-          this.setFieldState(fieldName, 'ai_draft', 'needs_review', 'low');
-          this.animateField(fieldName);
-        } else {
-          // Normal auto-fill
-          this.globalForm.patchValue({ [fieldName]: cleanValue });
-          this.setFieldState(fieldName, 'ai_draft', 'ok', 'high');
-          this.animateField(fieldName);
+    const applyField = (fieldName: string, fieldData: any, isMandatory: boolean = false) => {
+      if (!fieldData) {
+        if (isMandatory) {
+          this.setFieldState(fieldName, 'ai_draft', 'missing', 'low');
         }
-      } else if (isMandatory) {
-        // Mandatory field is empty after generation
-        this.setFieldState(fieldName, 'ai_draft', 'missing', 'low');
+        return;
       }
+
+      const text = fieldData.text || '';
+      if (!text || !text.trim()) {
+        if (isMandatory) {
+          this.setFieldState(fieldName, 'ai_draft', 'missing', 'low');
+        }
+        return;
+      }
+
+      // Parse array fields
+      let cleanValue = text.trim();
+      if (['valueProps', 'topObjections', 'allowedFacts', 'forbiddenWords', 'sensitiveClaims'].includes(fieldName)) {
+        cleanValue = parseArrayField(cleanValue);
+      }
+
+      // Determine review status and confidence from API response
+      const reviewStatus = fieldData.review_status || 'ok';
+      const confidence = fieldData.confidence || 'medium';
+      const hasFormatIssue = fieldData.format_issue || false;
+
+      // Apply value to form
+      this.globalForm.patchValue({ [fieldName]: cleanValue });
+
+      // Set field state based on API response
+      if (hasFormatIssue || reviewStatus === 'needs_review') {
+        this.setFieldState(fieldName, 'ai_draft', 'needs_review', confidence);
+      } else if (reviewStatus === 'missing') {
+        this.setFieldState(fieldName, 'ai_draft', 'missing', confidence);
+      } else {
+        this.setFieldState(fieldName, 'ai_draft', 'ok', confidence);
+      }
+
+      this.animateField(fieldName);
     };
 
-    // Apply generated content based on selected sections
-    if (this.aiAssistantForm.get('fillBusinessContext')?.value) {
-      applyField('productDescription', data.productDescription, true);
-      applyField('targetAudiences', data.targetAudiences, true);
-      applyField('valueProps', data.valueProps, true);
-      applyField('topObjections', data.topObjections, false);
+    // Apply generated fields from API response
+    const fields = response.fields || {};
+    for (const [apiKey, fieldData] of Object.entries(fields)) {
+      const formFieldName = fieldMapping[apiKey];
+      if (formFieldName) {
+        const isMandatory = ['productDescription', 'targetAudiences', 'valueProps', 'language', 'toneAndStyle', 'pageContextAndGoal'].includes(formFieldName);
+        applyField(formFieldName, fieldData, isMandatory);
+      }
     }
 
-    if (this.aiAssistantForm.get('fillJourneyContext')?.value) {
-      applyField('toneAndStyle', data.toneAndStyle, true);
-      applyField('pageContextAndGoal', data.pageContextAndGoal, true);
-      applyField('funnelStage', data.funnelStage, false);
-      applyField('nextAction', data.nextAction, false);
-    }
-
-    if (this.aiAssistantForm.get('fillGuardrails')?.value) {
-      applyField('brandGuidelines', data.brandGuidelines, false);
-      applyField('allowedFacts', data.allowedFacts, false);
-      applyField('forbiddenWords', data.forbiddenWords, false);
-      applyField('sensitiveClaims', data.sensitiveClaims, false);
+    // Update language field if provided in target_language
+    if (this.aiAssistantForm.get('targetLanguage')?.value) {
+      const targetLang = this.aiAssistantForm.get('targetLanguage')?.value;
+      this.globalForm.patchValue({ language: targetLang });
+      this.setFieldState('language', 'ai_draft', 'ok', 'high');
     }
 
     this.isUpdatingForm = false;
-    this.toast.showSuccess('Draft brief generated successfully. Please review the auto-filled fields.');
+    const filledCount = response.summary?.filled_fields || 0;
+    const needsReviewCount = response.summary?.needs_review_count || 0;
+    let message = `Draft brief generated successfully. ${filledCount} fields filled.`;
+    if (needsReviewCount > 0) {
+      message += ` ${needsReviewCount} field(s) need review.`;
+    }
+    this.toast.showSuccess(message);
   }
 
   private setFieldState(fieldName: string, source: 'manual' | 'ai_draft', reviewStatus: 'ok' | 'needs_review' | 'missing', confidence: 'high' | 'medium' | 'low'): void {

@@ -11,7 +11,11 @@ import {
   ProjectsListResponse,
   BriefingGuardrailsDto,
   CreateBriefingGuardrailsRequest,
-  UpdateBriefingGuardrailsRequest
+  UpdateBriefingGuardrailsRequest,
+  BriefingAssistantGenerateRequest,
+  BriefingAssistantGenerateResponse,
+  BriefingAssistantApproveProofPointsRequest,
+  BriefingAssistantApproveProofPointsResponse
 } from '../api-contracts/projects.contracts';
 import {
   OptimizationPointDto,
@@ -48,8 +52,12 @@ export interface ApiClient {
 
   // Briefing Guardrails
   briefingGuardrailsGet(projectId: string): Observable<BriefingGuardrailsDto>;
-  briefingGuardrailsCreate(req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto>;
+  briefingGuardrailsCreate(projectId: string, req: CreateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto>;
   briefingGuardrailsUpdate(projectId: string, req: UpdateBriefingGuardrailsRequest): Observable<BriefingGuardrailsDto>;
+
+  // Briefing Assistant
+  briefingAssistantGenerate(projectId: string, req: BriefingAssistantGenerateRequest): Observable<BriefingAssistantGenerateResponse>;
+  briefingAssistantApproveProofPoints(projectId: string, req: BriefingAssistantApproveProofPointsRequest): Observable<BriefingAssistantApproveProofPointsResponse>;
 
   // Points
   pointsList(projectId: string): Observable<OptimizationPointDto[]>;

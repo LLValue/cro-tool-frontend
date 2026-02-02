@@ -35,8 +35,7 @@
             <input 
               matInput 
               [formControl]="urlInputControl"
-              (keydown.enter)="addUrl($event)"
-              [disabled]="urls.length >= 5">
+              (keydown.enter)="addUrl($event)">
           </mat-form-field>
           <button mat-raised-button color="primary" type="button" (click)="addUrlFromButton()" [disabled]="urls.length >= 5">
             Add URL
