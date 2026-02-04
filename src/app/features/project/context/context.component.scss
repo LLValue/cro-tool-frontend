@@ -196,6 +196,79 @@
   }
 }
 
+// Persistent highlighting based on field state
+::ng-deep {
+  .field-ai-draft {
+    .mat-mdc-form-field-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: rgba(33, 150, 243, 0.3) !important;
+      }
+    }
+    
+    &.mat-focused .mat-mdc-form-field-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: rgba(33, 150, 243, 0.5) !important;
+      }
+    }
+  }
+
+  .field-needs-review {
+    .mat-mdc-form-field-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: rgba(255, 152, 0, 0.4) !important;
+      }
+    }
+    
+    &.mat-focused .mat-mdc-form-field-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: rgba(255, 152, 0, 0.6) !important;
+      }
+    }
+  }
+
+  .field-missing {
+    .mat-mdc-form-field-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: rgba(244, 67, 54, 0.4) !important;
+      }
+    }
+    
+    &.mat-focused .mat-mdc-form-field-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: rgba(244, 67, 54, 0.6) !important;
+      }
+    }
+  }
+
+  .field-manual {
+    // Subtle indication that field was manually edited
+    opacity: 0.95;
+  }
+
+  .field-low-confidence {
+    // Subtle visual indication for low confidence
+    .mat-mdc-form-field-outline {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-style: dashed;
+      }
+    }
+  }
+}
+
 :host-context(body.dark-mode) {
   .ai-assistant-header {
     border-bottom-color: rgba(255, 255, 255, 0.12);

@@ -843,6 +843,47 @@ export class ContextComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  // Helper methods to get field state for CSS classes
+  getFieldState(fieldName: string): { source: 'manual' | 'ai_draft' | null; reviewStatus: 'ok' | 'needs_review' | 'missing' | null; confidence: 'high' | 'medium' | 'low' | null } {
+    const state = this.fieldStates[fieldName];
+    if (!state) {
+      return { source: null, reviewStatus: null, confidence: null };
+    }
+    return {
+      source: state.source,
+      reviewStatus: state.reviewStatus,
+      confidence: state.confidence
+    };
+  }
+
+  // Get CSS classes for field highlighting based on state
+  getFieldHighlightClasses(fieldName: string): string {
+    const state = this.getFieldState(fieldName);
+    if (!state.source && !state.reviewStatus) return '';
+
+    const classes: string[] = [];
+    
+    if (state.source === 'ai_draft') {
+      classes.push('field-ai-draft');
+    } else if (state.source === 'manual') {
+      classes.push('field-manual');
+    }
+    
+    if (state.reviewStatus === 'needs_review') {
+      classes.push('field-needs-review');
+    } else if (state.reviewStatus === 'missing') {
+      classes.push('field-missing');
+    }
+    
+    if (state.confidence === 'low') {
+      classes.push('field-low-confidence');
+    } else if (state.confidence === 'high') {
+      classes.push('field-high-confidence');
+    }
+    
+    return classes.join(' ');
+  }
+
   hasFieldBeenEdited(fieldName: string): boolean {
     const state = this.fieldStates[fieldName];
     return state?.source === 'manual';

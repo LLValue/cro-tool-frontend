@@ -155,7 +155,7 @@
             </div>
           </div>
           <p class="field-helper">Describe what the product is, how it works at a high level, and the key features/benefits—avoid listing audience segments here.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('productDescription')">
             <textarea matInput formControlName="productDescription" rows="4" maxlength="5000" (input)="onFieldEdit('productDescription')"></textarea>
             <mat-error *ngIf="(globalForm.get('productDescription')?.touched || businessContextSubmitted) && globalForm.get('productDescription')?.hasError('required')">
               Product description is required
@@ -187,7 +187,7 @@
             </div>
           </div>
           <p class="field-helper">Describe 2–5 audience segments, their goals, and their main concerns—avoid repeating the product definition here.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('targetAudiences')">
             <textarea matInput formControlName="targetAudiences" rows="4" maxlength="5000" (input)="onFieldEdit('targetAudiences')"></textarea>
             <mat-error *ngIf="(globalForm.get('targetAudiences')?.touched || businessContextSubmitted) && globalForm.get('targetAudiences')?.hasError('required')">
               Target audiences is required
@@ -219,7 +219,7 @@
             </div>
           </div>
           <p class="field-helper">List 3–6 key value propositions you want to emphasize.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('valueProps')">
             <textarea matInput formControlName="valueProps" rows="4" maxlength="5000" (input)="onFieldEdit('valueProps')"></textarea>
             <mat-error *ngIf="(globalForm.get('valueProps')?.touched || businessContextSubmitted) && globalForm.get('valueProps')?.hasError('required')">
               Top value props is required
@@ -245,7 +245,7 @@
             </div>
           </div>
           <p class="field-helper">List the main concerns that stop users from applying or moving forward.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('topObjections')">
             <textarea matInput formControlName="topObjections" rows="4" maxlength="5000" (input)="onFieldEdit('topObjections')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('topObjections') }} / {{ getMaxLength('topObjections') }}</span>
@@ -287,7 +287,7 @@
             </div>
           </div>
           <p class="field-helper">Set the language and locale format for the copy (e.g., en-GB, es-ES).</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('language')">
             <mat-select formControlName="language" (selectionChange)="onFieldEdit('language')">
               <mat-option *ngFor="let locale of locales" [value]="locale.value">
                 {{ locale.label }}
@@ -320,7 +320,7 @@
             </div>
           </div>
           <p class="field-helper">Describe how the brand should sound, with do/don't guidance.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('toneAndStyle')">
             <textarea matInput formControlName="toneAndStyle" rows="4" maxlength="5000" (input)="onFieldEdit('toneAndStyle')"></textarea>
             <mat-error *ngIf="(globalForm.get('toneAndStyle')?.touched || journeyContextSubmitted) && globalForm.get('toneAndStyle')?.hasError('required')">
               Tone and style is required
@@ -352,7 +352,7 @@
             </div>
           </div>
           <p class="field-helper">Explain what this page is, what comes before/after, and what action you want.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('pageContextAndGoal')">
             <textarea matInput formControlName="pageContextAndGoal" rows="3" maxlength="5000" (input)="onFieldEdit('pageContextAndGoal')"></textarea>
             <mat-error *ngIf="(globalForm.get('pageContextAndGoal')?.touched || journeyContextSubmitted) && globalForm.get('pageContextAndGoal')?.hasError('required')">
               Page context and goal is required
@@ -383,7 +383,7 @@
             </div>
           </div>
           <p class="field-helper">Choose where the user is in the journey and the single action you want them to take next.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('funnelStageAndNextAction')">
             <input matInput formControlName="funnelStageAndNextAction" maxlength="5000" (input)="onFieldEdit('funnelStageAndNextAction')">
             <mat-hint align="end">
               <span>{{ getCharacterCount('funnelStageAndNextAction') }} / {{ getMaxLength('funnelStageAndNextAction') }}</span>
@@ -422,7 +422,7 @@
             </div>
           </div>
           <p class="field-helper">Add any brand rules the copy must follow (terminology, formatting, tone boundaries).</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('brandGuidelines')">
             <textarea matInput formControlName="brandGuidelines" rows="4" maxlength="5000" (input)="onFieldEdit('brandGuidelines')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('brandGuidelines') }} / {{ getMaxLength('brandGuidelines') }}</span>
@@ -450,7 +450,7 @@
             </div>
           </div>
           <p class="field-helper">List verified facts the AI is allowed to state as factual claims.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('allowedFacts')">
             <textarea matInput formControlName="allowedFacts" rows="4" maxlength="5000" (input)="onFieldEdit('allowedFacts')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('allowedFacts') }} / {{ getMaxLength('allowedFacts') }}</span>
@@ -478,7 +478,7 @@
             </div>
           </div>
           <p class="field-helper">Add words or claims the AI must never use in generated variants.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('forbiddenWords')">
             <textarea matInput formControlName="forbiddenWords" rows="4" maxlength="5000" (input)="onFieldEdit('forbiddenWords')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('forbiddenWords') }} / {{ getMaxLength('forbiddenWords') }}</span>
@@ -506,7 +506,7 @@
             </div>
           </div>
           <p class="field-helper">List claim categories that require extra caution or manual review.</p>
-          <mat-form-field appearance="outline" class="brief-input">
+          <mat-form-field appearance="outline" class="brief-input" [ngClass]="getFieldHighlightClasses('sensitiveClaims')">
             <textarea matInput formControlName="sensitiveClaims" rows="4" maxlength="5000" (input)="onFieldEdit('sensitiveClaims')"></textarea>
             <mat-hint align="end">
               <span>{{ getCharacterCount('sensitiveClaims') }} / {{ getMaxLength('sensitiveClaims') }}</span>
