@@ -639,6 +639,12 @@ export class ContextComponent implements OnInit, OnDestroy {
         if (this.aiAssistantUsed) {
           this.aiAssistantExpanded = false;
         }
+      } else if (result?.action === 'retry') {
+        // Retry the generation
+        this.generateDraftBrief();
+      } else if (result?.action === 'fallback') {
+        // Retry with fallback (same as retry for now)
+        this.generateDraftBrief();
       } else if (result && result.error) {
         const errorMessage = result.error?.error?.message || result.error?.message || 'Unknown error';
         this.toast.showError('Failed to generate draft brief: ' + errorMessage);
