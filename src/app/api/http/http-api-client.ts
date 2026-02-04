@@ -25,7 +25,9 @@ import {
 import {
   OptimizationPointDto,
   CreatePointRequest,
-  UpdatePointRequest
+  UpdatePointRequest,
+  PointBriefDraftRequest,
+  PointBriefDraftResponse
 } from '../../api-contracts/points.contracts';
 import {
   VariantDto,
@@ -133,6 +135,10 @@ export class HttpApiClient implements ApiClient {
 
   pointsDelete(projectId: string, pointId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/projects/${projectId}/points/${pointId}`);
+  }
+
+  pointsBriefDraft(projectId: string, pointId: string, req: PointBriefDraftRequest): Observable<PointBriefDraftResponse> {
+    return this.http.post<PointBriefDraftResponse>(`${this.baseUrl}/projects/${projectId}/points/${pointId}/ai/brief-draft`, req);
   }
 
   // Variants

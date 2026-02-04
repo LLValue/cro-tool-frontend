@@ -129,20 +129,46 @@
 
     <mat-tab label="Optimization Brief">
       <div class="tab-content">
+        <!-- AI Brief Helper toolbar -->
+        <div class="ai-brief-helper-toolbar">
+          <div class="ai-brief-helper-heading">
+            <h3 class="ai-brief-helper-title">AI brief helper</h3>
+            <p class="ai-brief-helper-subtitle">Draft a stronger objective and context for this optimization point.</p>
+          </div>
+          <div class="ai-brief-helper-actions">
+            <button mat-raised-button color="primary" type="button" (click)="requestBriefDraft('suggest')" [disabled]="briefDraftLoading">
+              Suggest brief
+            </button>
+            <button *ngIf="canShowImproveBrief" mat-raised-button color="primary" type="button" (click)="requestBriefDraft('improve')" [disabled]="briefDraftLoading">
+              Improve my brief
+            </button>
+            <button mat-button type="button" (click)="openWhatWillBeFilledModal()">
+              What will be filled?
+            </button>
+          </div>
+        </div>
+
         <p class="mandatory-note">The mandatory fields are marked with an asterisk <span class="asterisk-red">*</span></p>
         <form [formGroup]="briefForm" (ngSubmit)="saveBrief()">
           <!-- Qualitative objective (mandatory) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('objective')">
             <label class="field-label">
-              Qualitative objective
-              <span class="required-asterisk">*</span>
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Qualitative objective', 'objective')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Qualitative objective <span class="required-asterisk">*</span></span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Qualitative objective', 'objective')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('objective')" [class]="getBadgeClass('objective')">{{ getBadgeLabel('objective') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('objective')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">State the outcome you want this element to drive (e.g., improve clarity, increase trust, drive clicks) in 1–2 sentences.</p>
             <mat-form-field appearance="outline" class="brief-input">
-              <textarea matInput formControlName="objective" rows="2"></textarea>
+              <textarea matInput formControlName="objective" rows="2" (input)="onBriefFieldInput('objective')"></textarea>
               <mat-error *ngIf="briefForm.get('objective')?.hasError('required')">
                 Qualitative objective is required
               </mat-error>
@@ -154,17 +180,24 @@
           </div>
 
           <!-- Element context (mandatory) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('context')">
             <label class="field-label">
-              Element context
-              <span class="required-asterisk">*</span>
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Element context', 'context')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Element context <span class="required-asterisk">*</span></span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Element context', 'context')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('context')" [class]="getBadgeClass('context')">{{ getBadgeLabel('context') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('context')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">Describe the user mindset and surrounding content so the AI can write copy that fits this exact spot on the page.</p>
             <mat-form-field appearance="outline" class="brief-input">
-              <textarea matInput formControlName="context" rows="2" (input)="briefForm.get('context')?.updateValueAndValidity()"></textarea>
+              <textarea matInput formControlName="context" rows="2" (input)="onBriefFieldInput('context'); briefForm.get('context')?.updateValueAndValidity()"></textarea>
               <mat-error *ngIf="briefForm.get('context')?.hasError('required')">
                 Element context is required
               </mat-error>
@@ -176,84 +209,128 @@
           </div>
 
           <!-- Good ideas (optional) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('goodIdeas')">
             <label class="field-label">
-              Good ideas
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Good ideas', 'goodIdeas')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Good ideas</span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Good ideas', 'goodIdeas')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('goodIdeas')" [class]="getBadgeClass('goodIdeas')">{{ getBadgeLabel('goodIdeas') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('goodIdeas')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">List angles or copy patterns you want to explore (e.g., reassurance-first, benefit-first, process clarity, social proof).</p>
             <app-chips-input
               [(ngModel)]="goodIdeas"
               [ngModelOptions]="{standalone: true}"
               label=""
+              (ngModelChange)="onBriefFieldInput('goodIdeas')"
               >
             </app-chips-input>
           </div>
 
           <!-- Things to avoid (optional) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('thingsToAvoid')">
             <label class="field-label">
-              Things to avoid
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Things to avoid', 'thingsToAvoid')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Things to avoid</span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Things to avoid', 'thingsToAvoid')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('thingsToAvoid')" [class]="getBadgeClass('thingsToAvoid')">{{ getBadgeLabel('thingsToAvoid') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('thingsToAvoid')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">List words, tones, or claims to avoid (e.g., overpromising, jargon, sensitive claims, aggressive urgency).</p>
             <app-chips-input
               [(ngModel)]="thingsToAvoid"
               [ngModelOptions]="{standalone: true}"
               label=""
+              (ngModelChange)="onBriefFieldInput('thingsToAvoid')"
               >
             </app-chips-input>
           </div>
 
           <!-- Must include keywords (optional) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('mustIncludeKeywords')">
             <label class="field-label">
-              Must include keywords
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must include keywords', 'mustIncludeKeywords')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Must include keywords</span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must include keywords', 'mustIncludeKeywords')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('mustIncludeKeywords')" [class]="getBadgeClass('mustIncludeKeywords')">{{ getBadgeLabel('mustIncludeKeywords') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('mustIncludeKeywords')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">Add any words or phrases that must appear in the variant (use sparingly).</p>
             <app-chips-input
               [(ngModel)]="mustIncludeKeywords"
               [ngModelOptions]="{standalone: true}"
               label=""
+              (ngModelChange)="onBriefFieldInput('mustIncludeKeywords')"
               >
             </app-chips-input>
           </div>
 
           <!-- Must avoid terms (optional) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('mustAvoidTerms')">
             <label class="field-label">
-              Must avoid terms
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must avoid terms', 'mustAvoidTerms')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Must avoid terms</span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must avoid terms', 'mustAvoidTerms')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('mustAvoidTerms')" [class]="getBadgeClass('mustAvoidTerms')">{{ getBadgeLabel('mustAvoidTerms') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('mustAvoidTerms')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">Add words or phrases to avoid for this specific element (in addition to global forbidden terms).</p>
             <app-chips-input
               [(ngModel)]="mustAvoidTerms"
               [ngModelOptions]="{standalone: true}"
               label=""
+              (ngModelChange)="onBriefFieldInput('mustAvoidTerms')"
               >
             </app-chips-input>
           </div>
 
           <!-- Min chars (optional) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('minChars')">
             <label class="field-label">
-              Min chars
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Min chars', 'minChars')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Min chars</span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Min chars', 'minChars')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('minChars')" [class]="getBadgeClass('minChars')">{{ getBadgeLabel('minChars') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('minChars')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">Set the minimum character length for this element to fit the layout and UX.</p>
             <mat-form-field appearance="outline" class="brief-input-number">
-              <input matInput type="number" formControlName="minChars" min="0">
+              <input matInput type="number" formControlName="minChars" min="0" (input)="onBriefFieldInput('minChars')">
               <mat-error *ngIf="briefForm.get('minChars')?.hasError('pattern')">
                 Only numeric values are allowed
               </mat-error>
@@ -261,16 +338,24 @@
           </div>
 
           <!-- Max chars (optional) -->
-          <div class="form-field-wrapper">
+          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('maxChars')">
             <label class="field-label">
-              Max chars
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Max chars', 'maxChars')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
+              <div>
+                <span>Max chars</span>
+                <span class="field-label-right">
+                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Max chars', 'maxChars')" matTooltip="More information">
+                    <mat-icon>info</mat-icon>
+                  </button>
+                </span>
+              </div>
+              <div>
+                <span class="brief-badge" *ngIf="getBadgeLabel('maxChars')" [class]="getBadgeClass('maxChars')">{{ getBadgeLabel('maxChars') }}</span>
+                <span class="brief-edited" *ngIf="isManualField('maxChars')">Edited</span>
+              </div>
             </label>
             <p class="field-helper">Set the maximum character length for this element to fit the layout and UX.</p>
             <mat-form-field appearance="outline" class="brief-input-number">
-              <input matInput type="number" formControlName="maxChars" min="0">
+              <input matInput type="number" formControlName="maxChars" min="0" (input)="onBriefFieldInput('maxChars')">
               <mat-error *ngIf="briefForm.get('maxChars')?.hasError('pattern')">
                 Only numeric values are allowed
               </mat-error>
