@@ -2,7 +2,7 @@
 .kpi-cards {
   display: flex;
   gap: 16px;
-  padding: 24px 0 24px 0;
+  padding: 0 0 12px 0;
   margin-bottom: 0;
 }
 
@@ -396,7 +396,6 @@
 
 // Results section layout
 .results-section {
-  margin-top: 12px;
 
   &.empty-results {
     padding: 48px 24px;
