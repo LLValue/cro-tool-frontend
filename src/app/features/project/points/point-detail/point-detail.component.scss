@@ -226,6 +226,7 @@
   
   .left-column {
     min-width: 300px;
+    padding: 24px;
   }
 
   .right-column {
@@ -233,6 +234,7 @@
     top: 4px;
     overflow: hidden;
     min-width: 480px;
+    padding: 24px;
   }
 }
 
@@ -246,6 +248,11 @@
   .filter-field {
     width: 200px;
   }
+}
+
+.variants-actions{
+  display: flex;
+  gap: 16px;
 }
 
 .empty-variants {

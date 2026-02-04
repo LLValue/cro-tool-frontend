@@ -43,12 +43,12 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   private confidenceIndex = 0;
   private startTime = Date.now();
   private longWaitThreshold = 45000; // 45 seconds
-  private minDisplayTime = 3000; // Minimum 3 seconds to show the progress
+  private minDisplayTime = 5000; // Minimum 5 seconds to show the progress
   private responseReceived = false;
   private progressSimulationActive = true;
 
-  // Status messages (rotate every 4-6s)
-  private statusMessages = [
+  // Status messages for variants generation (rotate every 4-6s)
+  private statusMessagesVariants = [
     'Building the context pack for this page and element…',
     'Applying UX best practices for this element type…',
     'Generating diverse copy options…',
@@ -60,6 +60,19 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     'Finalizing and saving variants to your project…'
   ];
 
+  // Status messages for brief generation
+  private statusMessagesBrief = [
+    'Analyzing your sources and extracting key information…',
+    'Summarizing content from URLs and documents…',
+    'Extracting business context and value propositions…',
+    'Identifying target audiences and journey stages…',
+    'Drafting tone and style guidelines…',
+    'Extracting proof points and allowed facts…',
+    'Identifying sensitive claims and forbidden words…',
+    'Validating content against compliance requirements…',
+    'Finalizing draft brief content…'
+  ];
+
   // Confidence boosters (intercalables, 1 de cada 3 mensajes)
   private confidenceMessages = [
     'Designed for regulated environments and review workflows.',
@@ -67,7 +80,8 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     'Optimized for readability on mobile and desktop.'
   ];
 
-  steps: ProgressStep[] = [
+  // Steps for variants generation
+  stepsVariants: ProgressStep[] = [
     { label: 'Preparing context pack', status: 'pending' },
     { label: 'Loading UX best practices', status: 'pending' },
     { label: 'Generating candidate variants', status: 'pending' },
@@ -78,10 +92,35 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     { label: 'Finalizing and saving results', status: 'pending' }
   ];
 
+  // Steps for brief generation
+  stepsBrief: ProgressStep[] = [
+    { label: 'Analyzing sources', status: 'pending' },
+    { label: 'Extracting business context', status: 'pending' },
+    { label: 'Drafting journey context', status: 'pending' },
+    { label: 'Extracting guardrails and proof points', status: 'pending' },
+    { label: 'Validating content quality', status: 'pending' },
+    { label: 'Reviewing compliance requirements', status: 'pending' },
+    { label: 'Finalizing draft brief', status: 'pending' }
+  ];
+
+  steps: ProgressStep[] = [];
+  private statusMessages: string[] = [];
+
   constructor(
     public dialogRef: MatDialogRef<GenerateVariantsProgressComponent>,
     @Inject(MAT_DIALOG_DATA) public data: GenerateVariantsProgressData
   ) {
+    // Determine if this is brief generation or variants generation
+    const isBriefGeneration = this.data.pointName === 'Brief Generation';
+    
+    if (isBriefGeneration) {
+      this.statusMessages = this.statusMessagesBrief;
+      this.steps = this.stepsBrief;
+    } else {
+      this.statusMessages = this.statusMessagesVariants;
+      this.steps = this.stepsVariants;
+    }
+    
     this.currentMessage = this.statusMessages[0];
   }
 
@@ -131,15 +170,26 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
 
   private startProgressSimulation(): void {
     const elapsed = () => Date.now() - this.startTime;
+    const isBriefGeneration = this.data.pointName === 'Brief Generation';
+    const totalSteps = this.steps.length;
     
     // Progress checkpoints based on timing
-    const checkpoints = [
-      { time: 0, progress: 10, stepIndex: 0 },      // 0-10% (instant)
-      { time: 15000, progress: 35, stepIndex: 1 }, // 10-35% (15-20s)
-      { time: 30000, progress: 55, stepIndex: 2 }, // 35-55% (10-15s)
-      { time: 45000, progress: 75, stepIndex: 3 }, // 55-75% (10-15s)
-      { time: 60000, progress: 90, stepIndex: 4 }  // 75-90% (5-10s)
-    ];
+    // For brief generation (7 steps) vs variants (8 steps)
+    const checkpoints = isBriefGeneration
+      ? [
+          { time: 0, progress: 10, stepIndex: 0 },      // 0-10% (instant)
+          { time: 15000, progress: 30, stepIndex: 1 }, // 10-30% (15s)
+          { time: 30000, progress: 50, stepIndex: 2 }, // 30-50% (15s)
+          { time: 45000, progress: 70, stepIndex: 3 }, // 50-70% (15s)
+          { time: 60000, progress: 90, stepIndex: 5 }  // 70-90% (15s) - skip to step 5 for brief
+        ]
+      : [
+          { time: 0, progress: 10, stepIndex: 0 },      // 0-10% (instant)
+          { time: 15000, progress: 35, stepIndex: 1 }, // 10-35% (15-20s)
+          { time: 30000, progress: 55, stepIndex: 2 }, // 35-55% (10-15s)
+          { time: 45000, progress: 75, stepIndex: 3 }, // 55-75% (10-15s)
+          { time: 60000, progress: 90, stepIndex: 4 }  // 75-90% (5-10s)
+        ];
 
     // Update progress every 200ms
     interval(200).pipe(
@@ -162,7 +212,8 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
 
       if (time >= checkpoints[checkpoints.length - 1].time) {
         currentCheckpoint = checkpoints[checkpoints.length - 1];
-        nextCheckpoint = { time: Infinity, progress: 99, stepIndex: 7 };
+        const lastStepIndex = totalSteps - 1;
+        nextCheckpoint = { time: Infinity, progress: 99, stepIndex: lastStepIndex };
       }
 
       // Interpolate progress between checkpoints
@@ -186,10 +237,16 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
 
       // Handle long wait messages
       if (time > this.longWaitThreshold && !this.isComplete) {
-        const longWaitMessages = [
-          'Still working—running additional checks for quality and compliance…',
-          'Almost there—finalizing results…'
-        ];
+        const isBriefGeneration = this.data.pointName === 'Brief Generation';
+        const longWaitMessages = isBriefGeneration 
+          ? [
+              'Still analyzing sources—ensuring comprehensive coverage…',
+              'Almost there—finalizing draft brief content…'
+            ]
+          : [
+              'Still working—running additional checks for quality and compliance…',
+              'Almost there—finalizing results…'
+            ];
         const longWaitIndex = Math.floor((time - this.longWaitThreshold) / 10000) % longWaitMessages.length;
         this.currentMessage = longWaitMessages[longWaitIndex];
       }
@@ -286,7 +343,11 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   }
 
   private handleError(err: any): void {
-    this.error = err?.message || 'An error occurred while generating variants. Please try again.';
+    const isBriefGeneration = this.data.pointName === 'Brief Generation';
+    const defaultError = isBriefGeneration
+      ? 'An error occurred while generating the draft brief. Please try again.'
+      : 'An error occurred while generating variants. Please try again.';
+    this.error = err?.message || defaultError;
     this.steps.forEach(step => {
       if (step.status === 'in-progress') {
         step.status = 'pending';

@@ -310,10 +310,15 @@
                   <mat-option value="discarded">Discarded</mat-option>
                 </mat-select>
               </mat-form-field>
-              <button mat-raised-button color="primary" (click)="generateVariants()">
-                <mat-icon>auto_awesome</mat-icon>
-                Generate Variants
-              </button>
+              <div class="variants-actions">
+                <button mat-raised-button color="primary" (click)="generateVariants()">
+                  <mat-icon>auto_awesome</mat-icon>
+                  Generate Variants
+                </button>
+                <button *ngIf="variants.length > 0" mat-raised-button (click)="deleteAllVariants()">
+                  Borrar todas
+                </button>
+              </div>
             </div>
 
             <div *ngIf="filteredVariants.length === 0" class="empty-variants">

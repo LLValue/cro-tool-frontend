@@ -33,7 +33,9 @@ import {
 } from '../api-contracts/goals.contracts';
 import {
   ReportingResponse,
-  SimulationStartRequest
+  SimulationStartRequest,
+  SimulateMonthResponse,
+  ResetResponse
 } from '../api-contracts/reporting.contracts';
 
 export interface ApiClient {
@@ -80,6 +82,8 @@ export interface ApiClient {
   // Reporting
   reportingGet(projectId: string): Observable<ReportingResponse>;
   simulateStart(projectId: string, req: SimulationStartRequest): Observable<ReportingResponse>;
+  simulateMonth(projectId: string): Observable<SimulateMonthResponse>;
+  resetResults(projectId: string): Observable<ResetResponse>;
 
   // Proxy
   proxyFetch(url: string): Observable<{ html: string }>;

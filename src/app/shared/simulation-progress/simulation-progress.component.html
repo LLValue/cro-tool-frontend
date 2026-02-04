@@ -1,0 +1,66 @@
+<h2 mat-dialog-title>
+  <mat-icon>trending_up</mat-icon>
+  Simulating 30 days
+</h2>
+
+<mat-dialog-content>
+  <div class="progress-container" *ngIf="!isComplete && !error">
+    <div class="progress-section">
+      <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+      <div class="progress-text">{{ Math.round(progress) }}%</div>
+    </div>
+
+    <div class="status-message">
+      <p>{{ currentMessage }}</p>
+      <p class="time-note" *ngIf="progress < 90">This can take up to ~60 seconds.</p>
+    </div>
+
+    <div class="steps-list">
+      <div
+        *ngFor="let step of steps"
+        class="step-item"
+        [class.pending]="step.status === 'pending'"
+        [class.in-progress]="step.status === 'in-progress'"
+        [class.done]="step.status === 'done'">
+        <mat-icon class="step-icon">
+          <span *ngIf="step.status === 'pending'">radio_button_unchecked</span>
+          <span *ngIf="step.status === 'in-progress'">
+            <span class="spinner">autorenew</span>
+          </span>
+          <span *ngIf="step.status === 'done'">check_circle</span>
+        </mat-icon>
+        <span class="step-label">{{ step.label }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="success-container" *ngIf="isComplete && !error">
+    <div class="success-icon">
+      <mat-icon>check_circle</mat-icon>
+    </div>
+    <h3>Done</h3>
+    <p class="success-message">Simulation complete. Results are ready.</p>
+  </div>
+
+  <div class="error-container" *ngIf="error">
+    <div class="error-icon">
+      <mat-icon>error</mat-icon>
+    </div>
+    <h3>Simulation failed</h3>
+    <p class="error-message">{{ error }}</p>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-raised-button color="primary" (click)="cancel()" *ngIf="!isComplete && !error">
+    Cancel
+  </button>
+  <button mat-raised-button color="primary" (click)="cancel()" *ngIf="isComplete && !error">
+    <mat-icon>check</mat-icon>
+    Close
+  </button>
+  <button mat-raised-button color="primary" (click)="cancel()" *ngIf="error">
+    <mat-icon>close</mat-icon>
+    Close
+  </button>
+</mat-dialog-actions>

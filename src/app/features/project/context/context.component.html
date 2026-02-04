@@ -34,6 +34,7 @@
           <mat-form-field appearance="outline" class="url-input-field">
             <input 
               matInput 
+              placeholder="Paste a URL and press Enter (max 5)"
               [formControl]="urlInputControl"
               (keydown.enter)="addUrl($event)">
           </mat-form-field>
@@ -287,13 +288,14 @@
           </div>
           <p class="field-helper">Set the language and locale format for the copy (e.g., en-GB, es-ES).</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <input matInput formControlName="language" maxlength="50" (input)="onFieldEdit('language')">
+            <mat-select formControlName="language" (selectionChange)="onFieldEdit('language')">
+              <mat-option *ngFor="let locale of locales" [value]="locale.value">
+                {{ locale.label }}
+              </mat-option>
+            </mat-select>
             <mat-error *ngIf="(globalForm.get('language')?.touched || journeyContextSubmitted) && globalForm.get('language')?.hasError('required')">
               Language is required
             </mat-error>
-            <mat-hint align="end">
-              <span>{{ getCharacterCount('language') }} / {{ getMaxLength('language') }}</span>
-            </mat-hint>
           </mat-form-field>
         </div>
 
@@ -364,57 +366,27 @@
         <div class="form-field-wrapper">
           <div class="field-label-row">
             <label class="field-label">
-              Funnel stage
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Funnel stage', 'funnelStage')" matTooltip="More information">
+              Funnel stage and next action
+              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Funnel stage and next action', 'funnelStageAndNextAction')" matTooltip="More information">
                 <mat-icon>info</mat-icon>
               </button>
             </label>
-            <div class="field-badges" *ngIf="getFieldBadge('funnelStage')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('funnelStage') === 'Auto-filled (Draft)'"
-                    [class.badge-review]="getFieldBadge('funnelStage') === 'Needs review'"
-                    [class.badge-manual]="getFieldBadge('funnelStage') === 'Manual'"
-                    [class.badge-missing]="getFieldBadge('funnelStage') === 'Missing'">
-                {{ getFieldBadge('funnelStage') }}
+            <div class="field-badges" *ngIf="getFieldBadge('funnelStageAndNextAction')">
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('funnelStageAndNextAction') === 'Auto-filled (Draft)'"
+                    [class.badge-review]="getFieldBadge('funnelStageAndNextAction') === 'Needs review'"
+                    [class.badge-manual]="getFieldBadge('funnelStageAndNextAction') === 'Manual'"
+                    [class.badge-missing]="getFieldBadge('funnelStageAndNextAction') === 'Missing'">
+                {{ getFieldBadge('funnelStageAndNextAction') }}
               </span>
-              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('funnelStage')">Edited</span>
-              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('funnelStage')" matTooltip="Format issue detected">warning</mat-icon>
+              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('funnelStageAndNextAction')">Edited</span>
+              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('funnelStageAndNextAction')" matTooltip="Format issue detected">warning</mat-icon>
             </div>
           </div>
-          <p class="field-helper">Choose where the user is in the journey.</p>
+          <p class="field-helper">Choose where the user is in the journey and the single action you want them to take next.</p>
           <mat-form-field appearance="outline" class="brief-input">
-            <mat-select formControlName="funnelStage" (selectionChange)="onFieldEdit('funnelStage')">
-              <mat-option value="">None</mat-option>
-              <mat-option value="discovery">Discovery (learn)</mat-option>
-              <mat-option value="consideration">Consideration (compare)</mat-option>
-              <mat-option value="conversion">Conversion (apply)</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <div class="form-field-wrapper">
-          <div class="field-label-row">
-            <label class="field-label">
-              Next action
-              <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Next action', 'nextAction')" matTooltip="More information">
-                <mat-icon>info</mat-icon>
-              </button>
-            </label>
-            <div class="field-badges" *ngIf="getFieldBadge('nextAction')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('nextAction') === 'Auto-filled (Draft)'"
-                    [class.badge-review]="getFieldBadge('nextAction') === 'Needs review'"
-                    [class.badge-manual]="getFieldBadge('nextAction') === 'Manual'"
-                    [class.badge-missing]="getFieldBadge('nextAction') === 'Missing'">
-                {{ getFieldBadge('nextAction') }}
-              </span>
-              <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('nextAction')">Edited</span>
-              <mat-icon class="warning-icon" *ngIf="hasFormatIssue('nextAction')" matTooltip="Format issue detected">warning</mat-icon>
-            </div>
-          </div>
-          <p class="field-helper">The single action you want them to take next (one short line).</p>
-          <mat-form-field appearance="outline" class="brief-input">
-            <textarea matInput formControlName="nextAction" rows="2" maxlength="5000" (input)="onFieldEdit('nextAction')"></textarea>
+            <input matInput formControlName="funnelStageAndNextAction" maxlength="5000" (input)="onFieldEdit('funnelStageAndNextAction')">
             <mat-hint align="end">
-              <span>{{ getCharacterCount('nextAction') }} / {{ getMaxLength('nextAction') }}</span>
+              <span>{{ getCharacterCount('funnelStageAndNextAction') }} / {{ getMaxLength('funnelStageAndNextAction') }}</span>
             </mat-hint>
           </mat-form-field>
         </div>

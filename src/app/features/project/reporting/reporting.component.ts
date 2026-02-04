@@ -1,8 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, Inject, HostListener, ViewChild } from '@angular/core';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatTableModule } from '@angular/material/table';
+import { MatTable, MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
@@ -13,9 +12,45 @@ import { MatCardModule } from '@angular/material/card';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription, combineLatest } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { Chart, ChartConfiguration } from 'chart.js';
+
+/** Plugin: draws "Winner" badge next to the first bar in horizontal bar charts. */
+const chartWinnerBadgePlugin = {
+  id: 'chartWinnerBadge',
+  afterDraw(chart: Chart) {
+    const cfg = (chart as unknown as { config?: { type?: string } }).config;
+    if (cfg?.type !== 'bar' || !chart.options?.indexAxis || chart.options.indexAxis !== 'y') return;
+    const meta = chart.getDatasetMeta(0);
+    if (!meta?.data?.length) return;
+    const firstBar = meta.data[0] as unknown as { x: number; y: number };
+    const ctx = chart.ctx;
+    const x = firstBar.x + 8;
+    const y = firstBar.y;
+    const padding = 6;
+    const text = 'Winner';
+    ctx.save();
+    ctx.font = '11px Inter, system-ui, sans-serif';
+    const width = ctx.measureText(text).width + padding * 2;
+    const height = 18;
+    const left = x;
+    const top = y - height / 2;
+    ctx.fillStyle = 'rgba(46, 125, 50, 0.95)';
+    ctx.beginPath();
+    if (typeof (ctx as CanvasRenderingContext2D & { roundRect?: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect === 'function') {
+      (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(left, top, width, height, 4);
+    } else {
+      ctx.rect(left, top, width, height);
+    }
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, left + width / 2, y);
+    ctx.restore();
+  }
+};
+Chart.register(chartWinnerBadgePlugin);
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint, Variant, ReportingMetrics, Goal } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
@@ -27,12 +62,22 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { API_CLIENT } from '../../../api/api-client.token';
 import { ApiClient } from '../../../api/api-client';
 import { take } from 'rxjs/operators';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { SimulationProgressComponent } from '../../../shared/simulation-progress/simulation-progress.component';
+import { 
+  CombinationRow, 
+  CombinationPoint,
+  SimulateMonthResponse, 
+  SimulationFrame,
+  CombinationMetrics 
+} from '../../../api-contracts/reporting.contracts';
 
 @Component({
   selector: 'app-reporting',
   standalone: true,
   imports: [
-    MatTabsModule,
     MatTableModule,
     MatButtonModule,
     MatIconModule,
@@ -41,6 +86,8 @@ import { take } from 'rxjs/operators';
     MatFormFieldModule,
     MatSelectModule,
     MatCardModule,
+    MatSidenavModule,
+    MatTooltipModule,
     FormsModule,
     CommonModule,
     PageHeaderComponent,
@@ -53,8 +100,16 @@ import { take } from 'rxjs/operators';
       transition('* => *', [
         query('tr.mat-mdc-row', [
           style({ opacity: 0, transform: 'translateX(-20px)' }),
-          stagger(100, [
+          stagger(50, [
             animate('400ms ease-out', style({ opacity: 1, transform: 'translateX(0)' }))
+          ])
+        ], { optional: true })
+      ]),
+      transition('out => in', [
+        query('tr.mat-mdc-row', [
+          style({ opacity: 0.5, transform: 'translateY(-10px)' }),
+          stagger(30, [
+            animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
           ])
         ], { optional: true })
       ])
@@ -75,7 +130,25 @@ export class ReportingComponent implements OnInit, OnDestroy {
   selectedGoalType: string = 'all';
   selectedGoalId: string = 'all';
   simulating = false;
+  isSimulating = false; // For 30-day simulation
   animatingMetrics = false;
+  
+  // New properties for 30-day simulation
+  combinationRows: CombinationRow[] = [];
+  simulationFrames: SimulationFrame[] = [];
+  controlMetrics: CombinationMetrics | null = null;
+  currentFrameIndex = 0;
+  previewDrawerOpen = false;
+  selectedCombinationForPreview: CombinationRow | null = null;
+  /** Pending frame animation timeout; cleared on Reset. */
+  private animationTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  /** Current top combos for chart 2 tooltip (CR · Uplift). */
+  topCombosForChart: CombinationRow[] = [];
+  
+  // KPI cards data
+  controlCR = 0;
+  bestCR = 0;
+  uplift = 0;
   previousMetrics: ReportingMetrics[] = [];
   previewHtml: string = '';
   originalPreviewHtml: string = '';
@@ -91,9 +164,13 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }> = new Map();
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   displayedColumnsWithExpand: string[] = ['expand', 'variant', 'users', 'conversions', 'conversionRate', 'confidence'];
+  combinationColumnsWithExpand: string[] = ['expand', 'combination', 'users', 'conversions', 'conversionRate', 'uplift', 'winProbability', 'preview'];
   
+  @ViewChild('combinationTable') combinationTable: MatTable<CombinationRow> | null = null;
+
   // Track expanded rows
   expandedRows: Set<string> = new Set();
+  expandedCombinations: Set<string> = new Set();
   variantPreviewHtml: Map<string, string> = new Map();
   variantHighlightSelector: Map<string, string> = new Map();
   variantLoading: Map<string, boolean> = new Map();
@@ -103,59 +180,18 @@ export class ReportingComponent implements OnInit, OnDestroy {
   currentExpandedVariantHtml: string = '';
   private subscriptions = new Subscription();
 
-  // Chart configurations
-  public lineChartType: ChartType = 'line' as const;
-  public pieChartType: ChartType = 'pie' as const;
-  public conversionRateChartData: ChartConfiguration<'line'>['data'] = {
+  // Chart data for simulation (ticket)
+  public conversionRateOverTimeChartData: ChartConfiguration<'line'>['data'] = {
     labels: [],
     datasets: []
   };
-  public conversionRateChartOptions: ChartConfiguration<'line'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'top'
-      },
-      title: {
-        display: true,
-        text: 'Conversion Rate Over Time'
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: function(value) {
-            return (Number(value) * 100).toFixed(1) + '%';
-          }
-        }
-      }
-    }
-  };
-
-  public distributionChartData: ChartConfiguration<'pie'>['data'] = {
+  public conversionRateOverTimeChartOptions: ChartConfiguration<'line'>['options'] = {};
+  
+  public winProbabilityChartData: ChartConfiguration<'bar'>['data'] = {
     labels: [],
-    datasets: [{
-      data: [],
-      backgroundColor: []
-    }]
+    datasets: []
   };
-  public distributionChartOptions: ChartConfiguration<'pie'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'right'
-      },
-      title: {
-        display: true,
-        text: 'Conversions Distribution by Variant'
-      }
-    }
-  };
+  public winProbabilityChartOptions: ChartConfiguration<'bar'>['options'] = {};
 
   constructor(
     private route: ActivatedRoute,
@@ -166,6 +202,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
     private projectsApi: ProjectsApiService,
     private previewService: PreviewService,
     private sanitizer: DomSanitizer,
+    private dialog: MatDialog,
     @Inject(API_CLIENT) private apiClient: ApiClient
   ) {}
 
@@ -349,9 +386,6 @@ export class ReportingComponent implements OnInit, OnDestroy {
     } else {
       this.pointMetrics = [];
     }
-
-    // Update charts
-    this.updateCharts();
   }
 
   private groupMetricsByGoal(metrics: ReportingMetrics[]): void {
@@ -406,84 +440,6 @@ export class ReportingComponent implements OnInit, OnDestroy {
 
   onGoalChange(): void {
     this.recomputeMetrics();
-  }
-
-  private updateCharts(): void {
-    const metrics = this.selectedPointId ? this.pointMetrics : this.globalMetrics;
-    
-    if (metrics.length === 0) {
-      this.conversionRateChartData = {
-        labels: [],
-        datasets: []
-      };
-      this.distributionChartData = {
-        labels: [],
-        datasets: [{
-          data: [],
-          backgroundColor: []
-        }]
-      };
-      return;
-    }
-
-    // Line chart: Conversion rates over time (simulated with days)
-    const days = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
-    const datasets = metrics.slice(0, 5).map((metric, index) => {
-      const variant = this.variants.find(v => v.id === metric.variantId);
-      const baseRate = metric.conversionRate;
-      // Simulate daily variation
-      const data = days.map((_, dayIndex) => {
-        const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
-        return Math.max(0, Math.min(1, baseRate + variation));
-      });
-      
-      const colors = [
-        'rgba(126, 244, 115, 0.8)',
-        'rgba(33, 150, 243, 0.8)',
-        'rgba(156, 39, 176, 0.8)',
-        'rgba(255, 152, 0, 0.8)',
-        'rgba(244, 67, 54, 0.8)'
-      ];
-      
-      return {
-        label: variant?.text || `Variant ${index + 1}`,
-        data: data,
-        borderColor: colors[index % colors.length],
-        backgroundColor: colors[index % colors.length].replace('0.8', '0.2'),
-        tension: 0.4,
-        fill: false
-      };
-    });
-
-    this.conversionRateChartData = {
-      labels: days,
-      datasets: datasets
-    };
-
-    // Pie chart: Distribution of conversions
-    const pieLabels = metrics.map(m => {
-      const variant = this.variants.find(v => v.id === m.variantId);
-      return variant?.text || 'Unknown';
-    });
-    const pieData = metrics.map(m => m.conversions);
-    const pieColors = [
-      'rgba(126, 244, 115, 0.8)',
-      'rgba(33, 150, 243, 0.8)',
-      'rgba(156, 39, 176, 0.8)',
-      'rgba(255, 152, 0, 0.8)',
-      'rgba(244, 67, 54, 0.8)',
-      'rgba(76, 175, 80, 0.8)',
-      'rgba(233, 30, 99, 0.8)',
-      'rgba(63, 81, 181, 0.8)'
-    ];
-
-    this.distributionChartData = {
-      labels: pieLabels,
-      datasets: [{
-        data: pieData,
-        backgroundColor: pieColors.slice(0, pieData.length)
-      }]
-    };
   }
 
   private applyGoalTypeFilter(metrics: ReportingMetrics[], goalType: string): ReportingMetrics[] {
@@ -938,6 +894,512 @@ export class ReportingComponent implements OnInit, OnDestroy {
 
   getMetricsByGoalEntries(): Array<{key: string, value: {goal: Goal, metrics: ReportingMetrics[]}}> {
     return Array.from(this.metricsByGoal.entries()).map(([key, value]) => ({ key, value }));
+  }
+
+  // New methods for 30-day simulation
+  simulateMonth(): void {
+    if (this.isSimulating) {
+      return;
+    }
+
+    this.isSimulating = true;
+    
+    const dialogRef = this.dialog.open(SimulationProgressComponent, {
+      width: '600px',
+      disableClose: true,
+      data: {
+        simulateObservable: this.apiClient.simulateMonth(this.projectId)
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      this.isSimulating = false;
+      
+      if (result && result.success) {
+        const response = result.data as SimulateMonthResponse;
+        this.combinationRows = response.combinations;
+        this.simulationFrames = response.frames;
+        this.controlMetrics = response.controlMetrics;
+        
+        this.initializeCharts();
+        this.startSimulationAnimation();
+        // Toast shown when animation completes in startSimulationAnimation
+      } else if (result && result.cancelled) {
+        // User cancelled
+      } else if (result && !result.success) {
+        this.toast.showError('Simulation failed. Please try again.');
+      }
+    });
+  }
+
+  resetResults(): void {
+    if (this.isSimulating) {
+      return;
+    }
+
+    // Stop any animation in progress (ticket: "Debe parar cualquier animación en curso")
+    if (this.animationTimeoutId != null) {
+      clearTimeout(this.animationTimeoutId);
+      this.animationTimeoutId = null;
+    }
+    this.animatingMetrics = false;
+
+    const clearResultsState = () => {
+      this.combinationRows = [];
+      this.simulationFrames = [];
+      this.controlMetrics = null;
+      this.currentFrameIndex = 0;
+      this.controlCR = 0;
+      this.bestCR = 0;
+      this.uplift = 0;
+      this.topCombosForChart = [];
+      this.initializeCharts();
+      this.cdr.detectChanges();
+    };
+
+    this.apiClient.resetResults(this.projectId).subscribe({
+      next: () => {
+        clearResultsState();
+        this.toast.showSuccess('Results reset successfully.');
+      },
+      error: (err) => {
+        // Still clear UI so demo works when reset endpoint is not implemented
+        clearResultsState();
+        this.toast.showError('Failed to reset results. Please try again.');
+        console.error('Reset error:', err);
+      }
+    });
+  }
+
+  private startSimulationAnimation(): void {
+    if (this.simulationFrames.length === 0) {
+      this.updateKPIs();
+      this.markWinnersAndLosers();
+      this.toast.showSuccess('Simulation completed.');
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // Store previous metrics for comparison
+    const previousMetricsMap = new Map<string, CombinationMetrics>();
+    this.combinationRows.forEach(combo => {
+      previousMetricsMap.set(combo.comboId, { ...combo.metrics });
+    });
+
+    const frameIntervalMs = 120; // ~3.6s for 30 frames
+    let frameIndex = 0;
+    this.animatingMetrics = true;
+
+    const animateFrame = () => {
+      if (frameIndex >= this.simulationFrames.length) {
+        // Animation complete
+        this.animatingMetrics = false;
+        this.markWinnersAndLosers();
+        this.toast.showSuccess('Simulation completed.');
+        this.cdr.detectChanges();
+        return;
+      }
+
+      const frame = this.simulationFrames[frameIndex];
+      this.currentFrameIndex = frameIndex;
+      
+      // Update combination metrics from frame and track changes
+      frame.combos.forEach(frameCombo => {
+        const combo = this.combinationRows.find(c => c.comboId === frameCombo.comboId);
+        if (combo) {
+          const previousMetrics = previousMetricsMap.get(combo.comboId);
+          combo.metrics = {
+            users: frameCombo.users,
+            conversions: frameCombo.conversions,
+            conversionRate: frameCombo.conversionRate,
+            uplift: frameCombo.uplift,
+            winProbability: frameCombo.winProbability
+          };
+          
+          // Update previous metrics map
+          previousMetricsMap.set(combo.comboId, { ...combo.metrics });
+        }
+      });
+
+      // Reorder rows by conversion rate (descending)
+      this.combinationRows.sort((a, b) => b.metrics.conversionRate - a.metrics.conversionRate);
+      
+      // Update charts
+      this.updateChartsFromFrame(frame);
+      
+      // Update KPIs
+      this.updateKPIs();
+      
+      // Force change detection to trigger animations
+      this.cdr.detectChanges();
+      
+      // Add a small delay to allow DOM to update before next frame
+      frameIndex++;
+      if (frameIndex < this.simulationFrames.length) {
+        this.animationTimeoutId = setTimeout(animateFrame, frameIntervalMs);
+      } else {
+        this.animationTimeoutId = setTimeout(() => {
+          this.animationTimeoutId = null;
+          this.animatingMetrics = false;
+          this.markWinnersAndLosers();
+          this.toast.showSuccess('Simulation completed.');
+          this.cdr.detectChanges();
+        }, frameIntervalMs);
+      }
+    };
+
+    animateFrame();
+  }
+
+  private updateChartsFromFrame(frame: SimulationFrame): void {
+    // Update conversion rate over time chart
+    const dayLabel = `Day ${frame.day}`;
+    const controlCR = this.controlMetrics?.conversionRate || 0;
+    
+    // Find best combination CR for this frame
+    const bestCombo = frame.combos.reduce((best, current) => 
+      current.conversionRate > best.conversionRate ? current : best,
+      frame.combos[0] || { conversionRate: 0 }
+    );
+
+    // Add data point to chart
+    if (!this.conversionRateOverTimeChartData.labels) {
+      this.conversionRateOverTimeChartData.labels = [];
+    }
+    if (this.conversionRateOverTimeChartData.labels.length < frame.day) {
+      this.conversionRateOverTimeChartData.labels.push(dayLabel);
+      
+      if (this.conversionRateOverTimeChartData.datasets.length === 0) {
+        this.conversionRateOverTimeChartData.datasets = [
+          {
+            label: 'Control',
+            data: [],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+          },
+          {
+            label: 'Best combination',
+            data: [],
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            tension: 0.1
+          }
+        ];
+      }
+      
+      this.conversionRateOverTimeChartData.datasets[0].data.push(controlCR);
+      this.conversionRateOverTimeChartData.datasets[1].data.push(bestCombo.conversionRate);
+    }
+
+    // Update win probability chart (reorder every 2-3 frames to avoid too much movement)
+    if (frame.day % 3 === 0) {
+      const topCombos = [...this.combinationRows]
+        .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
+        .slice(0, 8);
+      this.topCombosForChart = topCombos;
+      this.winProbabilityChartData.labels = topCombos.map(c => this.getCombinationLabel(c));
+      this.winProbabilityChartData.datasets = [{
+        label: 'Win Probability',
+        data: topCombos.map(c => c.metrics.winProbability * 100),
+        backgroundColor: topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)')
+      }];
+    }
+  }
+
+  private initializeCharts(): void {
+    // Initialize conversion rate over time chart
+    this.conversionRateOverTimeChartData = {
+      labels: [],
+      datasets: []
+    };
+    
+    this.conversionRateOverTimeChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        title: {
+          display: true,
+          text: 'Conversion rate over time'
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label ?? ''}: ${(Number(context.parsed.y) * 100).toFixed(2)}%`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: (value: unknown) => (Number(value) * 100).toFixed(2) + '%'
+          }
+        }
+      }
+    };
+
+    // Initialize win probability chart (and topCombosForChart for tooltip)
+    const topCombos = [...this.combinationRows]
+      .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
+      .slice(0, 8);
+    this.topCombosForChart = topCombos;
+    this.winProbabilityChartData = {
+      labels: topCombos.map(c => this.getCombinationLabel(c)),
+      datasets: topCombos.length ? [{
+        label: 'Win Probability',
+        data: topCombos.map(c => c.metrics.winProbability * 100),
+        backgroundColor: topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)')
+      }] : []
+    };
+    
+    this.winProbabilityChartOptions = {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { right: 72 }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        title: {
+          display: true,
+          text: 'Top combinations (win probability)'
+        },
+        tooltip: {
+          callbacks: {
+            afterLabel: (context) => {
+              const idx = context.dataIndex;
+              const combo = this.topCombosForChart[idx];
+              if (!combo) return '';
+              const cr = this.formatConversionRate(combo.metrics.conversionRate, combo.metrics.users);
+              const uplift = this.formatUplift(combo.metrics.uplift, combo.metrics.users);
+              return `CR ${cr} · Uplift ${uplift}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: (value: unknown) => Number(value).toFixed(0) + '%'
+          }
+        }
+      }
+    };
+  }
+
+  private updateKPIs(): void {
+    if (this.controlMetrics) {
+      this.controlCR = this.controlMetrics.conversionRate;
+    }
+    
+    if (this.combinationRows.length > 0) {
+      const best = this.combinationRows[0];
+      this.bestCR = best.metrics.conversionRate;
+      this.uplift = best.metrics.uplift;
+    }
+  }
+
+  private markWinnersAndLosers(): void {
+    // Mark top row as winner
+    // Mark bottom 20% as discarded
+    const bottomThreshold = Math.floor(this.combinationRows.length * 0.2);
+    // This will be handled in the template with CSS classes
+  }
+
+  // Formatting methods
+  formatCombinationLabel(combo: CombinationRow, truncated: boolean = true): string {
+    if (truncated) {
+      return combo.points.map(p => {
+        const truncatedText = p.variantText.length > 12 
+          ? p.variantText.substring(0, 12) + '…' 
+          : p.variantText;
+        return `${p.pointName}: "${truncatedText}"`;
+      }).join('\n');
+    } else {
+      return combo.points.map(p => 
+        `${p.pointName}: ${p.variantText}`
+      ).join('\n');
+    }
+  }
+
+  getCombinationLabel(combo: CombinationRow): string {
+    return combo.points.map(p => p.pointName).join(' + ');
+  }
+
+  formatUplift(uplift: number, users: number = 0): string {
+    if (users < 50 || users === 0) return '—';
+    if (uplift === 0) return '—';
+    const sign = uplift > 0 ? '+' : '';
+    return `${sign}${(uplift * 100).toFixed(2)}%`;
+  }
+
+  formatConversionRate(cr: number, users: number): string {
+    if (users < 50) return '—';
+    return `${(cr * 100).toFixed(2)}%`;
+  }
+
+  formatWinProbability(wp: number, users: number): string {
+    if (users < 50) return '—';
+    return `${(wp * 100).toFixed(0)}%`;
+  }
+
+  /** Per-point contribution: uplift when backend exposes pointUplift. */
+  formatPointUplift(point: CombinationPoint): string {
+    if (point.pointUplift == null) return '—';
+    const sign = point.pointUplift > 0 ? '+' : '';
+    return `${sign}${(point.pointUplift * 100).toFixed(2)}%`;
+  }
+
+  /** Per-point contribution: win probability when backend exposes pointWinProbability. */
+  formatPointWinProbability(point: CombinationPoint): string {
+    if (point.pointWinProbability == null) return '—';
+    return `${(point.pointWinProbability * 100).toFixed(0)}%`;
+  }
+
+  /** True when backend exposes pointWinProbability and this point has the highest in the combination. */
+  isWinningPoint(point: CombinationPoint, combo: CombinationRow): boolean {
+    const withProb = combo.points.filter(p => p.pointWinProbability != null);
+    if (withProb.length === 0) return false;
+    const maxProb = Math.max(...withProb.map(p => p.pointWinProbability!));
+    return point.pointWinProbability != null && point.pointWinProbability >= maxProb;
+  }
+
+  truncateText(text: string, maxLength: number): string {
+    const t = (text ?? '').trim();
+    if (!t) return '—';
+    if (t.length <= maxLength) return t;
+    return t.substring(0, maxLength) + '…';
+  }
+
+  // Preview methods
+  previewCombination(combo: CombinationRow): void {
+    this.selectedCombinationForPreview = combo;
+    this.previewDrawerOpen = true;
+    
+    // Apply combination to preview
+    this.applyCombinationToPreview(combo);
+    
+    // Force change detection
+    this.cdr.detectChanges();
+  }
+
+  private applyCombinationToPreview(combo: CombinationRow): void {
+    if (!this.originalPreviewHtml) {
+      this.loadPreview();
+      // Retry after a short delay
+      setTimeout(() => {
+        if (this.originalPreviewHtml) {
+          this.applyCombinationToPreview(combo);
+        }
+      }, 500);
+      return;
+    }
+
+    // Apply all variants in combination using applyVariantsToHtml
+    const variants = combo.points.map(point => {
+      const variant = this.variants.find(v => v.id === point.variantId);
+      return variant || { id: point.variantId, text: point.variantText, optimizationPointId: point.pointId } as Variant;
+    });
+    const points = combo.points.map(point => {
+      const optPoint = this.points.find(p => p.id === point.pointId);
+      return optPoint || { id: point.pointId, selector: point.cssSelector, name: point.pointName } as OptimizationPoint;
+    });
+    
+    this.previewHtml = this.previewService.applyVariantsToHtml(
+      this.originalPreviewHtml,
+      variants,
+      points
+    );
+    
+    // Highlight all updated elements (fade 800–1200ms per spec)
+    const selectors = combo.points.map(p => p.cssSelector).filter(Boolean).join(', ');
+    this.highlightSelector = selectors;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.highlightSelector = '';
+      this.cdr.detectChanges();
+    }, 1100);
+  }
+
+  closePreviewDrawer(): void {
+    this.previewDrawerOpen = false;
+    this.selectedCombinationForPreview = null;
+    this.highlightSelector = '';
+    this.cdr.detectChanges();
+  }
+
+  /** Copy combination texts to clipboard (unfold action). */
+  copyCombinationTexts(combo: CombinationRow): void {
+    const lines = combo.points.map(p => `${p.pointName} — ${p.variantName}\n"${p.variantText}"`).join('\n\n');
+    navigator.clipboard.writeText(lines).then(() => {
+      this.toast.showSuccess('Combination texts copied to clipboard.');
+    }).catch(() => {
+      this.toast.showError('Could not copy to clipboard.');
+    });
+  }
+
+  /** Re-apply highlight in the preview drawer (optional "Apply highlight" action). */
+  applyHighlightInDrawer(): void {
+    if (!this.selectedCombinationForPreview) return;
+    const selectors = this.selectedCombinationForPreview.points.map(p => p.cssSelector).filter(Boolean).join(', ');
+    this.highlightSelector = selectors;
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.highlightSelector = '';
+      this.cdr.detectChanges();
+    }, 1100);
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  handleEscapeKey(event: KeyboardEvent): void {
+    if (this.previewDrawerOpen) {
+      this.closePreviewDrawer();
+    }
+  }
+
+  isCombinationExpanded(comboId: string): boolean {
+    return this.expandedCombinations.has(comboId);
+  }
+
+  isComboRowExpanded = (_index: number, row: CombinationRow): boolean =>
+    this.isCombinationExpanded(row.comboId);
+
+  toggleCombinationExpansion(comboId: string): void {
+    const next = new Set(this.expandedCombinations);
+    if (next.has(comboId)) {
+      next.delete(comboId);
+    } else {
+      next.add(comboId);
+    }
+    this.expandedCombinations = next;
+    this.cdr.detectChanges();
+    this.combinationTable?.renderRows();
+  }
+
+  isWinnerCombo(combo: CombinationRow): boolean {
+    return this.combinationRows.length > 0 && 
+           this.combinationRows[0].comboId === combo.comboId;
+  }
+
+  isLoserCombo(combo: CombinationRow): boolean {
+    const bottomThreshold = Math.floor(this.combinationRows.length * 0.2);
+    const sorted = [...this.combinationRows].sort((a, b) => 
+      a.metrics.conversionRate - b.metrics.conversionRate
+    );
+    return sorted.slice(0, bottomThreshold).some(c => c.comboId === combo.comboId);
+  }
+
+  trackByComboId(index: number, combo: CombinationRow): string {
+    return combo.comboId;
   }
 }
 

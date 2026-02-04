@@ -1,345 +1,309 @@
 <app-page-header
-  title="Reporting"
-  description="Analyze performance by variant and point. Simulate traffic, filter by goal type, and export results.">
+  title="Results"
+  description="Analyze performance by combination. Simulate 30 days, preview combinations, and export results.">
   <div class="header-actions">
-    <button mat-raised-button color="primary" (click)="exportCSV()">
-      <mat-icon>download</mat-icon>
-      Export CSV
+    <button mat-raised-button color="primary" (click)="simulateMonth()" [disabled]="isSimulating">
+      Simulate 30 days
     </button>
-    <button mat-raised-button color="primary" (click)="simulateTraffic()" [disabled]="simulating">
-      <mat-icon>play_arrow</mat-icon>
-      {{ simulating ? 'Simulating...' : 'Simulate traffic' }}
+    <button mat-button (click)="resetResults()" [disabled]="isSimulating">
+      Reset
     </button>
   </div>
 </app-page-header>
 
-<mat-card class="tabs-card">
-  <mat-tab-group class="reporting-tabs">
-  <mat-tab label="Page Overview">
-    <div class="reporting-content">
-      <div class="filters-section">
-        <mat-form-field appearance="outline">
-          <mat-select [(ngModel)]="selectedGoalType" (ngModelChange)="onGoalTypeChange()">
-            <mat-option value="all">All Goals</mat-option>
-            <mat-option value="clickSelector">Click Selector</mat-option>
-            <mat-option value="urlReached">URL Reached</mat-option>
-            <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline" *ngIf="selectedGoalType !== 'all'">
-          <mat-select [(ngModel)]="selectedGoalId" (ngModelChange)="onGoalChange()">
-            <mat-option value="all">All {{ getGoalTypeLabel(selectedGoalType) }} Goals</mat-option>
-            <mat-option *ngFor="let goal of getGoalsForType(selectedGoalType)" [value]="goal.id">
-              {{ goal.name || goal.value || (goal.type + ' - ' + goal.value) }}
-              <span *ngIf="goal.isPrimary"> (Primary)</span>
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div *ngIf="globalMetrics.length === 0" class="no-data-message">
-        <p>No metrics available. Click "Simulate Traffic" to generate metrics for approved variants.</p>
-        <p *ngIf="variants.length === 0" class="warning">No approved variants found. Approve variants first in the Variants page.</p>
-      </div>
-      <div *ngIf="globalMetrics.length > 0" class="charts-section">
-        <div class="charts-grid">
-          <mat-card class="chart-card">
-            <mat-card-content>
-              <canvas baseChart
-                [data]="conversionRateChartData"
-                [options]="conversionRateChartOptions"
-                type="line">
-              </canvas>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="chart-card">
-            <mat-card-content>
-              <canvas baseChart
-                [data]="distributionChartData"
-                [options]="distributionChartOptions"
-                type="pie">
-              </canvas>
-            </mat-card-content>
-          </mat-card>
+<!-- Results section: KPI + Charts + Combination table (when simulation data exists) -->
+<section class="results-section" *ngIf="combinationRows.length > 0">
+  <div class="kpi-cards">
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-label">Control conversion rate</div>
+        <div class="kpi-value">{{ (controlCR * 100).toFixed(2) }}%</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-label">Best conversion rate</div>
+        <div class="kpi-value">{{ (bestCR * 100).toFixed(2) }}%</div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="kpi-card">
+      <mat-card-content>
+        <div class="kpi-label">Uplift vs control</div>
+        <div class="kpi-value">{{ formatUplift(uplift, combinationRows[0].metrics.users) }}</div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="charts-section charts-row">
+    <mat-card class="chart-card chart-main">
+      <mat-card-header>
+        <mat-card-title>Conversion rate over time</mat-card-title>
+        <span class="chart-badge">30-day simulation</span>
+      </mat-card-header>
+      <mat-card-content>
+        <canvas baseChart
+          [data]="conversionRateOverTimeChartData"
+          [options]="conversionRateOverTimeChartOptions"
+          type="line">
+        </canvas>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="chart-card chart-secondary">
+      <mat-card-header>
+        <mat-card-title>Top combinations (win probability)</mat-card-title>
+        <mat-card-subtitle>Higher = more likely to be best given current traffic.</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <canvas baseChart
+          [data]="winProbabilityChartData"
+          [options]="winProbabilityChartOptions"
+          type="bar">
+        </canvas>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="table-section">
+    <h3 class="table-title">Page performance (combinations)</h3>
+    <table mat-table #combinationTable [dataSource]="combinationRows" class="metrics-table combination-table" multiTemplateDataRows>
+      <ng-container matColumnDef="expand">
+        <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
+        <td mat-cell *matCellDef="let combo" (click)="$event.stopPropagation()">
+          <button mat-icon-button (click)="toggleCombinationExpansion(combo.comboId)" [attr.aria-label]="isCombinationExpanded(combo.comboId) ? 'Collapse' : 'Expand'">
+            <mat-icon>{{ isCombinationExpanded(combo.comboId) ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="combination">
+        <th mat-header-cell *matHeaderCellDef>Combination</th>
+        <td mat-cell *matCellDef="let combo" class="combination-cell">
+          <div class="combo-badges">
+            <span class="winner-badge" *ngIf="isWinnerCombo(combo)">Winner</span>
+            <span class="discarded-badge" *ngIf="isLoserCombo(combo)">Discarded</span>
+          </div>
+          <div class="combination-text" [class.expanded]="isCombinationExpanded(combo.comboId)">
+            <ng-container *ngIf="!isCombinationExpanded(combo.comboId)">
+              <div *ngFor="let point of combo.points" class="combination-line">
+                <span class="point-name">{{ point.pointName }}:</span>
+                <span class="point-value">"{{ truncateText(point.variantText, 12) }}"</span>
+              </div>
+            </ng-container>
+            <ng-container *ngIf="isCombinationExpanded(combo.comboId)">
+              <div *ngFor="let point of combo.points" class="combination-line">
+                <span class="point-name">{{ point.pointName }}:</span>
+                <span class="point-value">{{ point.variantText || '—' }}</span>
+              </div>
+            </ng-container>
+          </div>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="users">
+        <th mat-header-cell *matHeaderCellDef>Users</th>
+        <td mat-cell *matCellDef="let combo" [class.animating]="animatingMetrics" class="metric-cell">
+          <span class="metric-value">{{ combo.metrics.users }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="conversions">
+        <th mat-header-cell *matHeaderCellDef>Conversions</th>
+        <td mat-cell *matCellDef="let combo" [class.animating]="animatingMetrics" class="metric-cell">
+          <span class="metric-value">{{ combo.metrics.conversions }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="conversionRate">
+        <th mat-header-cell *matHeaderCellDef>Conversion rate</th>
+        <td mat-cell *matCellDef="let combo" [class.animating]="animatingMetrics" class="metric-cell">
+          <span class="metric-value" [class.pulse]="animatingMetrics">{{ formatConversionRate(combo.metrics.conversionRate, combo.metrics.users) }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="uplift">
+        <th mat-header-cell *matHeaderCellDef>Uplift vs control</th>
+        <td mat-cell *matCellDef="let combo" [class.animating]="animatingMetrics" class="metric-cell">
+          <span class="metric-value">{{ formatUplift(combo.metrics.uplift, combo.metrics.users) }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="winProbability">
+        <th mat-header-cell *matHeaderCellDef>Win probability</th>
+        <td mat-cell *matCellDef="let combo" [class.animating]="animatingMetrics" class="metric-cell">
+          <span class="metric-value">{{ formatWinProbability(combo.metrics.winProbability, combo.metrics.users) }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="preview">
+        <th mat-header-cell *matHeaderCellDef>Preview</th>
+        <td mat-cell *matCellDef="let combo" (click)="$event.stopPropagation()" class="preview-cell">
+          <button mat-button color="primary" (click)="previewCombination(combo)" class="preview-link">
+            <mat-icon class="preview-icon">visibility</mat-icon>
+            Preview
+          </button>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="expandedDetail">
+        <td mat-cell *matCellDef="let combo" [attr.colspan]="combinationColumnsWithExpand.length" class="expanded-detail-cell">
+          <div class="expanded-combo-details">
+            <div class="detail-section">
+              <h4>Summary</h4>
+              <div class="kpi-strip">
+                <div class="kpi-item"><span class="kpi-label">Users</span><span class="kpi-value">{{ combo.metrics.users }}</span></div>
+                <div class="kpi-item"><span class="kpi-label">Conversions</span><span class="kpi-value">{{ combo.metrics.conversions }}</span></div>
+                <div class="kpi-item"><span class="kpi-label">Conversion rate</span><span class="kpi-value">{{ formatConversionRate(combo.metrics.conversionRate, combo.metrics.users) }}</span></div>
+                <div class="kpi-item"><span class="kpi-label">Uplift vs control</span><span class="kpi-value">{{ formatUplift(combo.metrics.uplift, combo.metrics.users) }}</span></div>
+                <div class="kpi-item"><span class="kpi-label">Win probability</span><span class="kpi-value">{{ formatWinProbability(combo.metrics.winProbability, combo.metrics.users) }}</span></div>
+              </div>
+            </div>
+            <div class="detail-section per-point-contribution" *ngIf="combo.points.length > 0">
+              <h4>Per-point contribution</h4>
+              <p class="subheader">Point uplift and win probability per optimization point.</p>
+              <div class="per-point-table-wrap">
+                <table class="per-point-table">
+                  <thead>
+                    <tr>
+                      <th>Point</th>
+                      <th>Point uplift</th>
+                      <th>Point win probability</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let point of combo.points">
+                      <td>
+                        <span class="point-name-cell">
+                          {{ point.pointName }}
+                          <span class="winner-badge point-winner-badge" *ngIf="isWinningPoint(point, combo)">Winner</span>
+                        </span>
+                      </td>
+                      <td>{{ formatPointUplift(point) }}</td>
+                      <td>{{ formatPointWinProbability(point) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="detail-section">
+              <h4>Combination details</h4>
+              <p class="subheader">Copy used across optimization points</p>
+              <div class="combination-details">
+                <div *ngFor="let point of combo.points" class="point-detail">
+                  <div class="point-header">
+                    <span class="point-name">{{ point.pointName }}</span>
+                    <span class="point-sep">—</span>
+                    <span class="variant-label">{{ point.variantName }}</span>
+                  </div>
+                  <div class="point-text">"{{ point.variantText }}"</div>
+                </div>
+              </div>
+            </div>
+            <div class="detail-section actions">
+              <button mat-raised-button color="primary" (click)="previewCombination(combo); $event.stopPropagation()">
+                Preview this combination
+              </button>
+              <button mat-raised-button (click)="copyCombinationTexts(combo); $event.stopPropagation()">
+                Copy texts
+              </button>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="combinationColumnsWithExpand"></tr>
+      <tr mat-row *matRowDef="let row; columns: combinationColumnsWithExpand;"
+          [class.winner-row]="isWinnerCombo(row)"
+          [class.discarded-row]="isLoserCombo(row)"
+          [class.animating-row]="animatingMetrics"
+          (click)="toggleCombinationExpansion(row.comboId)"
+          [@slideInOut]="animatingMetrics">
+      </tr>
+      <tr mat-row *matRowDef="let row; columns: ['expandedDetail']; when: isComboRowExpanded" class="expanded-detail-row"></tr>
+    </table>
+  </div>
+</section>
+
+<!-- Empty state when no simulation data -->
+<section class="results-section empty-results" *ngIf="combinationRows.length === 0 && !isSimulating">
+  <div class="no-data-message">
+    <p>Run <strong>Simulate 30 days</strong> to see combination performance, conversion rate over time, and win probability.</p>
+  </div>
+</section>
+
+<!-- Preview Drawer: only in DOM when open so it doesn't cover the page on load -->
+<mat-drawer-container *ngIf="previewDrawerOpen" class="preview-drawer-container" [hasBackdrop]="true" (backdropClick)="closePreviewDrawer()">
+  <mat-drawer #previewDrawer mode="over" position="end" [opened]="previewDrawerOpen" (closed)="closePreviewDrawer()" class="preview-drawer">
+    <div class="drawer-header">
+      <h3>Preview</h3>
+      <button mat-icon-button (click)="closePreviewDrawer()" aria-label="Cerrar panel de preview" class="drawer-close-btn">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div class="drawer-content" *ngIf="selectedCombinationForPreview">
+      <!-- Combination metrics -->
+      <mat-card class="drawer-metrics-card" *ngIf="isWinnerCombo(selectedCombinationForPreview)">
+        <mat-card-content>
+          <span class="winner-badge">Winner</span>
+        </mat-card-content>
+      </mat-card>
+      
+      <div class="drawer-metrics">
+        <div class="metric-item">
+          <span class="metric-label">Users</span>
+          <span class="metric-value">{{ selectedCombinationForPreview.metrics.users }}</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Conversions</span>
+          <span class="metric-value">{{ selectedCombinationForPreview.metrics.conversions }}</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Conversion rate</span>
+          <span class="metric-value">{{ formatConversionRate(selectedCombinationForPreview.metrics.conversionRate, selectedCombinationForPreview.metrics.users) }}</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Uplift vs control</span>
+          <span class="metric-value">{{ formatUplift(selectedCombinationForPreview.metrics.uplift, selectedCombinationForPreview.metrics.users) }}</span>
+        </div>
+        <div class="metric-item">
+          <span class="metric-label">Win probability</span>
+          <span class="metric-value">{{ formatWinProbability(selectedCombinationForPreview.metrics.winProbability, selectedCombinationForPreview.metrics.users) }}</span>
         </div>
       </div>
       
-      <!-- Show metrics grouped by goal when viewing all goals -->
-      <div *ngIf="selectedGoalType === 'all' && metricsByGoal.size > 1" class="goals-section">
-        <mat-card *ngFor="let goalEntry of getMetricsByGoalEntries()" class="goal-card" [class.primary-goal]="goalEntry.value.goal.isPrimary">
-          <mat-card-header>
-            <mat-card-title>
-              {{ goalEntry.value.goal.name || goalEntry.value.goal.value || getGoalTypeLabel(goalEntry.value.goal.type) }}
-              <span *ngIf="goalEntry.value.goal.isPrimary" class="primary-badge">Primary</span>
-            </mat-card-title>
-            <mat-card-subtitle>{{ getGoalTypeLabel(goalEntry.value.goal.type) }}</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <table mat-table [dataSource]="goalEntry.value.metrics" class="metrics-table">
-              <ng-container matColumnDef="variant">
-                <th mat-header-cell *matHeaderCellDef>Variant</th>
-                <td mat-cell *matCellDef="let item">{{ getVariantText(item.variantId) }}</td>
-              </ng-container>
-              <ng-container matColumnDef="users">
-                <th mat-header-cell *matHeaderCellDef>Users</th>
-                <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-                  <span class="metric-value">{{ item.users }}</span>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="conversions">
-                <th mat-header-cell *matHeaderCellDef>Conversions</th>
-                <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-                  <span class="metric-value">{{ item.conversions }}</span>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="conversionRate">
-                <th mat-header-cell *matHeaderCellDef>CR</th>
-                <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-                  <span class="metric-value">{{ (item.conversionRate * 100).toFixed(2) }}%</span>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="confidence">
-                <th mat-header-cell *matHeaderCellDef>Confidence</th>
-                <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-                  <span class="metric-value">{{ item.confidence }}%</span>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="expand">
-                <th mat-header-cell *matHeaderCellDef style="width: 50px;"></th>
-                <td mat-cell *matCellDef="let item">
-                  <button mat-icon-button (click)="toggleRowExpansion(item.variantId)">
-                    <mat-icon>{{ isRowExpanded(item.variantId) ? 'expand_less' : 'expand_more' }}</mat-icon>
-                  </button>
-                </td>
-              </ng-container>
-              <tr mat-header-row *matHeaderRowDef="displayedColumnsWithExpand"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedColumnsWithExpand;" 
-                  [class.winner]="isWinner(row)"
-                  [class.loser]="isLoser(row)"
-                  [class.animating-row]="animatingMetrics"
-                  [@slideInOut]="animatingMetrics">
-              </tr>
-            </table>
-            <!-- Preview panels below table for expanded rows -->
-            <div *ngFor="let row of goalEntry.value.metrics; trackBy: trackByVariantId">
-              <div *ngIf="isRowExpanded(row.variantId)" class="expanded-preview-row">
-                <app-preview-panel
-                  [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
-                  [previewUrl]="previewUrl"
-                  [loading]="loadingPreview || isLoadingVariant(row.variantId)"
-                  [useIframe]="useIframe"
-                  [showReset]="true"
-                  [originalHtml]="originalPreviewHtml"
-                  [highlightSelector]="getHighlightSelectorForVariant(row.variantId)"
-                  (reload)="onPreviewReload()"
-                  (reset)="onPreviewReset()">
-                </app-preview-panel>
-              </div>
+      <!-- Combination details -->
+      <div class="drawer-combination-details">
+        <h4>Combination details</h4>
+        <p class="subheader">Copy used across optimization points</p>
+        <div class="combination-details-list">
+          <div *ngFor="let point of selectedCombinationForPreview.points" class="point-detail-item">
+            <div class="point-header">
+              <span class="point-name">{{ point.pointName }}</span>
+              <span class="point-sep">—</span>
+              <span class="variant-label">{{ point.variantName }}</span>
             </div>
-          </mat-card-content>
-        </mat-card>
-      </div>
-
-      <!-- Show single table when a specific goal is selected -->
-      <table *ngIf="globalMetrics.length > 0 && (selectedGoalType !== 'all' || metricsByGoal.size <= 1)" mat-table [dataSource]="globalMetrics" class="metrics-table">
-        <ng-container matColumnDef="variant">
-          <th mat-header-cell *matHeaderCellDef>Variant</th>
-          <td mat-cell *matCellDef="let item">{{ getVariantText(item.variantId) }}</td>
-        </ng-container>
-        <ng-container matColumnDef="users">
-          <th mat-header-cell *matHeaderCellDef>Users</th>
-          <td mat-cell *matCellDef="let item">{{ item.users }}</td>
-        </ng-container>
-        <ng-container matColumnDef="conversions">
-          <th mat-header-cell *matHeaderCellDef>Conversions</th>
-          <td mat-cell *matCellDef="let item">{{ item.conversions }}</td>
-        </ng-container>
-        <ng-container matColumnDef="conversionRate">
-          <th mat-header-cell *matHeaderCellDef>CR</th>
-          <td mat-cell *matCellDef="let item">{{ (item.conversionRate * 100).toFixed(2) }}%</td>
-        </ng-container>
-        <ng-container matColumnDef="confidence">
-          <th mat-header-cell *matHeaderCellDef>Confidence</th>
-          <td mat-cell *matCellDef="let item">{{ item.confidence }}%</td>
-        </ng-container>
-        <ng-container matColumnDef="expand">
-          <th mat-header-cell *matHeaderCellDef style="width: 50px;"></th>
-          <td mat-cell *matCellDef="let item">
-            <button mat-icon-button (click)="toggleRowExpansion(item.variantId)">
-              <mat-icon>{{ isRowExpanded(item.variantId) ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumnsWithExpand"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumnsWithExpand;" 
-            [class.winner]="isWinner(row)"
-            [class.loser]="isLoser(row)"
-            [class.animating-row]="animatingMetrics"
-            [@slideInOut]="animatingMetrics">
-        </tr>
-      </table>
-      <!-- Preview panels below table for expanded rows -->
-      <div *ngFor="let row of globalMetrics; trackBy: trackByVariantId">
-        <div *ngIf="isRowExpanded(row.variantId)" class="expanded-preview-row">
-          <app-preview-panel
-            [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
-            [previewUrl]="previewUrl"
-            [loading]="loadingPreview || isLoadingVariant(row.variantId)"
-            [useIframe]="useIframe"
-            [showReset]="true"
-            [originalHtml]="originalPreviewHtml"
-            [highlightSelector]="getHighlightSelectorForVariant(row.variantId)"
-            (reload)="onPreviewReload()"
-            (reset)="onPreviewReset()">
-          </app-preview-panel>
+            <div class="point-text">"{{ point.variantText }}"</div>
+          </div>
         </div>
+      </div>
+      
+      <div class="drawer-actions" *ngIf="selectedCombinationForPreview">
+        <button mat-raised-button color="primary" (click)="applyHighlightInDrawer()">
+          <mat-icon>highlight</mat-icon>
+          Apply highlight
+        </button>
+      </div>
+      
+      <!-- Preview Panel -->
+      <div class="drawer-preview">
+        <app-preview-panel
+          [previewHtml]="previewHtml"
+          [previewUrl]="previewUrl"
+          [loading]="loadingPreview"
+          [useIframe]="useIframe"
+          [showReset]="true"
+          [originalHtml]="originalPreviewHtml"
+          [highlightSelector]="highlightSelector"
+          (reload)="onPreviewReload()"
+          (reset)="onPreviewReset()">
+        </app-preview-panel>
       </div>
     </div>
-  </mat-tab>
-
-  <mat-tab label="By Optimization Point">
-    <div class="reporting-content">
-      <div class="filters-section">
-        <mat-form-field appearance="outline">
-          <mat-select [(ngModel)]="selectedPointId" (ngModelChange)="loadPointMetrics()">
-            <mat-option *ngFor="let point of points" [value]="point.id">
-              {{ point.name }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-select [(ngModel)]="selectedGoalType" (ngModelChange)="onGoalTypeChange()">
-            <mat-option value="all">All Goals</mat-option>
-            <mat-option value="clickSelector">Click Selector</mat-option>
-            <mat-option value="urlReached">URL Reached</mat-option>
-            <mat-option value="dataLayerEvent">Data Layer Event</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-
-      <div *ngIf="!selectedPointId" class="no-data-message">
-        <p>Please select an optimization point to view its variant metrics.</p>
-      </div>
-
-      <div *ngIf="selectedPointId && pointMetrics.length === 0" class="no-data-message">
-        <p>No metrics available for this point. Click "Simulate Traffic" to generate metrics.</p>
-      </div>
-
-      <div *ngIf="selectedPointId" class="point-info-section">
-        <mat-card class="point-info-card">
-          <mat-card-header>
-            <mat-card-title>
-              {{ getSelectedPoint()?.name || 'Selected Point' }}
-            </mat-card-title>
-            <mat-card-subtitle>
-              Variants: {{ getPointVariantsCount() }} active
-            </mat-card-subtitle>
-          </mat-card-header>
-        </mat-card>
-      </div>
-      <div *ngIf="pointMetrics.length > 0" class="charts-section">
-        <div class="charts-grid">
-          <mat-card class="chart-card">
-            <mat-card-content>
-              <canvas baseChart
-                [data]="conversionRateChartData"
-                [options]="conversionRateChartOptions"
-                type="line">
-              </canvas>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="chart-card">
-            <mat-card-content>
-              <canvas baseChart
-                [data]="distributionChartData"
-                [options]="distributionChartOptions"
-                type="pie">
-              </canvas>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </div>
-      <table *ngIf="pointMetrics.length > 0" mat-table [dataSource]="pointMetrics" class="metrics-table">
-        <ng-container matColumnDef="variant">
-          <th mat-header-cell *matHeaderCellDef>Variant</th>
-          <td mat-cell *matCellDef="let item">{{ getVariantText(item.variantId) }}</td>
-        </ng-container>
-        <ng-container matColumnDef="users">
-          <th mat-header-cell *matHeaderCellDef>Users</th>
-          <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-            <span class="metric-value">{{ item.users }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="conversions">
-          <th mat-header-cell *matHeaderCellDef>Conversions</th>
-          <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-            <span class="metric-value">{{ item.conversions }}</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="conversionRate">
-          <th mat-header-cell *matHeaderCellDef>CR</th>
-          <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-            <span class="metric-value">{{ (item.conversionRate * 100).toFixed(2) }}%</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="confidence">
-          <th mat-header-cell *matHeaderCellDef>Confidence</th>
-          <td mat-cell *matCellDef="let item" [class.animating]="animatingMetrics" class="metric-cell">
-            <span class="metric-value">{{ item.confidence }}%</span>
-          </td>
-        </ng-container>
-        <ng-container matColumnDef="expand">
-          <th mat-header-cell *matHeaderCellDef style="width: 50px;"></th>
-          <td mat-cell *matCellDef="let item">
-            <button mat-icon-button (click)="toggleRowExpansion(item.variantId)">
-              <mat-icon>{{ isRowExpanded(item.variantId) ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="expandedDetail">
-          <td mat-cell *matCellDef="let row" [attr.colspan]="displayedColumnsWithExpand.length" class="expanded-detail-cell">
-            <div class="expanded-row-content">
-              <app-preview-panel
-                [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
-                [previewUrl]="previewUrl"
-                [loading]="loadingPreview"
-                [useIframe]="useIframe"
-                [showReset]="true"
-                [originalHtml]="originalPreviewHtml"
-                [highlightSelector]="getHighlightSelectorForVariant(row.variantId)"
-                (reload)="onPreviewReload()"
-                (reset)="onPreviewReset()">
-              </app-preview-panel>
-            </div>
-          </td>
-        </ng-container>
-        <tr mat-header-row *matHeaderRowDef="displayedColumnsWithExpand"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumnsWithExpand;"
-            [class.winner]="isWinner(row)"
-            [class.loser]="isLoser(row)"
-            [class.animating-row]="animatingMetrics"
-            [@slideInOut]="animatingMetrics">
-        </tr>
-      </table>
-      <!-- Preview panels below table for expanded rows -->
-      <div *ngFor="let row of pointMetrics; trackBy: trackByVariantId">
-        <div *ngIf="isRowExpanded(row.variantId)" class="expanded-preview-row">
-          <app-preview-panel
-            [previewHtml]="getPreviewHtmlForVariant(row.variantId)"
-            [previewUrl]="previewUrl"
-            [loading]="loadingPreview || isLoadingVariant(row.variantId)"
-            [useIframe]="useIframe"
-            [showReset]="true"
-            [originalHtml]="originalPreviewHtml"
-            [highlightSelector]="getHighlightSelectorForVariant(row.variantId)"
-            (reload)="onPreviewReload()"
-            (reset)="onPreviewReset()">
-          </app-preview-panel>
-        </div>
-      </div>
-    </div>
-  </mat-tab>
-  </mat-tab-group>
-</mat-card>
-
+  </mat-drawer>
+  
+  <mat-drawer-content class="preview-drawer-backdrop-area" (click)="closePreviewDrawer()">
+    <!-- Click en esta zona cierra el drawer -->
+  </mat-drawer-content>
+</mat-drawer-container>

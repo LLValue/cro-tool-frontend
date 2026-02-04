@@ -401,6 +401,36 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  deleteAllVariants(): void {
+    const count = this.variants.length;
+    if (count === 0) return;
+    const pointName = this.point?.name ?? 'este punto';
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Borrar todas las variantes',
+        message: `¿Borrar las ${count} variante${count === 1 ? '' : 's'} del punto "${pointName}"? Esta acción no se puede deshacer.`,
+        confirmText: 'Borrar',
+        cancelText: 'Cancelar',
+        confirmColor: 'primary'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.store.deleteAllVariantsForPoint(this.pointId).subscribe({
+          next: () => {
+            this.toast.showSuccess(`Se han borrado ${count} variante${count === 1 ? '' : 's'}.`);
+            this.loadVariants();
+          },
+          error: () => {
+            this.toast.showError('Error al borrar las variantes. Inténtalo de nuevo.');
+          }
+        });
+      }
+    });
+  }
+
   updateVariant(variant: Variant): void {
     if (variant.status === 'approved') return;
     

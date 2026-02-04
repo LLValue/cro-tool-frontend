@@ -104,8 +104,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       language: ['', Validators.required],
       toneAndStyle: ['', Validators.required],
       pageContextAndGoal: ['', Validators.required],
-      funnelStage: [''],
-      nextAction: [''],
+      funnelStageAndNextAction: [''],
       // Guardrails
       brandGuidelines: [''],
       allowedFacts: [''],
@@ -180,6 +179,26 @@ export class ContextComponent implements OnInit, OnDestroy {
       this.subscriptions.add(parentParamsSub);
     }
 
+    // Sync language between Journey context and AI Assistant
+    // When Journey context language changes, update AI Assistant target language
+    this.globalForm.get('language')?.valueChanges.subscribe(language => {
+      if (language && !this.isUpdatingForm) {
+        const currentTargetLang = this.aiAssistantForm.get('targetLanguage')?.value;
+        if (currentTargetLang !== language) {
+          this.aiAssistantForm.patchValue({ targetLanguage: language }, { emitEvent: false });
+        }
+      }
+    });
+
+    // When AI Assistant target language changes, update Journey context language
+    this.aiAssistantForm.get('targetLanguage')?.valueChanges.subscribe(targetLang => {
+      if (targetLang && !this.isUpdatingForm) {
+        const currentLang = this.globalForm.get('language')?.value;
+        if (currentLang !== targetLang) {
+          this.globalForm.patchValue({ language: targetLang }, { emitEvent: false });
+        }
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -220,6 +239,9 @@ export class ContextComponent implements OnInit, OnDestroy {
           const forbiddenWordsText = Array.isArray(bg.forbiddenWords) ? bg.forbiddenWords.join('\n') : (bg.forbiddenWords || '');
           const sensitiveClaimsText = Array.isArray(bg.sensitiveClaims) ? bg.sensitiveClaims.join('\n') : (bg.sensitiveClaims || '');
 
+          // Combine funnelStage and nextAction into single field
+          const funnelStageAndNextAction = [bg.funnelStage || '', bg.nextAction || ''].filter(v => v).join(' - ') || '';
+          
           this.globalForm.patchValue({
             productDescription: bg.productDescription || '',
             targetAudiences: bg.targetAudiences || '',
@@ -228,8 +250,7 @@ export class ContextComponent implements OnInit, OnDestroy {
             language: bg.language || '',
             toneAndStyle: bg.toneAndStyle || '',
             pageContextAndGoal: bg.pageContextAndGoal || '',
-            funnelStage: bg.funnelStage || '',
-            nextAction: bg.nextAction || '',
+            funnelStageAndNextAction: funnelStageAndNextAction,
             brandGuidelines: bg.brandGuidelines || '',
             allowedFacts: allowedFactsText,
             forbiddenWords: forbiddenWordsText,
@@ -278,21 +299,18 @@ export class ContextComponent implements OnInit, OnDestroy {
     }
     const values = this.globalForm.value;
     
-    // Store funnelStage as enum if it's one of the valid values
-    let funnelStageEnum: 'discovery' | 'consideration' | 'conversion' | undefined = undefined;
-    const funnelStageValue = values.funnelStage?.trim() || '';
-    if (funnelStageValue === 'discovery' || funnelStageValue === 'consideration' || funnelStageValue === 'conversion') {
-      funnelStageEnum = funnelStageValue;
-    }
-    
-    // Store nextAction as text
-    const nextActionText = values.nextAction?.trim() || '';
+    // Split funnelStageAndNextAction back into separate fields if needed
+    // For now, we'll store the combined value in both fields
+    const combinedValue = values.funnelStageAndNextAction?.trim() || '';
+    const parts = combinedValue.split(' - ').map((p: string) => p.trim()).filter((p: string) => p);
+    const funnelStageText = parts[0] || '';
+    const nextActionText = parts.length > 1 ? parts.slice(1).join(' - ') : combinedValue;
     
     this.store.updateBriefingGuardrails(this.projectId, {
       language: values.language || '',
       toneAndStyle: values.toneAndStyle || '',
       pageContextAndGoal: values.pageContextAndGoal,
-      funnelStage: funnelStageEnum,
+      funnelStage: funnelStageText || undefined,
       nextAction: nextActionText || undefined
     });
     this.toast.showSuccess('Journey context saved');
@@ -329,7 +347,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       'topObjections': 5000,
       'toneAndStyle': 5000,
       'pageContextAndGoal': 5000,
-      'funnelStage': 5000,
+      'funnelStageAndNextAction': 5000,
       'brandGuidelines': 5000,
       'allowedFacts': 5000,
       'forbiddenWords': 5000,
@@ -403,21 +421,12 @@ export class ContextComponent implements OnInit, OnDestroy {
         <p><strong>Banking example (credit cards):</strong></p>
         <p>"This is a product landing page for a credit card. Users arrive from paid search and comparison pages. The goal is to encourage them to start an application or eligibility check. The page should reduce fear of hidden fees and help users feel in control of spending and repayments."</p>
       `,
-      funnelStage: `
-        <p><strong>Choose where the user is in the journey.</strong> This helps the AI calibrate messaging density and CTA strength.</p>
-        <p><strong>Examples:</strong></p>
-        <ul>
-          <li><strong>Discovery (learn):</strong> User is exploring and learning about the product</li>
-          <li><strong>Consideration (compare):</strong> User is comparing options and evaluating</li>
-          <li><strong>Conversion (apply):</strong> User is ready to take action</li>
-        </ul>
-        <p><strong>Banking example (credit cards):</strong> "Consideration"</p>
-      `,
-      nextAction: `
-        <p><strong>The single action you want them to take next (one short line).</strong></p>
-        <p><strong>Next action examples:</strong> "Start application", "Check eligibility", "Get a quote", "Compare plans".</p>
+      funnelStageAndNextAction: `
+        <p><strong>Choose where the user is in the journey and the single action you want them to take next.</strong></p>
+        <p><strong>Funnel stage examples:</strong> Discovery (learn), Consideration (compare), Conversion (apply)</p>
+        <p><strong>Next action examples:</strong> "Start application", "Check eligibility", "Get a quote", "Compare plans"</p>
         <p><strong>Banking example (credit cards):</strong></p>
-        <p><strong>Next action:</strong> "Start application" (secondary: "Check eligibility")</p>
+        <p>You can combine both: "Consideration - Start application" or enter them separately.</p>
       `,
       brandGuidelines: `
         <p><strong>Use this for concrete, enforceable rules:</strong> preferred terms, banned phrasing, capitalization rules, naming conventions, and how to refer to the product. This complements tone/style by making rules explicit.</p>
@@ -638,14 +647,52 @@ export class ContextComponent implements OnInit, OnDestroy {
       'business.value_props': 'valueProps',
       'business.top_objections': 'topObjections',
       'journey.page_context_and_goal': 'pageContextAndGoal',
-      'journey.next_action': 'nextAction',
-      'journey.funnel_stage': 'funnelStage',
       'journey.tone_and_style': 'toneAndStyle',
       'guardrails.brand_guidelines': 'brandGuidelines',
       'guardrails.allowed_facts': 'allowedFacts',
       'guardrails.forbidden_words': 'forbiddenWords',
       'guardrails.sensitive_claims': 'sensitiveClaims'
     };
+    
+    // Special handling for funnelStage and nextAction - combine them
+    let funnelStageData: any = null;
+    let nextActionData: any = null;
+    const fields = response.fields || {};
+    for (const [apiKey, fieldData] of Object.entries(fields)) {
+      if (apiKey === 'journey.funnel_stage') {
+        funnelStageData = fieldData;
+      } else if (apiKey === 'journey.next_action') {
+        nextActionData = fieldData;
+      }
+    }
+    
+    // Combine funnelStage and nextAction if both exist
+    if (funnelStageData || nextActionData) {
+      const funnelStageText = funnelStageData?.text?.trim() || '';
+      const nextActionText = nextActionData?.text?.trim() || '';
+      const combinedValue = [funnelStageText, nextActionText].filter(v => v).join(' - ') || '';
+      
+      if (combinedValue) {
+        this.globalForm.patchValue({ funnelStageAndNextAction: combinedValue });
+        
+        // Determine review status and confidence (use the worst of the two)
+        const reviewStatus = (funnelStageData?.review_status === 'needs_review' || nextActionData?.review_status === 'needs_review') 
+          ? 'needs_review' 
+          : (funnelStageData?.review_status || nextActionData?.review_status || 'ok');
+        const confidence = (funnelStageData?.confidence === 'low' || nextActionData?.confidence === 'low')
+          ? 'low'
+          : (funnelStageData?.confidence || nextActionData?.confidence || 'medium');
+        const hasFormatIssue = funnelStageData?.format_issue || nextActionData?.format_issue || false;
+        
+        if (hasFormatIssue || reviewStatus === 'needs_review') {
+          this.setFieldState('funnelStageAndNextAction', 'ai_draft', 'needs_review', confidence);
+        } else {
+          this.setFieldState('funnelStageAndNextAction', 'ai_draft', 'ok', confidence);
+        }
+        
+        this.animateField('funnelStageAndNextAction');
+      }
+    }
 
     // Helper function to parse array fields (valueProps, topObjections, etc.)
     const parseArrayField = (text: string): string => {
@@ -706,7 +753,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     };
 
     // Apply generated fields from API response
-    const fields = response.fields || {};
+    // Note: funnelStage and nextAction are handled separately above
     for (const [apiKey, fieldData] of Object.entries(fields)) {
       const formFieldName = fieldMapping[apiKey];
       if (formFieldName) {
@@ -714,12 +761,15 @@ export class ContextComponent implements OnInit, OnDestroy {
         applyField(formFieldName, fieldData, isMandatory);
       }
     }
+    
+    // Note: funnelStage and nextAction are handled separately above
 
     // Update language field if provided in target_language
     if (this.aiAssistantForm.get('targetLanguage')?.value) {
       const targetLang = this.aiAssistantForm.get('targetLanguage')?.value;
       this.globalForm.patchValue({ language: targetLang });
       this.setFieldState('language', 'ai_draft', 'ok', 'high');
+      this.animateField('language');
     }
 
     this.isUpdatingForm = false;
@@ -738,12 +788,31 @@ export class ContextComponent implements OnInit, OnDestroy {
 
   private animateField(fieldName: string): void {
     // Add animation class to field
+    // Use a small delay to ensure the DOM has updated with the new value
     setTimeout(() => {
-      const fieldElement = document.querySelector(`[formControlName="${fieldName}"]`);
+      // Try multiple selectors to find the input/textarea element
+      // Material Angular wraps inputs in mat-form-field, so we need to find the actual input
+      const selectors = [
+        `[formControlName="${fieldName}"]`,
+        `input[formControlName="${fieldName}"]`,
+        `textarea[formControlName="${fieldName}"]`,
+        `mat-select[formControlName="${fieldName}"]`
+      ];
+      
+      let fieldElement: HTMLElement | null = null;
+      for (const selector of selectors) {
+        fieldElement = document.querySelector(selector);
+        if (fieldElement) break;
+      }
+      
       if (fieldElement) {
-        fieldElement.classList.add('ai-filled-animation');
+        // For mat-form-field, we need to animate the wrapper
+        const matFormField = fieldElement.closest('mat-form-field');
+        const elementToAnimate = matFormField || fieldElement;
+        
+        elementToAnimate.classList.add('ai-filled-animation');
         setTimeout(() => {
-          fieldElement.classList.remove('ai-filled-animation');
+          elementToAnimate.classList.remove('ai-filled-animation');
         }, 900);
       }
     }, 100);

@@ -130,7 +130,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
     const storeProject = this.store.getProject(this.projectId);
     if (storeProject) {
       this.project = storeProject;
-      this.pageUrl = storeProject.pageUrl || 'https://pack.stage.es';
+      this.pageUrl = storeProject.pageUrl || 'https://exmaple.es';
       this.loadPagePreview();
       this.loadPoints();
       this.loadVariants();
@@ -142,7 +142,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
         const foundProject = projects.find(p => p.id === this.projectId);
         if (foundProject) {
           this.project = foundProject;
-          this.pageUrl = foundProject.pageUrl || 'https://pack.stage.es';
+          this.pageUrl = foundProject.pageUrl || 'https://example.es';
           this.loadPagePreview();
           this.loadPoints();
           this.loadVariants();
@@ -151,7 +151,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
             this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
               next: project => {
                 this.project = project;
-                this.pageUrl = project.pageUrl || 'https://pack.stage.es';
+                this.pageUrl = project.pageUrl || 'https://example.es';
                 this.loadPagePreview();
                 this.loadPoints();
                 this.loadVariants();
@@ -170,7 +170,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
           this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
             next: project => {
               this.project = project;
-              this.pageUrl = project.pageUrl || 'https://pack.stage.es';
+              this.pageUrl = project.pageUrl || 'https://example.es';
               this.loadPagePreview();
               this.loadPoints();
               this.loadVariants();
@@ -190,8 +190,8 @@ export class PreviewComponent implements OnInit, OnDestroy {
   private useDefaultProject(): void {
     this.project = {
       id: this.projectId || '1',
-      name: 'Landing Page A',
-      pageUrl: 'https://pack.stage.es',
+      name: 'Project Example',
+      pageUrl: 'https://example.es',
       notes: 'Main conversion page',
       status: 'live',
       previewHtml: '',
@@ -206,7 +206,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
 
   loadPagePreview(): void {
     if (!this.pageUrl) {
-      this.pageUrl = 'https://pack.stage.es';
+      this.pageUrl = 'https://example.es';
     }
 
     if (!this.pageUrl && this.project?.previewHtml) {

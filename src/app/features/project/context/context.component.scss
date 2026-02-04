@@ -47,6 +47,7 @@
 
 .ai-assistant-content {
   padding: 24px;
+  width: 60%;
 }
 
 .ai-assistant-form {
@@ -168,6 +169,18 @@
 ::ng-deep {
   .ai-filled-animation {
     animation: aiFillFlash 0.9s ease-out;
+    
+    // Ensure the animation applies to the form field wrapper
+    .mat-mdc-form-field {
+      animation: aiFillFlash 0.9s ease-out;
+    }
+    
+    // For input and textarea elements
+    input,
+    textarea,
+    .mat-mdc-select-trigger {
+      animation: aiFillFlash 0.9s ease-out;
+    }
   }
 }
 

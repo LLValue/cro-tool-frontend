@@ -1,106 +1,47 @@
 <div class="preview-panel" [class.sticky]="true" [class.mobile-view]="viewMode === 'mobile'">
-  <div class="preview-header">
-    <h3>Page Preview</h3>
-    <div class="header-actions">
-      <div class="view-mode-toggle">
-        <button 
-          mat-icon-button 
-          [class.active]="viewMode === 'mobile'"
-          (click)="setViewMode('mobile')"
-          matTooltip="Mobile view">
-          <mat-icon>phone_android</mat-icon>
-        </button>
-        <button 
-          mat-icon-button 
-          [class.active]="viewMode === 'desktop'"
-          (click)="setViewMode('desktop')"
-          matTooltip="Desktop view">
-          <mat-icon>desktop_windows</mat-icon>
-        </button>
-      </div>
-      <div class="zoom-controls" *ngIf="viewMode === 'mobile'">
-        <button 
-          mat-button 
-          [class.active]="zoomMode === 'fit'"
-          (click)="setZoomMode('fit')"
-          matTooltip="Fit to width">
-          Fit
-        </button>
-        <button 
-          mat-button 
-          [class.active]="zoomMode === '100%'"
-          (click)="setZoomMode('100%')"
-          matTooltip="100% scale">
-          100%
-        </button>
-        <button 
-          mat-button 
-          [class.active]="zoomMode === '75%'"
-          (click)="setZoomMode('75%')"
-          matTooltip="75% scale">
-          75%
-        </button>
-      </div>
-      <button 
-        mat-icon-button 
-        (click)="onReload()" 
-        matTooltip="Reload page"
-        [disabled]="loading">
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <button 
-        *ngIf="showReset && originalHtml" 
-        mat-icon-button 
-        (click)="onReset()" 
-        matTooltip="Reset to original"
-        [disabled]="loading">
-        <mat-icon>restore</mat-icon>
-      </button>
-    </div>
-  </div>
-
   <div class="preview-wrapper" 
        [class.loading]="loading" 
        [class.mobile-view]="viewMode === 'mobile'"
        [class.zoom-fit]="zoomMode === 'fit'"
        [class.zoom-100]="zoomMode === '100%'"
-       [class.zoom-75]="zoomMode === '75%'"
-       [class.zoom-125]="zoomMode === '125%'">
+       [class.zoom-75]="zoomMode === '75%'">
     <div class="loading-overlay" *ngIf="loading">
       <mat-progress-bar mode="indeterminate"></mat-progress-bar>
       <p>Loading page preview...</p>
     </div>
 
-    <!-- Iframe preview -->
+    <!-- Iframe preview. Mobile: viewport (deviceViewW×deviceViewH) = 430×932 at 100%, scaled by zoom; single scroll inside iframe. -->
     <div class="iframe-container" 
+         #iframeContainer
          [class.mobile-view]="viewMode === 'mobile'"
-         [class.zoom-fit]="zoomMode === 'fit' && viewMode === 'mobile'"
-         [class.zoom-100]="zoomMode === '100%' && viewMode === 'mobile'"
-         [class.zoom-75]="zoomMode === '75%' && viewMode === 'mobile'"
-         [class.zoom-125]="zoomMode === '125%' && viewMode === 'mobile'"
-         [style.overflow-x]="viewMode === 'mobile' && zoomMode === 'fit' ? 'hidden' : 'auto'">
-      <iframe 
-        *ngIf="useIframe && safeIframeHtml && !loading" 
-        #previewIframe
-        [srcdoc]="safeIframeHtml" 
-        class="preview-iframe"
-        [class.mobile-view]="viewMode === 'mobile'"
-        tabindex="-1"
-        aria-hidden="true"
-        (load)="onIframeLoad()"
-        frameborder="0">
-      </iframe>
-      <iframe 
-        *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loading" 
-        #previewIframe
-        [src]="safeIframeUrl" 
-        class="preview-iframe"
-        [class.mobile-view]="viewMode === 'mobile'"
-        tabindex="-1"
-        aria-hidden="true"
-        (load)="onIframeLoad()"
-        frameborder="0">
-      </iframe>
+         [style.width.px]="viewMode === 'mobile' && deviceViewW > 0 ? deviceViewW : null"
+         [style.height.px]="viewMode === 'mobile' && deviceViewH > 0 ? deviceViewH : null">
+      <div class="device-frame" 
+           #deviceFrame
+           [style.transform]="viewMode === 'mobile' ? 'scale(' + currentScale + ')' : null">
+        <iframe 
+          *ngIf="useIframe && safeIframeHtml && !loading" 
+          #previewIframe
+          [srcdoc]="safeIframeHtml" 
+          class="preview-iframe"
+          [class.mobile-view]="viewMode === 'mobile'"
+          tabindex="-1"
+          aria-hidden="true"
+          (load)="onIframeLoad()"
+          frameborder="0">
+        </iframe>
+        <iframe 
+          *ngIf="useIframe && safeIframeUrl && !safeIframeHtml && !loading" 
+          #previewIframe
+          [src]="safeIframeUrl" 
+          class="preview-iframe"
+          [class.mobile-view]="viewMode === 'mobile'"
+          tabindex="-1"
+          aria-hidden="true"
+          (load)="onIframeLoad()"
+          frameborder="0">
+        </iframe>
+      </div>
     </div>
 
     <!-- Div preview -->
@@ -118,5 +59,54 @@
       <p>No preview available</p>
       <p class="hint">Load a page preview to see it here</p>
     </div>
+  </div>
+
+  <div class="preview-header-rail">
+    <div class="view-mode-toggle">
+      <button 
+        mat-icon-button 
+        [class.active]="viewMode === 'mobile'"
+        (click)="setViewMode('mobile')"
+        matTooltip="Mobile view">
+        <mat-icon>phone_android</mat-icon>
+      </button>
+      <button 
+        mat-icon-button 
+        [class.active]="viewMode === 'desktop'"
+        (click)="setViewMode('desktop')"
+        matTooltip="Desktop view">
+        <mat-icon>desktop_windows</mat-icon>
+      </button>
+    </div>
+    <span class="zoom-select-label">Zoom</span>
+    <mat-form-field *ngIf="viewMode === 'mobile'" class="zoom-select" appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
+      <mat-select 
+        [value]="zoomMode" 
+        (valueChange)="setZoomMode($event)"
+        [aria-label]="'Zoom: ' + zoomSelectLabel"
+        panelClass="zoom-select-panel">
+        <mat-select-trigger class="zoom-select-trigger">{{ zoomSelectLabel }}</mat-select-trigger>
+        <mat-option value="fit">Fit ({{ fitScalePercent }}%)</mat-option>
+        <mat-option value="125%">125%</mat-option>
+        <mat-option value="100%">100%</mat-option>
+        <mat-option value="75%">75%</mat-option>
+        <mat-option value="50%">50%</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <button 
+      mat-icon-button 
+      (click)="onReload()" 
+      matTooltip="Reload page"
+      [disabled]="loading">
+      <mat-icon>refresh</mat-icon>
+    </button>
+    <button 
+      *ngIf="showReset && originalHtml" 
+      mat-icon-button 
+      (click)="onReset()" 
+      matTooltip="Reset to original"
+      [disabled]="loading">
+      <mat-icon>restore</mat-icon>
+    </button>
   </div>
 </div>

@@ -500,6 +500,16 @@ body.dark-mode {
   font-size: 14px !important;
 }
 
+// Zoom selector: panel ancho al texto más largo, opciones en una línea
+.zoom-select-panel {
+  width: max-content !important;
+  min-width: max-content;
+
+  .mat-mdc-option {
+    white-space: nowrap;
+  }
+}
+
 body.dark-mode {
   background: #121212;
   color: #ffffff;
@@ -1399,3 +1409,12 @@ body.dark-mode .cdk-overlay-container {
   }
 }
 
+.mat-mdc-select-arrow svg {
+  left: 0% !important;
+}
+
+.mat-mdc-dialog-container .mdc-dialog__title {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  margin-bottom: 24px !important;
+}

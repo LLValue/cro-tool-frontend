@@ -5,21 +5,30 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { FormsModule } from '@angular/forms';
+import { calculateFitScale, fitScaleToPercent } from './device-zoom.utils';
 
 export interface HighlightElement {
   selector: string;
   duration?: number;
 }
 
+export type ZoomModeOption = 'fit' | '125%' | '100%' | '75%' | '50%';
+
 @Component({
   selector: 'app-preview-panel',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatFormFieldModule,
+    MatSelectModule
   ],
   templateUrl: './preview-panel.component.html',
   styleUrls: ['./preview-panel.component.scss']
@@ -39,15 +48,30 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
 
   @ViewChild('previewIframe', { static: false }) previewIframe?: ElementRef<HTMLIFrameElement>;
   @ViewChild('previewContent', { static: false }) previewContent?: ElementRef<HTMLDivElement>;
+  @ViewChild('iframeContainer', { static: false }) iframeContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('deviceFrame', { static: false }) deviceFrame?: ElementRef<HTMLDivElement>;
+
+  /** iPhone 14 Pro Max viewport at 100%. */
+  private readonly deviceWidth = 430;
+  private readonly deviceHeight = 932;
 
   viewMode: 'desktop' | 'mobile' = 'mobile';
-  zoomMode: 'fit' | '100%' | '75%' | '125%' = 'fit';
+  /** Chrome Device Toolbar style: Fit, 125%, 100%, 75%, 50%. Default 75%. */
+  zoomMode: ZoomModeOption = '75%';
+  /** Current scale factor applied (0..1). In fit mode, recalculated on container resize. */
+  currentScale = 1;
+  /** Integer 0–125 for display (Fit shows percentage; 50/75/100/125 fixed). */
+  fitScalePercent = 75;
+  /** Viewport size in px (device size × scale). Set in updateFitScale for mobile; template binds these. */
+  deviceViewW = 0;
+  deviceViewH = 0;
   safePreviewHtml: SafeHtml = '';
   safeIframeUrl: SafeResourceUrl = '';
   safeIframeHtml: SafeHtml = '';
   private highlightTimeout?: number;
   private highlightStyleElement?: HTMLStyleElement;
   private resizeListener?: () => void;
+  private resizeObserver?: ResizeObserver;
   private selectionStyleElement?: HTMLStyleElement;
   private selectionEventListeners: { type: string; listener: (e: Event) => void }[] = [];
 
@@ -62,13 +86,23 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       setTimeout(() => this.highlightElement(this.highlightSelector), 100);
     }
     setTimeout(() => this.updateFitScale(), 200);
-    
+
     this.resizeListener = () => {
-      if (this.viewMode === 'mobile' && this.zoomMode === 'fit') {
+      if (this.viewMode === 'mobile') {
         this.updateFitScale();
       }
     };
     window.addEventListener('resize', this.resizeListener);
+
+    const wrapper = document.querySelector('.preview-wrapper');
+    if (wrapper && typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        if (this.viewMode === 'mobile') {
+          requestAnimationFrame(() => this.updateFitScale());
+        }
+      });
+      this.resizeObserver.observe(wrapper);
+    }
   }
 
   ngOnDestroy(): void {
@@ -77,6 +111,7 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (this.resizeListener) {
       window.removeEventListener('resize', this.resizeListener);
     }
+    this.resizeObserver?.disconnect();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -135,7 +170,13 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     this.reload.emit();
   }
 
-  setZoomMode(mode: 'fit' | '100%' | '75%' | '125%'): void {
+  /** Trigger: con Fit seleccionado se muestra solo el porcentaje (ej. 87%); con 75%/100% el valor. */
+  get zoomSelectLabel(): string {
+    if (this.zoomMode === 'fit') return `${this.fitScalePercent}%`;
+    return this.zoomMode;
+  }
+
+  setZoomMode(mode: ZoomModeOption): void {
     this.zoomMode = mode;
     setTimeout(() => this.updateFitScale(), 0);
   }
@@ -383,85 +424,76 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   private updateFitScale(): void {
-    let iframe: HTMLIFrameElement | null = null;
-    if (this.previewIframe?.nativeElement) {
-      iframe = this.previewIframe.nativeElement;
-    } else {
-      const container = document.querySelector('.iframe-container');
-      if (container) {
-        iframe = container.querySelector('.preview-iframe') as HTMLIFrameElement;
-      }
-    }
+    const iframe = this.previewIframe?.nativeElement ?? document.querySelector('.iframe-container .preview-iframe') as HTMLIFrameElement;
+    const container = this.iframeContainer?.nativeElement ?? document.querySelector('.iframe-container');
+    const deviceFrameEl = this.deviceFrame?.nativeElement ?? container?.querySelector('.device-frame');
 
     if (!iframe) {
       setTimeout(() => this.updateFitScale(), 100);
       return;
     }
 
+    if (this.viewMode === 'mobile' && container) {
+      const wrapper = container.closest('.preview-wrapper');
+      const wrapperW = wrapper ? (wrapper as HTMLElement).clientWidth : 400;
+      const wrapperH = wrapper ? (wrapper as HTMLElement).clientHeight : 500;
+      const padding = 24;
+      const preferredW = Math.max(1, wrapperW - padding);
+      const preferredH = Math.max(1, wrapperH - padding);
 
-    if (this.viewMode === 'mobile') {
-      iframe.style.width = '375px';
-      iframe.style.height = '100%';
-      iframe.style.display = 'block';
-      iframe.style.transformOrigin = 'top center';
-      
-      const container = iframe.parentElement;
-      const wrapper = container?.parentElement;
-      
-      if (!wrapper || !container) {
-        console.warn('[PreviewPanel] No container/wrapper found');
-        return;
+      const fitScale = calculateFitScale({
+        screenWidth: this.deviceWidth,
+        screenHeight: this.deviceHeight,
+        preferredWidth: preferredW,
+        preferredHeight: preferredH
+      });
+      this.fitScalePercent = fitScaleToPercent(fitScale);
+
+      let scale: number;
+      switch (this.zoomMode) {
+        case 'fit':
+          scale = fitScale;
+          break;
+        case '125%':
+          scale = 1.25;
+          break;
+        case '100%':
+          scale = 1;
+          break;
+        case '75%':
+          scale = 0.75;
+          break;
+        case '50%':
+          scale = 0.5;
+          break;
+        default:
+          scale = 1;
       }
-      
-      const wrapperWidth = wrapper.clientWidth;
-      const containerWidth = wrapperWidth - 40;
-      const iframeWidth = 375;
-      
-      if (this.zoomMode === 'fit') {
-        // FIT: Scale to fit available width in the container
-        // Key behavior: ALWAYS ensures content fits completely, NO horizontal scroll
-        // - If container >= 375px: show 375px at scale 1 (fits perfectly, no scroll)
-        // - If container < 375px: scale down to fit exactly (no scroll)
-        const scale = Math.min(1, containerWidth / iframeWidth);
-        iframe.style.width = '375px';
-        iframe.style.maxWidth = '100%';
-        iframe.style.transform = `scale(${scale})`;
-        // CRITICAL: No horizontal scroll in Fit mode - content always fits
-        wrapper.style.overflowX = 'hidden';
-        container.style.overflowX = 'hidden';
-        container.style.width = '100%';
-      } else if (this.zoomMode === '100%') {
-        // 100%: Always show at actual size (375px), NO scaling, ALLOWS scroll for detail inspection
-        // Key behavior: NEVER scales, always 375px, allows horizontal scroll for inspection
-        // This is the key difference: 100% allows scroll even when container is wider
-        iframe.style.width = '375px';
-        iframe.style.maxWidth = 'none';
-        iframe.style.transform = 'scale(1)';
-        // CRITICAL: Allow horizontal scroll in 100% mode for detail inspection
-        // Even if container is wider, scroll is enabled to allow inspecting content inside iframe
-        wrapper.style.overflowX = 'auto';
-        container.style.overflowX = 'auto';
-        container.style.width = 'auto';
-        container.style.minWidth = '375px';
-        const needsScroll = containerWidth < iframeWidth;
-      } else if (this.zoomMode === '75%') {
-        iframe.style.width = '375px';
-        iframe.style.maxWidth = 'none';
-        iframe.style.transform = 'scale(0.75)';
-        wrapper.style.overflowX = 'auto';
-        container.style.overflowX = 'auto';
-      } else if (this.zoomMode === '125%') {
-        iframe.style.width = '375px';
-        iframe.style.maxWidth = 'none';
-        iframe.style.transform = 'scale(1.25)';
-        wrapper.style.overflowX = 'auto';
-        container.style.overflowX = 'auto';
+      this.currentScale = scale;
+      this.deviceViewW = Math.round(this.deviceWidth * scale);
+      this.deviceViewH = Math.round(this.deviceHeight * scale);
+
+      iframe.style.width = this.deviceWidth + 'px';
+      iframe.style.height = this.deviceHeight + 'px';
+      iframe.style.maxWidth = '';
+      iframe.style.transform = 'none';
+      iframe.style.display = 'block';
+
+      if (wrapper) {
+        (wrapper as HTMLElement).style.overflow = 'hidden';
       }
     } else {
-      iframe.style.transform = 'none';
       iframe.style.width = '100%';
       iframe.style.height = '100%';
-      iframe.style.maxWidth = '100%';
+      iframe.style.maxWidth = '';
+      iframe.style.minWidth = '';
+      iframe.style.minHeight = '';
+      iframe.style.transform = '';
+      iframe.style.display = '';
+      this.deviceViewW = 0;
+      this.deviceViewH = 0;
+      const wrapperEl = document.querySelector('.preview-wrapper');
+      if (wrapperEl) (wrapperEl as HTMLElement).style.overflow = '';
     }
   }
 

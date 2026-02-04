@@ -205,7 +205,7 @@ export class SetupComponent implements OnInit {
     const urlToUse = formUrl || this.pageUrl;
     
     if (!urlToUse || !urlToUse.trim()) {
-      this.pageUrl = 'https://pack.stage.es';
+      this.pageUrl = 'https://example.es';
     } else {
       this.pageUrl = urlToUse;
     }

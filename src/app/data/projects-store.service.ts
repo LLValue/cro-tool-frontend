@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
 import { map, catchError, tap, switchMap, shareReplay } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Project, BriefingGuardrails, OptimizationPoint, Variant, Goal, ReportingMetrics } from './models';
@@ -45,8 +45,8 @@ export class ProjectsStoreService {
           // If no projects, create a default one
           const defaultProject: Project = {
             id: '1',
-            name: 'Landing Page A',
-            pageUrl: 'https://pack.stage.es',
+            name: 'Project Example',
+            pageUrl: 'https://example.es',
             industry: undefined,
             notes: 'Main conversion page',
             status: 'live',
@@ -63,8 +63,8 @@ export class ProjectsStoreService {
         // On error, provide default project for development
         const defaultProject: Project = {
           id: '1',
-          name: 'Landing Page A',
-          pageUrl: 'https://pack.stage.es',
+          name: 'Project Example',
+            pageUrl: 'https://example.es',
           industry: undefined,
           notes: 'Main conversion page',
           status: 'live',
@@ -350,6 +350,21 @@ export class ProjectsStoreService {
       next: () => this.listVariants(variant.optimizationPointId),
       error: () => {} // Error handling done in components
     });
+  }
+
+  /** Deletes all variants for the given point. Returns an observable that completes when all deletes are done. */
+  deleteAllVariantsForPoint(pointId: string): Observable<void> {
+    const variants = this.variantsSubject.value.filter(v => v.optimizationPointId === pointId);
+    if (variants.length === 0) {
+      return of(undefined);
+    }
+    const deletes = variants.map(v =>
+      this.variantsApi.deleteVariant(v.projectId, v.id)
+    );
+    return forkJoin(deletes).pipe(
+      tap(() => this.listVariants(pointId)),
+      map(() => undefined)
+    );
   }
 
   discardLowScoreVariants(pointId: string): void {
