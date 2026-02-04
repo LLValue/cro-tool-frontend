@@ -73,6 +73,15 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     'Finalizing draft brief content…'
   ];
 
+  // Status messages for Optimization Point brief draft
+  private statusMessagesPointBrief = [
+    'Drafting a clear objective…',
+    'Adding element context…',
+    'Suggesting copy angles…',
+    'Identifying risks to avoid…',
+    'Proposing length constraints…'
+  ];
+
   // Confidence boosters (intercalables, 1 de cada 3 mensajes)
   private confidenceMessages = [
     'Designed for regulated environments and review workflows.',
@@ -103,6 +112,15 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     { label: 'Finalizing draft brief', status: 'pending' }
   ];
 
+  // Steps for Optimization Point brief draft
+  stepsPointBrief: ProgressStep[] = [
+    { label: 'Drafting a clear objective…', status: 'pending' },
+    { label: 'Adding element context…', status: 'pending' },
+    { label: 'Suggesting copy angles…', status: 'pending' },
+    { label: 'Identifying risks to avoid…', status: 'pending' },
+    { label: 'Proposing length constraints…', status: 'pending' }
+  ];
+
   steps: ProgressStep[] = [];
   private statusMessages: string[] = [];
 
@@ -110,17 +128,20 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<GenerateVariantsProgressComponent>,
     @Inject(MAT_DIALOG_DATA) public data: GenerateVariantsProgressData
   ) {
-    // Determine if this is brief generation or variants generation
+    const isPointBriefDraft = this.data.pointName === 'Point Brief Draft';
     const isBriefGeneration = this.data.pointName === 'Brief Generation';
-    
-    if (isBriefGeneration) {
+
+    if (isPointBriefDraft) {
+      this.statusMessages = this.statusMessagesPointBrief;
+      this.steps = this.stepsPointBrief;
+    } else if (isBriefGeneration) {
       this.statusMessages = this.statusMessagesBrief;
       this.steps = this.stepsBrief;
     } else {
       this.statusMessages = this.statusMessagesVariants;
       this.steps = this.stepsVariants;
     }
-    
+
     this.currentMessage = this.statusMessages[0];
   }
 
@@ -170,12 +191,19 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
 
   private startProgressSimulation(): void {
     const elapsed = () => Date.now() - this.startTime;
+    const isPointBriefDraft = this.data.pointName === 'Point Brief Draft';
     const isBriefGeneration = this.data.pointName === 'Brief Generation';
     const totalSteps = this.steps.length;
-    
+
     // Progress checkpoints based on timing
-    // For brief generation (7 steps) vs variants (8 steps)
-    const checkpoints = isBriefGeneration
+    const checkpointsPointBrief = [
+      { time: 0, progress: 15, stepIndex: 0 },
+      { time: 5000, progress: 50, stepIndex: 2 },
+      { time: 10000, progress: 85, stepIndex: 4 }
+    ];
+    const checkpoints = isPointBriefDraft
+      ? checkpointsPointBrief
+      : isBriefGeneration
       ? [
           { time: 0, progress: 10, stepIndex: 0 },      // 0-10% (instant)
           { time: 15000, progress: 30, stepIndex: 1 }, // 10-30% (15s)
@@ -237,8 +265,11 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
 
       // Handle long wait messages
       if (time > this.longWaitThreshold && !this.isComplete) {
-        const isBriefGeneration = this.data.pointName === 'Brief Generation';
-        const longWaitMessages = isBriefGeneration 
+        const isPointBriefDraft = this.data.pointName === 'Point Brief Draft';
+        const isBriefGen = this.data.pointName === 'Brief Generation';
+        const longWaitMessages = isPointBriefDraft
+          ? ['Still drafting your optimization brief…', 'Almost there…']
+          : isBriefGen
           ? [
               'Still analyzing sources—ensuring comprehensive coverage…',
               'Almost there—finalizing draft brief content…'
@@ -343,10 +374,13 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   }
 
   private handleError(err: any): void {
+    const isPointBriefDraft = this.data.pointName === 'Point Brief Draft';
     const isBriefGeneration = this.data.pointName === 'Brief Generation';
-    const defaultError = isBriefGeneration
-      ? 'An error occurred while generating the draft brief. Please try again.'
-      : 'An error occurred while generating variants. Please try again.';
+    const defaultError = isPointBriefDraft
+      ? 'We couldn\'t generate a draft. Please try again.'
+      : isBriefGeneration
+        ? 'An error occurred while generating the draft brief. Please try again.'
+        : 'An error occurred while generating variants. Please try again.';
     this.error = err?.message || defaultError;
     this.steps.forEach(step => {
       if (step.status === 'in-progress') {

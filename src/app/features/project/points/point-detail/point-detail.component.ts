@@ -24,13 +24,20 @@ import { PreviewPanelComponent } from '../../../../shared/preview-panel/preview-
 import { PreviewService } from '../../../../shared/preview.service';
 import { ProjectsStoreService } from '../../../../data/projects-store.service';
 import { ProjectsApiService } from '../../../../api/services/projects-api.service';
+import { PointsApiService } from '../../../../api/services/points-api.service';
 import { OptimizationPoint, Variant } from '../../../../data/models';
+import { PointBriefDraftRequest, PointBriefDraftResponse } from '../../../../api-contracts/points.contracts';
+import { of, timer } from 'rxjs';
+import { map, catchError, take, switchMap } from 'rxjs/operators';
+import { BriefingGuardrails } from '../../../../data/models';
 import { ToastHelperService } from '../../../../shared/toast-helper.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { API_CLIENT } from '../../../../api/api-client.token';
 import { ApiClient } from '../../../../api/api-client';
 import { Subscription } from 'rxjs';
-import { take } from 'rxjs/operators';
+
+/** Set to false when backend POST /api/projects/:id/points/:id/ai/brief-draft is ready */
+const USE_MOCK_BRIEF_DRAFT = true;
 
 interface SelectedElement {
   element: HTMLElement | null;
@@ -114,6 +121,13 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   loadingPreview: boolean = false;
   highlightSelector: string = '';
 
+  // AI Brief Helper state
+  readonly MIN_CHARS_FOR_IMPROVE = 10;
+  briefDraftLoading = false;
+  briefFieldState: Record<string, { source: 'manual' | 'ai_draft'; reviewStatus: 'ok' | 'needs_review' | 'missing'; lastUpdatedAt?: number }> = {};
+  private highlightFieldsSet = new Set<string>();
+  private highlightTimeoutIds: ReturnType<typeof setTimeout>[] = [];
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -123,6 +137,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     @Inject(API_CLIENT) private apiClient: ApiClient,
     private sanitizer: DomSanitizer,
     private projectsApi: ProjectsApiService,
+    private pointsApi: PointsApiService,
     private dialog: MatDialog,
     private previewService: PreviewService
   ) {
@@ -165,6 +180,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.removeHighlightStyle();
+    this.highlightTimeoutIds.forEach(id => clearTimeout(id));
+    this.highlightTimeoutIds = [];
   }
 
   loadPoint(): void {
@@ -989,6 +1006,286 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       width: '600px',
       data: { title, content }
     });
+  }
+
+  openWhatWillBeFilledModal(): void {
+    const content = `
+      <ul>
+        <li>Qualitative objective</></li>
+        <li>Element context</></li>
+        <li>Good ideas (optional)</li>
+        <li>Things to avoid (optional)</li>
+        <li>Suggested length constraints (if empty)</li>
+      </ul>
+      <p><em>You can edit everything before generating variants.</em></p>
+    `;
+    this.dialog.open(InfoModalComponent, {
+      width: '500px',
+      data: { title: 'What the assistant will draft', content }
+    });
+  }
+
+  get canShowImproveBrief(): boolean {
+    const obj = (this.briefForm.get('objective')?.value || '').trim();
+    const ctx = (this.briefForm.get('context')?.value || '').trim();
+    return obj.length >= this.MIN_CHARS_FOR_IMPROVE || ctx.length >= this.MIN_CHARS_FOR_IMPROVE;
+  }
+
+  getBadgeLabel(fieldKey: string): string {
+    const state = this.briefFieldState[fieldKey];
+    if (!state) return '';
+    if (state.source === 'manual') return 'Manual';
+    if (state.reviewStatus === 'missing') return 'Missing';
+    if (state.reviewStatus === 'needs_review') return 'Needs review';
+    if (state.source === 'ai_draft') return 'Auto-filled (Draft)';
+    return '';
+  }
+
+  getBadgeClass(fieldKey: string): string {
+    const state = this.briefFieldState[fieldKey];
+    if (!state) return 'brief-badge-default';
+    if (state.source === 'manual') return 'brief-badge-manual';
+    if (state.reviewStatus === 'missing') return 'brief-badge-missing';
+    if (state.reviewStatus === 'needs_review') return 'brief-badge-needs-review';
+    return 'brief-badge-draft';
+  }
+
+  isManualField(fieldKey: string): boolean {
+    return this.briefFieldState[fieldKey]?.source === 'manual';
+  }
+
+  isFieldHighlighted(fieldKey: string): boolean {
+    return this.highlightFieldsSet.has(fieldKey);
+  }
+
+  onBriefFieldInput(fieldKey: string): void {
+    this.briefFieldState[fieldKey] = {
+      source: 'manual',
+      reviewStatus: 'ok',
+      lastUpdatedAt: Date.now()
+    };
+  }
+
+  requestBriefDraft(mode: 'suggest' | 'improve'): void {
+    if (!this.projectId || !this.pointId || this.pointId === 'new') {
+      this.toast.showError('Save the point first to use the AI brief helper.');
+      return;
+    }
+    this.briefDraftLoading = true;
+    this.store.getBriefingGuardrails(this.projectId).pipe(
+      take(1),
+      map(guardrails => guardrails ?? undefined),
+      catchError(() => of(undefined))
+    ).subscribe(guardrails => {
+      this.store.goals$.pipe(take(1)).subscribe(goals => {
+        const req = this.buildBriefDraftRequest(mode, guardrails, goals);
+        const obs = USE_MOCK_BRIEF_DRAFT
+          ? timer(5500).pipe(switchMap(() => of(this.getMockBriefDraftResponse(req))))
+          : this.pointsApi.getBriefDraft(this.projectId, this.pointId, req).pipe(
+              catchError(err => {
+                this.briefDraftLoading = false;
+                this.toast.showError('We couldn\'t generate a draft. Please try again.');
+                throw err;
+              })
+            );
+        const dialogRef = this.dialog.open(GenerateVariantsProgressComponent, {
+          width: '600px',
+          disableClose: true,
+          data: {
+            generateObservable: obs,
+            pointName: 'Point Brief Draft'
+          } as GenerateVariantsProgressData
+        });
+        dialogRef.afterClosed().subscribe(result => {
+          this.briefDraftLoading = false;
+          if (result?.success && result?.data) {
+            this.applyDraft(result.data as PointBriefDraftResponse);
+            this.toast.showSuccess('Draft applied. Please review before generating variants.');
+          } else if (result?.action === 'retry') {
+            this.requestBriefDraft(mode);
+          }
+        });
+      });
+    });
+  }
+
+  private getMockBriefDraftResponse(_req: PointBriefDraftRequest): PointBriefDraftResponse {
+    const pointName = _req.point?.pointName || 'this element';
+    const elementType = _req.point?.elementType || 'Headline';
+    return {
+      suggestedFields: {
+        qualitativeObjective: `Increase clarity and drive engagement for ${pointName}. Make the value proposition immediately clear and aligned with the page goal.`,
+        elementContext: `User is viewing the main conversion area. ${elementType} is above the fold and should reinforce trust and next-step clarity. Surrounding content sets expectations; this element must align in tone and length.`,
+        goodIdeas: 'Benefit-first, reassurance, social proof, clear CTA language',
+        thingsToAvoid: 'Overpromising, jargon, aggressive urgency, unsubstantiated claims',
+        minChars: 15,
+        maxChars: 60,
+        mustIncludeKeywords: [],
+        mustAvoidTerms: ['guaranteed', 'free', 'instant']
+      },
+      fieldStates: {
+        qualitativeObjective: { source: 'ai_draft', reviewStatus: 'ok', confidence: 'high' },
+        elementContext: { source: 'ai_draft', reviewStatus: 'ok', confidence: 'medium' },
+        goodIdeas: { source: 'ai_draft', reviewStatus: 'ok', confidence: 'medium' },
+        thingsToAvoid: { source: 'ai_draft', reviewStatus: 'needs_review', confidence: 'low' },
+        minChars: { source: 'ai_draft', reviewStatus: 'ok', confidence: 'medium' },
+        maxChars: { source: 'ai_draft', reviewStatus: 'ok', confidence: 'medium' }
+      },
+      warnings: [
+        { code: 'REVIEW_RECOMMENDED', message: 'Review "Things to avoid" for your market and compliance rules.' }
+      ]
+    };
+  }
+
+  private buildBriefDraftRequest(
+    mode: 'suggest' | 'improve',
+    guardrails: BriefingGuardrails | undefined,
+    goals: { id: string; type: string; isPrimary: boolean; value: string }[]
+  ): PointBriefDraftRequest {
+    const primaryGoal = goals?.find(g => g.isPrimary);
+    const pointName = this.setupForm.get('name')?.value || this.point?.name || 'Point';
+    const elementType = this.setupForm.get('elementType')?.value || this.point?.elementType || 'Other';
+    const selector = this.setupForm.get('selector')?.value || this.point?.selector || '';
+    const deviceScope = this.setupForm.get('deviceScope')?.value || this.point?.deviceScope || 'All';
+    const currentElementText = this.point?.text || this.selectedElement?.text || '';
+    const objective = this.briefForm.get('objective')?.value ?? '';
+    const context = this.briefForm.get('context')?.value ?? '';
+    const minChars = this.briefForm.get('minChars')?.value;
+    const maxChars = this.briefForm.get('maxChars')?.value;
+    const language = guardrails?.language || 'en-US';
+    const targetLanguage = language === 'es' || language?.startsWith('es') ? 'es-ES' : 'en-US';
+
+    return {
+      mode,
+      targetLanguage,
+      point: {
+        pointName,
+        elementType: String(elementType),
+        cssSelector: selector,
+        deviceScope: String(deviceScope)
+      },
+      currentElementText: currentElementText || undefined,
+      existingBrief: {
+        qualitativeObjective: objective,
+        elementContext: context,
+        goodIdeas: Array.isArray(this.goodIdeas) ? this.goodIdeas.join(', ') : '',
+        thingsToAvoid: Array.isArray(this.thingsToAvoid) ? this.thingsToAvoid.join(', ') : '',
+        mustIncludeKeywords: Array.isArray(this.mustIncludeKeywords) ? [...this.mustIncludeKeywords] : [],
+        mustAvoidTerms: Array.isArray(this.mustAvoidTerms) ? [...this.mustAvoidTerms] : [],
+        minChars: minChars != null && minChars !== '' ? Number(minChars) : null,
+        maxChars: maxChars != null && maxChars !== '' ? Number(maxChars) : null
+      },
+      projectContext: {
+        primaryGoal: primaryGoal ? {
+          type: primaryGoal.type,
+          label: primaryGoal.type === 'clickSelector' ? 'CTA click' : primaryGoal.type,
+          selector: primaryGoal.value
+        } : undefined,
+        briefAndGuardrails: {
+          productDescription: guardrails?.productDescription,
+          targetAudiences: guardrails?.targetAudiences,
+          topValueProps: guardrails?.valueProps?.join('\n'),
+          topObjections: guardrails?.topObjections?.join('\n'),
+          toneAndStyle: guardrails?.toneAndStyle,
+          pageContextAndGoal: guardrails?.pageContextAndGoal,
+          funnelStageAndNextAction: [guardrails?.funnelStage, guardrails?.nextAction].filter(Boolean).join(' – '),
+          brandGuidelines: guardrails?.brandGuidelines,
+          allowedProofPoints: guardrails?.allowedFacts?.join('\n'),
+          forbiddenWordsAndClaims: guardrails?.forbiddenWords?.join('\n'),
+          sensitiveClaims: guardrails?.sensitiveClaims?.join('\n')
+        }
+      }
+    };
+  }
+
+  private applyDraft(response: PointBriefDraftResponse): void {
+    const { suggestedFields, fieldStates } = response;
+    if (!suggestedFields) return;
+
+    const fieldsToHighlight: string[] = [];
+
+    if (suggestedFields.qualitativeObjective !== undefined && suggestedFields.qualitativeObjective !== '') {
+      this.briefForm.patchValue({ objective: suggestedFields.qualitativeObjective });
+      fieldsToHighlight.push('objective');
+      this.briefFieldState['objective'] = {
+        source: 'ai_draft',
+        reviewStatus: fieldStates?.qualitativeObjective?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        lastUpdatedAt: Date.now()
+      };
+    }
+
+    if (suggestedFields.elementContext !== undefined && suggestedFields.elementContext !== '') {
+      this.briefForm.patchValue({ context: suggestedFields.elementContext });
+      fieldsToHighlight.push('context');
+      this.briefFieldState['context'] = {
+        source: 'ai_draft',
+        reviewStatus: fieldStates?.elementContext?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        lastUpdatedAt: Date.now()
+      };
+    }
+
+    // Required fields that are still empty after apply → Missing (per ticket: "Si campo obligatorio quedó vacío → Missing")
+    const objectiveValue = (this.briefForm.get('objective')?.value ?? '').toString().trim();
+    const contextValue = (this.briefForm.get('context')?.value ?? '').toString().trim();
+    if (objectiveValue === '') {
+      this.briefFieldState['objective'] = { source: 'ai_draft', reviewStatus: 'missing', lastUpdatedAt: Date.now() };
+    }
+    if (contextValue === '') {
+      this.briefFieldState['context'] = { source: 'ai_draft', reviewStatus: 'missing', lastUpdatedAt: Date.now() };
+    }
+
+    if (suggestedFields.goodIdeas !== undefined && suggestedFields.goodIdeas !== '') {
+      this.goodIdeas = suggestedFields.goodIdeas.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+      fieldsToHighlight.push('goodIdeas');
+      this.briefFieldState['goodIdeas'] = {
+        source: 'ai_draft',
+        reviewStatus: fieldStates?.goodIdeas?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        lastUpdatedAt: Date.now()
+      };
+    }
+    if (suggestedFields.thingsToAvoid !== undefined && suggestedFields.thingsToAvoid !== '') {
+      this.thingsToAvoid = suggestedFields.thingsToAvoid.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+      fieldsToHighlight.push('thingsToAvoid');
+      this.briefFieldState['thingsToAvoid'] = {
+        source: 'ai_draft',
+        reviewStatus: fieldStates?.thingsToAvoid?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        lastUpdatedAt: Date.now()
+      };
+    }
+    if (suggestedFields.mustIncludeKeywords?.length) {
+      this.mustIncludeKeywords = [...suggestedFields.mustIncludeKeywords];
+      fieldsToHighlight.push('mustIncludeKeywords');
+      this.briefFieldState['mustIncludeKeywords'] = { source: 'ai_draft', reviewStatus: 'ok', lastUpdatedAt: Date.now() };
+    }
+    if (suggestedFields.mustAvoidTerms?.length) {
+      this.mustAvoidTerms = [...suggestedFields.mustAvoidTerms];
+      fieldsToHighlight.push('mustAvoidTerms');
+      this.briefFieldState['mustAvoidTerms'] = { source: 'ai_draft', reviewStatus: 'ok', lastUpdatedAt: Date.now() };
+    }
+    if (suggestedFields.minChars != null) {
+      this.briefForm.patchValue({ minChars: suggestedFields.minChars });
+      fieldsToHighlight.push('minChars');
+      this.briefFieldState['minChars'] = { source: 'ai_draft', reviewStatus: 'ok', lastUpdatedAt: Date.now() };
+    }
+    if (suggestedFields.maxChars != null) {
+      this.briefForm.patchValue({ maxChars: suggestedFields.maxChars });
+      fieldsToHighlight.push('maxChars');
+      this.briefFieldState['maxChars'] = { source: 'ai_draft', reviewStatus: 'ok', lastUpdatedAt: Date.now() };
+    }
+
+    this.triggerFieldHighlights(fieldsToHighlight);
+  }
+
+  private triggerFieldHighlights(fieldKeys: string[]): void {
+    this.highlightTimeoutIds.forEach(id => clearTimeout(id));
+    this.highlightTimeoutIds = [];
+    fieldKeys.forEach(k => this.highlightFieldsSet.add(k));
+    const duration = 750;
+    this.highlightTimeoutIds = fieldKeys.map(k =>
+      setTimeout(() => {
+        this.highlightFieldsSet.delete(k);
+      }, duration)
+    );
   }
 
   loadProjectPreview(): void {

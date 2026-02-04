@@ -1,6 +1,6 @@
 <h2 mat-dialog-title>
   <mat-icon>auto_awesome</mat-icon>
-  {{ data.pointName === 'Brief Generation' ? 'Generating Draft Brief' : 'Generating Variants' }}
+  {{ data.pointName === 'Point Brief Draft' ? 'Drafting your optimization brief…' : (data.pointName === 'Brief Generation' ? 'Generating Draft Brief' : 'Generating Variants') }}
 </h2>
 
 <mat-dialog-content>
@@ -43,8 +43,9 @@
       <mat-icon>check_circle</mat-icon>
     </div>
     <h3>Done</h3>
+    <p class="success-message" *ngIf="data.pointName === 'Point Brief Draft'">Draft applied. You can review and edit the fields below.</p>
     <p class="success-message" *ngIf="data.pointName === 'Brief Generation'">Draft brief generated successfully</p>
-    <p class="success-message" *ngIf="data.pointName !== 'Brief Generation'">{{ variantCount }} variants generated</p>
+    <p class="success-message" *ngIf="data.pointName !== 'Brief Generation' && data.pointName !== 'Point Brief Draft'">{{ variantCount }} variants generated</p>
   </div>
 
   <!-- Error State -->
@@ -52,7 +53,7 @@
     <div class="error-icon">
       <mat-icon>error</mat-icon>
     </div>
-    <h3>{{ data.pointName === 'Brief Generation' ? 'Brief Generation Failed' : 'Generation Failed' }}</h3>
+    <h3>{{ data.pointName === 'Point Brief Draft' ? 'Draft Failed' : (data.pointName === 'Brief Generation' ? 'Brief Generation Failed' : 'Generation Failed') }}</h3>
     <p class="error-message">{{ error }}</p>
   </div>
 </mat-dialog-content>
@@ -65,7 +66,7 @@
     mat-raised-button 
     color="primary" 
     (click)="onReviewVariants()" 
-    *ngIf="isComplete && !error && data.pointName !== 'Brief Generation'">
+    *ngIf="isComplete && !error && data.pointName !== 'Brief Generation' && data.pointName !== 'Point Brief Draft'">
     <mat-icon>visibility</mat-icon>
     Review Variants
   </button>
@@ -73,7 +74,7 @@
     mat-raised-button 
     color="primary" 
     (click)="onClose()" 
-    *ngIf="isComplete && !error && data.pointName === 'Brief Generation'">
+    *ngIf="isComplete && !error && (data.pointName === 'Brief Generation' || data.pointName === 'Point Brief Draft')">
     <mat-icon>check</mat-icon>
     Close
   </button>
@@ -87,7 +88,7 @@
   <button 
     mat-button 
     (click)="onGenerateFallback()" 
-    *ngIf="error">
+    *ngIf="error && data.pointName !== 'Point Brief Draft'">
     <mat-icon>settings_backup_restore</mat-icon>
     {{ data.pointName === 'Brief Generation' ? 'Generate Fallback Brief' : 'Generate Fallback Variants' }}
   </button>

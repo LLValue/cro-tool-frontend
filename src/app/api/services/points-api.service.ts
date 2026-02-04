@@ -6,7 +6,9 @@ import { ApiClient } from '../api-client';
 import {
   OptimizationPointDto,
   CreatePointRequest,
-  UpdatePointRequest
+  UpdatePointRequest,
+  PointBriefDraftRequest,
+  PointBriefDraftResponse
 } from '../../api-contracts/points.contracts';
 import { OptimizationPoint } from '../../data/models';
 
@@ -36,6 +38,10 @@ export class PointsApiService {
 
   deletePoint(projectId: string, pointId: string): Observable<void> {
     return this.apiClient.pointsDelete(projectId, pointId);
+  }
+
+  getBriefDraft(projectId: string, pointId: string, req: PointBriefDraftRequest): Observable<PointBriefDraftResponse> {
+    return this.apiClient.pointsBriefDraft(projectId, pointId, req);
   }
 
   private dtoToModel(dto: OptimizationPointDto): OptimizationPoint {

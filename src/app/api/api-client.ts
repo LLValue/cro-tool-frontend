@@ -20,7 +20,9 @@ import {
 import {
   OptimizationPointDto,
   CreatePointRequest,
-  UpdatePointRequest
+  UpdatePointRequest,
+  PointBriefDraftRequest,
+  PointBriefDraftResponse
 } from '../api-contracts/points.contracts';
 import {
   VariantDto,
@@ -66,6 +68,7 @@ export interface ApiClient {
   pointsCreate(projectId: string, req: CreatePointRequest): Observable<OptimizationPointDto>;
   pointsUpdate(projectId: string, pointId: string, req: UpdatePointRequest): Observable<OptimizationPointDto>;
   pointsDelete(projectId: string, pointId: string): Observable<void>;
+  pointsBriefDraft(projectId: string, pointId: string, req: PointBriefDraftRequest): Observable<PointBriefDraftResponse>;
 
   // Variants
   variantsList(projectId: string, pointId: string): Observable<VariantDto[]>;
