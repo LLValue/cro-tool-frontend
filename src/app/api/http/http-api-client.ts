@@ -1,8 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, of, timer } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
-import { getMockSimulateMonthResponse } from '../mocks/simulate-month.mock';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiClient } from '../api-client';
 import {
   LoginRequest,
@@ -184,12 +183,8 @@ export class HttpApiClient implements ApiClient {
     return this.http.post<ReportingResponse>(`${this.baseUrl}/projects/${projectId}/reporting/simulate`, req);
   }
 
-  simulateMonth(_projectId: string): Observable<SimulateMonthResponse> {
-    // Demo: return mocked 30-day simulation after ~5.5s (modal min 5s). Replace with real POST when backend is ready.
-    return timer(5500).pipe(
-      switchMap(() => of(getMockSimulateMonthResponse()))
-    );
-    // Real API: return this.http.post<SimulateMonthResponse>(`${this.baseUrl}/projects/${projectId}/results/simulate-month`, {});
+  simulateMonth(projectId: string): Observable<SimulateMonthResponse> {
+    return this.http.post<SimulateMonthResponse>(`${this.baseUrl}/projects/${projectId}/results/simulate-month`, {});
   }
 
   resetResults(projectId: string): Observable<ResetResponse> {
