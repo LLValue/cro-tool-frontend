@@ -1090,6 +1090,14 @@ export class ReportingComponent implements OnInit, OnDestroy {
       
       this.conversionRateOverTimeChartData.datasets[0].data.push(controlCR);
       this.conversionRateOverTimeChartData.datasets[1].data.push(bestCombo.conversionRate);
+      // Nueva referencia para que ng2-charts detecte el cambio (Angular OnPush / ngOnChanges)
+      this.conversionRateOverTimeChartData = {
+        labels: [...(this.conversionRateOverTimeChartData.labels || [])],
+        datasets: (this.conversionRateOverTimeChartData.datasets || []).map(ds => ({
+          ...ds,
+          data: [...(ds.data as number[])]
+        }))
+      };
     }
 
     // Update win probability chart (reorder every 2-3 frames to avoid too much movement)
@@ -1098,13 +1106,16 @@ export class ReportingComponent implements OnInit, OnDestroy {
         .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
         .slice(0, 8);
       this.topCombosForChart = topCombos;
-      this.winProbabilityChartData.labels = topCombos.map(c => this.getCombinationLabel(c));
-      this.winProbabilityChartData.datasets = [{
-        label: 'Win Probability',
-        data: topCombos.map(c => c.metrics.winProbability * 100),
-        backgroundColor: topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)')
-      }];
+      this.winProbabilityChartData = {
+        labels: topCombos.map(c => this.getCombinationLabel(c)),
+        datasets: [{
+          label: 'Win Probability',
+          data: topCombos.map(c => c.metrics.winProbability * 100),
+          backgroundColor: topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)')
+        }]
+      };
     }
+    this.cdr.detectChanges();
   }
 
   private initializeCharts(): void {
