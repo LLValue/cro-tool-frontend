@@ -78,7 +78,7 @@
         <mat-icon>desktop_windows</mat-icon>
       </button>
     </div>
-    <span class="zoom-select-label">Zoom</span>
+    <!--<span *ngIf="viewMode === 'mobile'" class="zoom-select-label">Zoom</span>
     <mat-form-field *ngIf="viewMode === 'mobile'" class="zoom-select" appearance="outline" subscriptSizing="dynamic" hideRequiredMarker>
       <mat-select 
         [value]="zoomMode" 
@@ -92,7 +92,7 @@
         <mat-option value="75%">75%</mat-option>
         <mat-option value="50%">50%</mat-option>
       </mat-select>
-    </mat-form-field>
+    </mat-form-field>-->
     <button 
       mat-icon-button 
       (click)="onReload()" 

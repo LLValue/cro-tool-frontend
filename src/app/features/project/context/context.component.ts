@@ -72,18 +72,27 @@ export class ContextComponent implements OnInit, OnDestroy {
   // Field states for badges
   fieldStates: { [key: string]: { source: 'manual' | 'ai_draft'; reviewStatus: 'ok' | 'needs_review' | 'missing'; confidence: 'high' | 'medium' | 'low' } } = {};
 
-  // Locales for language selector
+  // Locales for language selector (canonical list)
   locales = [
+    { value: 'da-DK', label: 'Danish (Denmark) - da-DK' },
+    { value: 'de-DE', label: 'German (Germany) - de-DE' },
+    { value: 'en-GB', label: 'English (UK) - en-GB' },
+    { value: 'es-AR', label: 'Spanish (Argentina) - es-AR' },
+    { value: 'es-CL', label: 'Spanish (Chile) - es-CL' },
+    { value: 'es-CO', label: 'Spanish (Colombia) - es-CO' },
+    { value: 'es-DO', label: 'Spanish (Dominican Republic) - es-DO' },
+    { value: 'es-EC', label: 'Spanish (Ecuador) - es-EC' },
     { value: 'es-ES', label: 'Spanish (Spain) - es-ES' },
     { value: 'es-MX', label: 'Spanish (Mexico) - es-MX' },
-    { value: 'en-GB', label: 'English (UK) - en-GB' },
-    { value: 'en-US', label: 'English (USA) - en-US' },
+    { value: 'es-PE', label: 'Spanish (Peru) - es-PE' },
+    { value: 'es-UY', label: 'Spanish (Uruguay) - es-UY' },
     { value: 'fr-FR', label: 'French (France) - fr-FR' },
-    { value: 'de-DE', label: 'German (Germany) - de-DE' },
     { value: 'it-IT', label: 'Italian (Italy) - it-IT' },
-    { value: 'pt-PT', label: 'Portuguese (Portugal) - pt-PT' },
+    { value: 'nl-NL', label: 'Dutch (Netherlands) - nl-NL' },
+    { value: 'no-NO', label: 'Norwegian (Norway) - no-NO' },
     { value: 'pt-BR', label: 'Portuguese (Brazil) - pt-BR' },
-    { value: 'nl-NL', label: 'Dutch (Netherlands) - nl-NL' }
+    { value: 'pt-PT', label: 'Portuguese (Portugal) - pt-PT' },
+    { value: 'sv-SE', label: 'Swedish (Sweden) - sv-SE' }
   ];
 
   constructor(
