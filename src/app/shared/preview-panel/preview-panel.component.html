@@ -23,6 +23,7 @@
           *ngIf="useIframe && safeIframeHtml && !loading" 
           #previewIframe
           [srcdoc]="safeIframeHtml" 
+          sandbox="allow-same-origin"
           class="preview-iframe"
           [class.mobile-view]="viewMode === 'mobile'"
           tabindex="-1"

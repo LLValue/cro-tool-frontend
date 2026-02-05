@@ -21,6 +21,7 @@
     <iframe 
       *ngIf="useIframe && safeIframeHtml && !loadingPreview" 
       [srcdoc]="safeIframeHtml" 
+      sandbox="allow-same-origin"
       class="preview-iframe"
       tabindex="-1"
       aria-hidden="true"

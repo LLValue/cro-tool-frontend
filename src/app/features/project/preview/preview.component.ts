@@ -333,7 +333,10 @@ export class PreviewComponent implements OnInit, OnDestroy {
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-      
+
+      // Remove all scripts so third-party (e.g. utag.js, analytics) cannot run and freeze the app
+      doc.querySelectorAll('script').forEach(s => s.remove());
+
       const cookieSelectors = [
         '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
         '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
@@ -382,97 +385,8 @@ export class PreviewComponent implements OnInit, OnDestroy {
       `;
       doc.head.appendChild(style);
 
-      const script = doc.createElement('script');
-      script.textContent = `
-        (function() {
-          function hideCookieElements() {
-            const selectors = [
-              '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
-              '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
-              '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
-              '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
-              '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
-              '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]'
-            ];
-            selectors.forEach(selector => {
-              try {
-                document.querySelectorAll(selector).forEach(el => {
-                  const text = (el.textContent || '').toLowerCase();
-                  if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
-                    el.style.cssText = 'display:none!important;visibility:hidden!important;opacity:0!important;height:0!important;width:0!important;position:absolute!important;left:-9999px!important;z-index:-9999!important;';
-                  }
-                });
-              } catch(e) {}
-            });
-          }
-          hideCookieElements();
-          
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', hideCookieElements);
-          }
-          
-          setTimeout(hideCookieElements, 500);
-          setTimeout(hideCookieElements, 1000);
-          setTimeout(hideCookieElements, 2000);
-          setTimeout(hideCookieElements, 3000);
-          
-          const observer = new MutationObserver(function(mutations) {
-            hideCookieElements();
-          });
-          
-          if (document.body) {
-            observer.observe(document.body, { 
-              childList: true, 
-              subtree: true,
-              attributes: true,
-              attributeFilter: ['class', 'id', 'style']
-            });
-          }
-          
-          const docObserver = new MutationObserver(function(mutations) {
-            if (document.body) {
-              observer.observe(document.body, { 
-                childList: true, 
-                subtree: true,
-                attributes: true,
-                attributeFilter: ['class', 'id', 'style']
-              });
-              docObserver.disconnect();
-            }
-          });
-          docObserver.observe(document.documentElement, { childList: true });
-          
-          const originalPushState = history.pushState;
-          const originalReplaceState = history.replaceState;
-          
-          history.pushState = function() {
-            originalPushState.apply(history, arguments);
-            setTimeout(hideCookieElements, 100);
-            setTimeout(hideCookieElements, 500);
-          };
-          
-          history.replaceState = function() {
-            originalReplaceState.apply(history, arguments);
-            setTimeout(hideCookieElements, 100);
-            setTimeout(hideCookieElements, 500);
-          };
-          
-          window.addEventListener('popstate', function() {
-            setTimeout(hideCookieElements, 100);
-            setTimeout(hideCookieElements, 500);
-          });
-          
-          document.addEventListener('click', function(e) {
-            const target = e.target;
-            if (target && target.tagName === 'A') {
-              setTimeout(hideCookieElements, 500);
-              setTimeout(hideCookieElements, 1000);
-            }
-          }, true);
-        })();
-      `;
-      doc.head.appendChild(script);
-
+      // Script removed: iframe is sandboxed (no allow-scripts) so it would not run.
+      // Cookie hiding relies on DOM removal + CSS above only.
       const baseUrl = this.extractBaseUrl(this.pageUrl);
       if (baseUrl) {
         const allLinks = doc.querySelectorAll('link[href], script[src], img[src], source[src]');

@@ -116,6 +116,7 @@
               <iframe 
                 *ngIf="safePreviewHtml && !loadingPreview" 
                 [srcdoc]="safePreviewHtml" 
+                sandbox="allow-same-origin"
                 class="preview-iframe"
                 tabindex="-1"
                 aria-hidden="true"
