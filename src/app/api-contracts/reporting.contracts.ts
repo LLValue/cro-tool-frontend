@@ -58,6 +58,8 @@ export interface SimulationFrame {
 }
 
 export interface SimulateMonthResponse {
+  /** ID de la simulación guardada; "" si no hubo datos suficientes y no se persistió. */
+  id: string;
   combinations: CombinationRow[];
   frames: SimulationFrame[]; // 30 frames, one per day
   controlMetrics: CombinationMetrics;
@@ -66,4 +68,36 @@ export interface SimulateMonthResponse {
 export interface ResetResponse {
   success: boolean;
   message?: string;
+}
+
+// Simulations list and detail (GET list, GET by id, DELETE)
+export interface SimulationSummaryDto {
+  id: string;
+  monthlyUsers: number;
+  days: number;
+  seed: string | null;
+  createdAt: string; // ISO date
+  summary: {
+    totalCombinations: number;
+    bestCombinationId: string;
+    bestUplift: number;
+    controlConversionRate: number;
+  };
+}
+
+export interface SimulationsListResponse {
+  simulations: SimulationSummaryDto[];
+}
+
+/** Simulación completa (GET /simulations/:id). */
+export interface SimulationDetailResponse {
+  id: string;
+  projectId: string;
+  monthlyUsers: number;
+  days: number;
+  seed: string | null;
+  combinations: CombinationRow[];
+  frames: SimulationFrame[];
+  controlMetrics: CombinationMetrics;
+  createdAt: string; // ISO date
 }

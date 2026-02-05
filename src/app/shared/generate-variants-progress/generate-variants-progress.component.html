@@ -59,7 +59,7 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="onClose()" *ngIf="!isComplete && !error">
+  <button mat-raised-button (click)="onClose()" *ngIf="!isComplete && !error">
     Cancel
   </button>
   <button 
@@ -79,14 +79,23 @@
     Close
   </button>
   <button 
-    mat-button 
+    mat-raised-button
+    color="primary"
+    (click)="onClose()" 
+    *ngIf="error">
+    Close
+  </button>
+  <button 
+    mat-raised-button
+    color="primary"
     (click)="onRetry()" 
     *ngIf="error">
     <mat-icon>refresh</mat-icon>
     Retry
   </button>
   <button 
-    mat-button 
+    mat-raised-button
+    color="primary"
     (click)="onGenerateFallback()" 
     *ngIf="error && data.pointName !== 'Point Brief Draft'">
     <mat-icon>settings_backup_restore</mat-icon>

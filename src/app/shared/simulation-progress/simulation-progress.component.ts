@@ -42,6 +42,7 @@ export class SimulationProgressComponent implements OnInit, OnDestroy {
   private minDisplayTime = 5000; // Minimum 5 seconds
   private responseReceived = false;
   private progressSimulationActive = true;
+  private fastCompleteTimeoutIds: ReturnType<typeof setTimeout>[] = [];
 
   // Status messages (rotate every 4-6s)
   private statusMessages = [
@@ -78,11 +79,13 @@ export class SimulationProgressComponent implements OnInit, OnDestroy {
         this.simulatedData = result;
         this.responseReceived = true;
         this.progressSimulationActive = false;
-        
-        // Wait for minimum display time
+
         const elapsed = Date.now() - this.startTime;
         const remaining = Math.max(0, this.minDisplayTime - elapsed);
-        
+
+        // Si la respuesta llega rápido, completar los pasos pendientes en secuencia rápida (efecto profesional)
+        this.runFastStepCompletion(remaining);
+
         setTimeout(() => {
           this.completeSimulation();
         }, remaining);
@@ -96,8 +99,34 @@ export class SimulationProgressComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.fastCompleteTimeoutIds.forEach(id => clearTimeout(id));
+    this.fastCompleteTimeoutIds = [];
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Cuando el backend responde rápido, completa los pasos pendientes en secuencia rápida
+   * para que a los 5s todos estén en "done" y se vea profesional.
+   */
+  private runFastStepCompletion(remainingMs: number): void {
+    const pendingStartIndex = this.steps.findIndex(s => s.status !== 'done');
+    if (pendingStartIndex === -1) return;
+
+    const pendingCount = this.steps.length - pendingStartIndex;
+    const msPerStep = Math.min(280, Math.max(120, Math.floor(remainingMs / (pendingCount + 1))));
+
+    for (let i = pendingStartIndex; i < this.steps.length; i++) {
+      const step = this.steps[i];
+      const delay = (i - pendingStartIndex) * msPerStep;
+      const id1 = setTimeout(() => {
+        step.status = 'in-progress';
+      }, delay);
+      const id2 = setTimeout(() => {
+        step.status = 'done';
+      }, delay + 80);
+      this.fastCompleteTimeoutIds.push(id1, id2);
+    }
   }
 
   private startMessageRotation(): void {

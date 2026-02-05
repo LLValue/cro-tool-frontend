@@ -41,7 +41,9 @@ import {
   ReportingResponse,
   SimulationStartRequest,
   SimulateMonthResponse,
-  ResetResponse
+  ResetResponse,
+  SimulationsListResponse,
+  SimulationDetailResponse
 } from '../../api-contracts/reporting.contracts';
 
 /**
@@ -57,7 +59,7 @@ import {
 @Injectable()
 export class HttpApiClient implements ApiClient {
   private http = inject(HttpClient);
-  private baseUrl = '/api'; // Configure your API base URL
+  private baseUrl = '/api';
 
   // Auth
   authLogin(req: LoginRequest): Observable<LoginResponse> {
@@ -191,9 +193,20 @@ export class HttpApiClient implements ApiClient {
     return this.http.post<ResetResponse>(`${this.baseUrl}/projects/${projectId}/results/reset`, {});
   }
 
+  resultsSimulationsList(projectId: string): Observable<SimulationsListResponse> {
+    return this.http.get<SimulationsListResponse>(`${this.baseUrl}/projects/${projectId}/results/simulations`);
+  }
+
+  resultsSimulationGet(projectId: string, simulationId: string): Observable<SimulationDetailResponse> {
+    return this.http.get<SimulationDetailResponse>(`${this.baseUrl}/projects/${projectId}/results/simulations/${simulationId}`);
+  }
+
+  resultsSimulationDelete(projectId: string, simulationId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/projects/${projectId}/results/simulations/${simulationId}`);
+  }
+
   // Proxy
   proxyFetch(url: string): Observable<{ html: string }> {
-    // The endpoint returns HTML directly (text/html), not JSON
     return this.http.get(`${this.baseUrl}/proxy/fetch`, {
       params: { url },
       responseType: 'text'
@@ -207,16 +220,13 @@ export class HttpApiClient implements ApiClient {
     if (variantIds && variantIds.length > 0) {
       params.variantIds = variantIds.join(',');
     }
-    // Try JSON first, fallback to text
     return this.http.get<{ html: string }>(`${this.baseUrl}/proxy/preview/${projectId}`, {
       params
     }).pipe(
       map((response: any) => {
-        // Handle error responses from backend
         if (response.message && !response.html) {
           throw new Error(response.message);
         }
-        // Handle both JSON { html: "..." } and plain text responses
         if (typeof response === 'string') {
           return { html: response };
         }

@@ -115,14 +115,22 @@ Create/Update body: `productDescription?`, `targetAudiences?`, `valueProps?`, `t
 |--------|------|---------|----------|
 | GET | `/projects/:projectId/reporting` | — | `ReportingResponse` |
 | POST | `/projects/:projectId/reporting/simulate` | `{ durationMs?, intervalMs? }` | `ReportingResponse` |
-| POST | `/projects/:projectId/results/simulate-month` | `{}` | `SimulateMonthResponse` |
+| POST | `/projects/:projectId/results/simulate-month` | `{}` | `SimulateMonthResponse` (incl. `id`; `id: ""` si no persistió) |
 | POST | `/projects/:projectId/results/reset` | `{}` | `{ success: boolean, message? }` |
+| GET | `/projects/:projectId/results/simulations` | — | `SimulationsListResponse` |
+| GET | `/projects/:projectId/results/simulations/:simulationId` | — | `SimulationDetailResponse` |
+| DELETE | `/projects/:projectId/results/simulations/:simulationId` | — | `204 No Content` |
 
 **ReportingResponse:** `metrics: Array<{ variantId, pointId, goalType, users, conversions, conversionRate, confidence }>`, `lastUpdated` (ISO).
 
-**SimulateMonthResponse:** `combinations: CombinationRow[]`, `frames: SimulationFrame[]` (30 días), `controlMetrics: CombinationMetrics`.  
-CombinationRow: `comboId`, `points[]` (pointId, pointName, variantId, variantName, variantText, cssSelector), `metrics` (users, conversions, conversionRate, uplift, winProbability).  
+**SimulateMonthResponse:** `id` (string; "" si no hubo datos y no se persistió), `combinations`, `frames`, `controlMetrics`.  
+CombinationRow: `comboId`, `points[]`, `metrics`.  
 SimulationFrame: `day`, `combos[]` (comboId, users, conversions, conversionRate, uplift, winProbability).
+
+**SimulationsListResponse:** `simulations: SimulationSummaryDto[]`. Orden: `createdAt` desc.  
+**SimulationSummaryDto:** `id`, `monthlyUsers`, `days`, `seed` (string | null), `createdAt` (ISO), `summary`: `{ totalCombinations`, `bestCombinationId`, `bestUplift`, `controlConversionRate }`.
+
+**SimulationDetailResponse:** `id`, `projectId`, `monthlyUsers`, `days`, `seed`, `combinations`, `frames`, `controlMetrics`, `createdAt` (ISO). 404 si no existe o no pertenece al proyecto.
 
 ---
 

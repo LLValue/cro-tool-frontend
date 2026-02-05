@@ -71,7 +71,8 @@ import {
   CombinationPoint,
   SimulateMonthResponse, 
   SimulationFrame,
-  CombinationMetrics 
+  CombinationMetrics,
+  SimulationDetailResponse
 } from '../../../api-contracts/reporting.contracts';
 
 @Component({
@@ -137,6 +138,10 @@ export class ReportingComponent implements OnInit, OnDestroy {
   combinationRows: CombinationRow[] = [];
   simulationFrames: SimulationFrame[] = [];
   controlMetrics: CombinationMetrics | null = null;
+  /** comboId del control (uplift === 0) para usar su CR por día en el gráfico. */
+  private controlComboId: string | null = null;
+  /** ID de la simulación actual (tras POST simulate-month); para historial/eliminar. */
+  currentSimulationId: string | null = null;
   currentFrameIndex = 0;
   previewDrawerOpen = false;
   selectedCombinationForPreview: CombinationRow | null = null;
@@ -224,6 +229,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
       this.projectId = initialProjectId;
       this.loadData();
       this.loadPreview();
+      this.loadSavedSimulation();
     }
 
     this.route.params.subscribe(params => {
@@ -232,6 +238,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
         this.projectId = newProjectId;
         this.loadData();
         this.loadPreview();
+        this.loadSavedSimulation();
       }
     });
 
@@ -242,6 +249,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
           this.projectId = newProjectId;
           this.loadData();
           this.loadPreview();
+          this.loadSavedSimulation();
         }
       });
     }
@@ -309,6 +317,37 @@ export class ReportingComponent implements OnInit, OnDestroy {
         this.pointMetrics = [];
       }
     });
+  }
+
+  /** Carga la última simulación guardada (si existe) y la muestra sin animación. */
+  loadSavedSimulation(): void {
+    if (!this.projectId) return;
+    this.apiClient.resultsSimulationsList(this.projectId).subscribe({
+      next: (res) => {
+        if (!res.simulations?.length) return;
+        const latestId = res.simulations[0].id;
+        this.apiClient.resultsSimulationGet(this.projectId, latestId).subscribe({
+          next: (detail: SimulationDetailResponse) => {
+            this.applySimulationDetail(detail);
+          },
+          error: () => {}
+        });
+      },
+      error: () => {}
+    });
+  }
+
+  /** Aplica una simulación completa al estado (detalle desde GET o POST). Sin animación. */
+  private applySimulationDetail(detail: SimulateMonthResponse | SimulationDetailResponse): void {
+    this.combinationRows = [...detail.combinations].sort((a, b) => b.metrics.conversionRate - a.metrics.conversionRate);
+    this.simulationFrames = detail.frames;
+    this.controlMetrics = detail.controlMetrics;
+    this.controlComboId = detail.combinations.find(c => c.metrics.uplift === 0)?.comboId ?? null;
+    this.currentSimulationId = detail.id?.trim() ? detail.id : null;
+    this.initializeCharts();
+    this.updateKPIs();
+    this.markWinnersAndLosers();
+    this.cdr.detectChanges();
   }
 
   updateMetrics(): void {
@@ -917,11 +956,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
       
       if (result && result.success) {
         const response = result.data as SimulateMonthResponse;
-        this.combinationRows = response.combinations;
-        this.simulationFrames = response.frames;
-        this.controlMetrics = response.controlMetrics;
-        
-        this.initializeCharts();
+        this.applySimulationDetail(response);
         this.startSimulationAnimation();
         // Toast shown when animation completes in startSimulationAnimation
       } else if (result && result.cancelled) {
@@ -948,6 +983,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
       this.combinationRows = [];
       this.simulationFrames = [];
       this.controlMetrics = null;
+      this.controlComboId = null;
+      this.currentSimulationId = null;
       this.currentFrameIndex = 0;
       this.controlCR = 0;
       this.bestCR = 0;
@@ -1054,8 +1091,11 @@ export class ReportingComponent implements OnInit, OnDestroy {
   private updateChartsFromFrame(frame: SimulationFrame): void {
     // Update conversion rate over time chart
     const dayLabel = `Day ${frame.day}`;
-    const controlCR = this.controlMetrics?.conversionRate || 0;
-    
+    const controlInFrame = this.controlComboId
+      ? frame.combos.find(c => c.comboId === this.controlComboId)
+      : null;
+    const controlCR = controlInFrame?.conversionRate ?? this.controlMetrics?.conversionRate ?? 0;
+
     // Find best combination CR for this frame
     const bestCombo = frame.combos.reduce((best, current) => 
       current.conversionRate > best.conversionRate ? current : best,

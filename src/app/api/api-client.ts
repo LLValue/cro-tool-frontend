@@ -37,7 +37,9 @@ import {
   ReportingResponse,
   SimulationStartRequest,
   SimulateMonthResponse,
-  ResetResponse
+  ResetResponse,
+  SimulationsListResponse,
+  SimulationDetailResponse
 } from '../api-contracts/reporting.contracts';
 
 export interface ApiClient {
@@ -87,6 +89,11 @@ export interface ApiClient {
   simulateStart(projectId: string, req: SimulationStartRequest): Observable<ReportingResponse>;
   simulateMonth(projectId: string): Observable<SimulateMonthResponse>;
   resetResults(projectId: string): Observable<ResetResponse>;
+
+  // Results simulations (list, get, delete)
+  resultsSimulationsList(projectId: string): Observable<SimulationsListResponse>;
+  resultsSimulationGet(projectId: string, simulationId: string): Observable<SimulationDetailResponse>;
+  resultsSimulationDelete(projectId: string, simulationId: string): Observable<void>;
 
   // Proxy
   proxyFetch(url: string): Observable<{ html: string }>;
