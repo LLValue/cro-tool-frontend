@@ -44,6 +44,7 @@ export class ProjectsListComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.store.refreshProjects();
     this.store.projects$.subscribe(projects => {
       this.projects = projects;
     });

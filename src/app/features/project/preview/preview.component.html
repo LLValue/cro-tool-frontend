@@ -13,6 +13,11 @@
       <mat-progress-bar mode="indeterminate"></mat-progress-bar>
       <p>Loading page preview...</p>
     </div>
+    <div class="preview-error" *ngIf="previewErrorMessage && !loadingPreview">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ previewErrorMessage }}</p>
+      <a [href]="pageUrl" target="_blank" rel="noopener noreferrer">Open page in new tab</a>
+    </div>
     <iframe 
       *ngIf="useIframe && safeIframeHtml && !loadingPreview" 
       [srcdoc]="safeIframeHtml" 

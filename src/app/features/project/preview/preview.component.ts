@@ -45,6 +45,8 @@ export class PreviewComponent implements OnInit, OnDestroy {
   safeIframeUrl: SafeResourceUrl | null = null;
   safeIframeHtml: SafeHtml = '';
   loadingPreview = false;
+  /** Set when proxy fetch fails (e.g. 502) or page blocks embedding (X-Frame-Options). */
+  previewErrorMessage: string | null = null;
   private lastScrollY = 0;
   private subscriptions = new Subscription();
 
@@ -218,6 +220,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
 
     this.lastScrollY = window.scrollY || 0;
     this.loadingPreview = true;
+    this.previewErrorMessage = null;
     this.useIframe = false;
     this.safeIframeUrl = null;
     this.safeIframeHtml = '';
@@ -225,6 +228,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
     this.apiClient.proxyFetch(this.pageUrl).subscribe({
       next: (response) => {
         this.loadingPreview = false;
+        this.previewErrorMessage = null;
         if (response.html && response.html.trim().length > 0) {
           const processedHtml = this.removeCookiePopupsFromHtml(response.html);
           this.basePreviewHtml = processedHtml;
@@ -239,8 +243,10 @@ export class PreviewComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.loadingPreview = false;
-        this.useIframe = true;
-        this.safeIframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pageUrl);
+        this.previewErrorMessage = 'Preview unavailable (proxy error or page blocks embedding). Try again later or open the page URL in a new tab.';
+        this.useIframe = false;
+        this.safeIframeUrl = null;
+        this.safeIframeHtml = '';
         this.updatePreview();
       }
     });

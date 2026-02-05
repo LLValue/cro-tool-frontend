@@ -106,8 +106,16 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   ngOnDestroy(): void {
-    this.clearHighlight();
-    this.disableSelectionMode();
+    try {
+      this.clearHighlight();
+    } catch (_) {
+      // Cross-origin iframe can make clearHighlight throw SecurityError
+    }
+    try {
+      this.disableSelectionMode();
+    } catch (_) {
+      // Cross-origin iframe can make disableSelectionMode throw SecurityError
+    }
     if (this.resizeListener) {
       window.removeEventListener('resize', this.resizeListener);
     }
@@ -264,33 +272,30 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   private disableSelectionMode(): void {
     if (!this.useIframe || !this.previewIframe?.nativeElement) return;
 
-    const iframe = this.previewIframe.nativeElement;
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) return;
+    try {
+      const iframe = this.previewIframe.nativeElement;
+      const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      if (!iframeDoc) return;
 
-    // Remove event listeners
-    this.selectionEventListeners.forEach(({ type, listener }) => {
-      iframeDoc.removeEventListener(type, listener, true);
-    });
-    this.selectionEventListeners = [];
+      this.selectionEventListeners.forEach(({ type, listener }) => {
+        iframeDoc.removeEventListener(type, listener, true);
+      });
+      this.selectionEventListeners = [];
 
-    // Remove highlight classes
-    const highlights = iframeDoc.querySelectorAll('.point-editor-highlight, .point-editor-selected');
-    highlights.forEach(el => {
-      el.classList.remove('point-editor-highlight', 'point-editor-selected');
-    });
+      const highlights = iframeDoc.querySelectorAll('.point-editor-highlight, .point-editor-selected');
+      highlights.forEach(el => {
+        el.classList.remove('point-editor-highlight', 'point-editor-selected');
+      });
 
-    // Remove style element
-    if (this.selectionStyleElement) {
-      try {
-        const parent = this.selectionStyleElement.parentNode;
-        if (parent) {
-          parent.removeChild(this.selectionStyleElement);
-        }
-      } catch (e) {
-        // Element may have been removed already
+      if (this.selectionStyleElement) {
+        try {
+          const parent = this.selectionStyleElement.parentNode;
+          if (parent) parent.removeChild(this.selectionStyleElement);
+        } catch (_) {}
+        this.selectionStyleElement = undefined;
       }
-      this.selectionStyleElement = undefined;
+    } catch (_) {
+      // Cross-origin iframe: contentDocument/contentWindow.document throw SecurityError
     }
   }
 
@@ -621,9 +626,10 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       this.highlightStyleElement = undefined;
     }
 
-    if (this.useIframe && this.previewIframe?.nativeElement?.contentDocument) {
+    if (this.useIframe && this.previewIframe?.nativeElement) {
       try {
         const doc = this.previewIframe.nativeElement.contentDocument;
+        if (!doc) return;
         const allElements = doc.querySelectorAll('*');
         let clearedCount = 0;
         

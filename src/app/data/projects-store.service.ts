@@ -82,6 +82,11 @@ export class ProjectsStoreService {
     return this.projects$;
   }
 
+  /** Refetch projects from API and update store. Call when entering projects list to recover from stale/empty state. */
+  refreshProjects(): void {
+    this.loadProjects();
+  }
+
   createProject(project: Partial<Project>): Project {
     const req = {
       name: project.name || 'New Project',
