@@ -32,8 +32,10 @@
             <form [formGroup]="setupForm" (ngSubmit)="saveSetup()">
               <div class="form-field-wrapper">
                 <label class="field-label">
-                  Name
-                  <span class="required-asterisk">*</span>
+                  <span>
+                    Name
+                    <span class="required-asterisk">*</span>
+                  </span>
                 </label>
                 <p class="field-helper">Enter a descriptive name for this optimization point.</p>
                 <mat-form-field appearance="outline" class="brief-input">
@@ -58,8 +60,10 @@
 
               <div class="form-field-wrapper">
                 <label class="field-label">
-                  CSS Selector
-                  <span class="required-asterisk">*</span>
+                  <span>
+                    CSS Selector
+                    <span class="required-asterisk">*</span>
+                  </span>                  
                 </label>
                 <p class="field-helper">Enter the CSS selector for the element (e.g., .hero-title, #cta-button, h1).</p>
                 <mat-form-field appearance="outline" class="brief-input">
