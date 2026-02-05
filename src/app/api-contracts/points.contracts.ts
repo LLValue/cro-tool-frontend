@@ -68,9 +68,14 @@ export interface PointBriefDraftRequest {
     minChars: number | null;
     maxChars: number | null;
   };
-  projectContext: {
-    primaryGoal?: { type: string; label: string; selector?: string };
-    briefAndGuardrails: {
+  /** Optional. Backend loads project context (guardrails, goals) by projectId when omitted */
+  projectContext?: {
+    primaryGoal?: {
+      type: 'clickSelector' | 'urlReached' | 'dataLayerEvent';
+      label: string;
+      selector?: string; // only for type="clickSelector"
+    };
+    briefAndGuardrails?: {
       productDescription?: string;
       targetAudiences?: string;
       topValueProps?: string;

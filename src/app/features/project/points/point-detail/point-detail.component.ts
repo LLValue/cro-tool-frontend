@@ -25,19 +25,19 @@ import { PreviewService } from '../../../../shared/preview.service';
 import { ProjectsStoreService } from '../../../../data/projects-store.service';
 import { ProjectsApiService } from '../../../../api/services/projects-api.service';
 import { PointsApiService } from '../../../../api/services/points-api.service';
-import { OptimizationPoint, Variant } from '../../../../data/models';
+import { GoalsApiService } from '../../../../api/services/goals-api.service';
+import { OptimizationPoint, Variant, Goal } from '../../../../data/models';
 import { PointBriefDraftRequest, PointBriefDraftResponse } from '../../../../api-contracts/points.contracts';
 import { of, timer } from 'rxjs';
-import { map, catchError, take, switchMap } from 'rxjs/operators';
-import { BriefingGuardrails } from '../../../../data/models';
+import { catchError, take, switchMap } from 'rxjs/operators';
 import { ToastHelperService } from '../../../../shared/toast-helper.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { API_CLIENT } from '../../../../api/api-client.token';
 import { ApiClient } from '../../../../api/api-client';
 import { Subscription } from 'rxjs';
 
-/** Set to false when backend POST /api/projects/:id/points/:id/ai/brief-draft is ready */
-const USE_MOCK_BRIEF_DRAFT = true;
+/** Set to true to use local mock when backend is unavailable */
+const USE_MOCK_BRIEF_DRAFT = false;
 
 interface SelectedElement {
   element: HTMLElement | null;
@@ -138,6 +138,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     private sanitizer: DomSanitizer,
     private projectsApi: ProjectsApiService,
     private pointsApi: PointsApiService,
+    private goalsApi: GoalsApiService,
     private dialog: MatDialog,
     private previewService: PreviewService
   ) {
@@ -1072,14 +1073,19 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.briefDraftLoading = true;
-    this.store.getBriefingGuardrails(this.projectId).pipe(
+    const obs = this.goalsApi.getGoals(this.projectId).pipe(
       take(1),
-      map(guardrails => guardrails ?? undefined),
-      catchError(() => of(undefined))
-    ).subscribe(guardrails => {
-      this.store.goals$.pipe(take(1)).subscribe(goals => {
-        const req = this.buildBriefDraftRequest(mode, guardrails, goals);
-        const obs = USE_MOCK_BRIEF_DRAFT
+      switchMap(goals => {
+        const primary = goals.find((g: Goal) => g.isPrimary);
+        const primaryGoalPayload: { type: 'clickSelector' | 'urlReached' | 'dataLayerEvent'; label: string; selector?: string } = primary
+          ? {
+              type: primary.type,
+              label: primary.name || `${primary.type} goal`,
+              selector: primary.type === 'clickSelector' ? primary.value : undefined
+            }
+          : { type: 'urlReached', label: 'Not specified' };
+        const req = this.buildBriefDraftRequest(mode, primaryGoalPayload);
+        return USE_MOCK_BRIEF_DRAFT
           ? timer(5500).pipe(switchMap(() => of(this.getMockBriefDraftResponse(req))))
           : this.pointsApi.getBriefDraft(this.projectId, this.pointId, req).pipe(
               catchError(err => {
@@ -1088,24 +1094,24 @@ export class PointDetailComponent implements OnInit, OnDestroy {
                 throw err;
               })
             );
-        const dialogRef = this.dialog.open(GenerateVariantsProgressComponent, {
-          width: '600px',
-          disableClose: true,
-          data: {
-            generateObservable: obs,
-            pointName: 'Point Brief Draft'
-          } as GenerateVariantsProgressData
-        });
-        dialogRef.afterClosed().subscribe(result => {
-          this.briefDraftLoading = false;
-          if (result?.success && result?.data) {
-            this.applyDraft(result.data as PointBriefDraftResponse);
-            this.toast.showSuccess('Draft applied. Please review before generating variants.');
-          } else if (result?.action === 'retry') {
-            this.requestBriefDraft(mode);
-          }
-        });
-      });
+      })
+    );
+    const dialogRef = this.dialog.open(GenerateVariantsProgressComponent, {
+      width: '600px',
+      disableClose: true,
+      data: {
+        generateObservable: obs,
+        pointName: 'Point Brief Draft'
+      } as GenerateVariantsProgressData
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      this.briefDraftLoading = false;
+      if (result?.success && result?.data) {
+        this.applyDraft(result.data as PointBriefDraftResponse);
+        this.toast.showSuccess('Draft applied. Please review before generating variants.');
+      } else if (result?.action === 'retry') {
+        this.requestBriefDraft(mode);
+      }
     });
   }
 
@@ -1139,28 +1145,27 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
   private buildBriefDraftRequest(
     mode: 'suggest' | 'improve',
-    guardrails: BriefingGuardrails | undefined,
-    goals: { id: string; type: string; isPrimary: boolean; value: string }[]
+    primaryGoal: { type: 'clickSelector' | 'urlReached' | 'dataLayerEvent'; label: string; selector?: string }
   ): PointBriefDraftRequest {
-    const primaryGoal = goals?.find(g => g.isPrimary);
     const pointName = this.setupForm.get('name')?.value || this.point?.name || 'Point';
-    const elementType = this.setupForm.get('elementType')?.value || this.point?.elementType || 'Other';
+    const elementTypeRaw = this.setupForm.get('elementType')?.value || this.point?.elementType || 'Other';
+    const elementType = this.mapElementTypeForApi(elementTypeRaw);
     const selector = this.setupForm.get('selector')?.value || this.point?.selector || '';
     const deviceScope = this.setupForm.get('deviceScope')?.value || this.point?.deviceScope || 'All';
     const currentElementText = this.point?.text || this.selectedElement?.text || '';
     const objective = this.briefForm.get('objective')?.value ?? '';
     const context = this.briefForm.get('context')?.value ?? '';
-    const minChars = this.briefForm.get('minChars')?.value;
-    const maxChars = this.briefForm.get('maxChars')?.value;
-    const language = guardrails?.language || 'en-US';
-    const targetLanguage = language === 'es' || language?.startsWith('es') ? 'es-ES' : 'en-US';
+    const minCharsVal = this.briefForm.get('minChars')?.value;
+    const maxCharsVal = this.briefForm.get('maxChars')?.value;
+    const minChars = minCharsVal !== undefined && minCharsVal !== null && minCharsVal !== '' ? Number(minCharsVal) : null;
+    const maxChars = maxCharsVal !== undefined && maxCharsVal !== null && maxCharsVal !== '' ? Number(maxCharsVal) : null;
 
     return {
       mode,
-      targetLanguage,
+      targetLanguage: 'en-US',
       point: {
         pointName,
-        elementType: String(elementType),
+        elementType,
         cssSelector: selector,
         deviceScope: String(deviceScope)
       },
@@ -1172,30 +1177,22 @@ export class PointDetailComponent implements OnInit, OnDestroy {
         thingsToAvoid: Array.isArray(this.thingsToAvoid) ? this.thingsToAvoid.join(', ') : '',
         mustIncludeKeywords: Array.isArray(this.mustIncludeKeywords) ? [...this.mustIncludeKeywords] : [],
         mustAvoidTerms: Array.isArray(this.mustAvoidTerms) ? [...this.mustAvoidTerms] : [],
-        minChars: minChars != null && minChars !== '' ? Number(minChars) : null,
-        maxChars: maxChars != null && maxChars !== '' ? Number(maxChars) : null
+        minChars,
+        maxChars
       },
-      projectContext: {
-        primaryGoal: primaryGoal ? {
-          type: primaryGoal.type,
-          label: primaryGoal.type === 'clickSelector' ? 'CTA click' : primaryGoal.type,
-          selector: primaryGoal.value
-        } : undefined,
-        briefAndGuardrails: {
-          productDescription: guardrails?.productDescription,
-          targetAudiences: guardrails?.targetAudiences,
-          topValueProps: guardrails?.valueProps?.join('\n'),
-          topObjections: guardrails?.topObjections?.join('\n'),
-          toneAndStyle: guardrails?.toneAndStyle,
-          pageContextAndGoal: guardrails?.pageContextAndGoal,
-          funnelStageAndNextAction: [guardrails?.funnelStage, guardrails?.nextAction].filter(Boolean).join(' – '),
-          brandGuidelines: guardrails?.brandGuidelines,
-          allowedProofPoints: guardrails?.allowedFacts?.join('\n'),
-          forbiddenWordsAndClaims: guardrails?.forbiddenWords?.join('\n'),
-          sensitiveClaims: guardrails?.sensitiveClaims?.join('\n')
-        }
-      }
+      projectContext: { primaryGoal }
     };
+  }
+
+  private mapElementTypeForApi(value: string): string {
+    if (!value) return 'Other';
+    const v = String(value);
+    if (v.includes('H1') || v.includes('Headline')) return 'Title';
+    if (v.includes('CTA') || v.includes('Call to Action')) return 'CTA';
+    if (v.includes('H2') || v.includes('Subheadline') || v.includes('Subheader')) return 'Subheadline';
+    if (v.includes('Form Labels') || v.includes('Helper Text') || v.includes('Trust') || v.includes('Supporting Copy') || v.includes('Benefit Bullets')) return 'Microcopy';
+    if (v === 'Title' || v === 'CTA' || v === 'Subheadline' || v === 'Microcopy' || v === 'Other') return v;
+    return 'Other';
   }
 
   private applyDraft(response: PointBriefDraftResponse): void {
