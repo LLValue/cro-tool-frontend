@@ -11,26 +11,6 @@
     <mat-card-content>
       <form [formGroup]="goalForm">
         <p class="mandatory-note">The mandatory fields are marked with an asterisk <span class="asterisk-red">*</span></p>
-        
-        <div class="form-field-wrapper">
-          <label class="field-label">
-            Goal priority
-            <span class="required-asterisk">*</span>
-          </label>
-          <p class="field-helper">Select whether this is a primary or secondary goal.</p>
-          <mat-form-field appearance="outline" class="brief-input">
-            <mat-select formControlName="isPrimary" required>
-              <mat-option [value]="true">Primary</mat-option>
-              <mat-option [value]="false">Secondary</mat-option>
-            </mat-select>
-            <mat-error *ngIf="(goalForm.get('isPrimary')?.touched || formSubmitted) && goalForm.get('isPrimary')?.hasError('required')">
-              Goal priority is required
-            </mat-error>
-            <mat-error *ngIf="goalForm.get('isPrimary')?.hasError('primaryExists')">
-              A primary goal already exists. Only one primary goal is allowed.
-            </mat-error>
-          </mat-form-field>
-        </div>
 
         <div class="form-field-wrapper">
           <label class="field-label">
@@ -77,6 +57,26 @@
             <input matInput formControlName="value" required>
             <mat-error *ngIf="(goalForm.get('value')?.touched || formSubmitted) && goalForm.get('value')?.hasError('required')">
               {{ getValueLabel() }} is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="form-field-wrapper">
+          <label class="field-label">
+            Goal priority
+            <span class="required-asterisk">*</span>
+          </label>
+          <p class="field-helper">Select whether this is a primary or secondary goal.</p>
+          <mat-form-field appearance="outline" class="brief-input">
+            <mat-select formControlName="isPrimary" required>
+              <mat-option [value]="true">Primary</mat-option>
+              <mat-option [value]="false">Secondary</mat-option>
+            </mat-select>
+            <mat-error *ngIf="(goalForm.get('isPrimary')?.touched || formSubmitted) && goalForm.get('isPrimary')?.hasError('required')">
+              Goal priority is required
+            </mat-error>
+            <mat-error *ngIf="goalForm.get('isPrimary')?.hasError('primaryExists')">
+              A primary goal already exists. Only one primary goal is allowed.
             </mat-error>
           </mat-form-field>
         </div>
