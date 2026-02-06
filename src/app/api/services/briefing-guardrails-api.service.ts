@@ -35,11 +35,14 @@ export class BriefingGuardrailsApiService {
   }
 
   private dtoToModel(dto: BriefingGuardrailsDto): BriefingGuardrails {
+    const targetAudiences = Array.isArray(dto.targetAudiences)
+      ? (dto.targetAudiences as string[]).map(s => (s != null ? String(s).trim() : '')).filter(Boolean).join('\n')
+      : (dto.targetAudiences != null ? String(dto.targetAudiences) : undefined);
     return {
       id: dto.id,
       projectId: dto.projectId,
       productDescription: dto.productDescription,
-      targetAudiences: dto.targetAudiences,
+      targetAudiences: targetAudiences || undefined,
       valueProps: dto.valueProps,
       topObjections: dto.topObjections,
       language: dto.language,

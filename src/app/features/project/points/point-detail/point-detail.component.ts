@@ -1337,12 +1337,16 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     const fieldsToHighlight: string[] = [];
 
+    // Only set needs_review when backend explicitly says so AND confidence is low (avoid aggressive tagging)
+    const reviewFor = (fs: { reviewStatus?: string; confidence?: string } | undefined) =>
+      (fs?.reviewStatus === 'needs_review' && fs?.confidence === 'low') ? 'needs_review' as const : 'ok' as const;
+
     if (suggestedFields.qualitativeObjective !== undefined && suggestedFields.qualitativeObjective !== '') {
       this.briefForm.patchValue({ objective: suggestedFields.qualitativeObjective });
       fieldsToHighlight.push('objective');
       this.briefFieldState['objective'] = {
         source: 'ai_draft',
-        reviewStatus: fieldStates?.qualitativeObjective?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        reviewStatus: reviewFor(fieldStates?.qualitativeObjective),
         lastUpdatedAt: Date.now()
       };
     }
@@ -1352,7 +1356,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       fieldsToHighlight.push('context');
       this.briefFieldState['context'] = {
         source: 'ai_draft',
-        reviewStatus: fieldStates?.elementContext?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        reviewStatus: reviewFor(fieldStates?.elementContext),
         lastUpdatedAt: Date.now()
       };
     }
@@ -1372,7 +1376,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       fieldsToHighlight.push('goodIdeas');
       this.briefFieldState['goodIdeas'] = {
         source: 'ai_draft',
-        reviewStatus: fieldStates?.goodIdeas?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        reviewStatus: reviewFor(fieldStates?.goodIdeas),
         lastUpdatedAt: Date.now()
       };
     }
@@ -1381,7 +1385,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       fieldsToHighlight.push('thingsToAvoid');
       this.briefFieldState['thingsToAvoid'] = {
         source: 'ai_draft',
-        reviewStatus: fieldStates?.thingsToAvoid?.reviewStatus === 'needs_review' ? 'needs_review' : 'ok',
+        reviewStatus: reviewFor(fieldStates?.thingsToAvoid),
         lastUpdatedAt: Date.now()
       };
     }

@@ -212,6 +212,18 @@ mat-dialog-content {
   .error-message {
     color: #f44336;
   }
+
+  .fallback-link {
+    font-size: 14px;
+    color: #212121;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 4px;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
 }
 
 mat-dialog-actions {
@@ -276,6 +288,10 @@ mat-dialog-actions {
   .error-container {
     h3 {
       color: #ffffff;
+    }
+
+    .fallback-link {
+      color: var(--theme-primary-light, #b39ddb);
     }
     
     .success-message {

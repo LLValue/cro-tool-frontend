@@ -837,13 +837,17 @@ export class ContextComponent implements OnInit, OnDestroy {
     const state = this.fieldStates[fieldName];
     if (!state) return null;
 
+    // Manual takes precedence: once user edits, show Manual (not Needs review)
+    if (state.source === 'manual') {
+      return 'Manual';
+    }
+    if (state.reviewStatus === 'needs_review') {
+      return 'Needs review';
+    }
     if (state.source === 'ai_draft' && state.reviewStatus === 'ok') {
       return 'Auto-filled (Draft)';
-    } else if (state.reviewStatus === 'needs_review') {
-      return 'Needs review';
-    } else if (state.source === 'manual') {
-      return 'Manual';
-    } else if (state.reviewStatus === 'missing') {
+    }
+    if (state.reviewStatus === 'missing') {
       return 'Missing';
     }
     return null;

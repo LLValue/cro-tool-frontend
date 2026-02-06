@@ -17,6 +17,11 @@
             <div class="form-section">
               <div class="field-label-row">
                 <h3>Point Details</h3>
+                <mat-slide-toggle
+                  [checked]="setupForm.get('status')?.value === 'Included'"
+                  (change)="onStatusToggleChange($event.checked)">
+                  {{ setupForm.get('status')?.value === 'Included' ? 'Included' : 'Excluded' }}
+                </mat-slide-toggle>
               </div>
             <form [formGroup]="setupForm" (ngSubmit)="saveSetup()">
               <div class="form-field-wrapper">
@@ -86,14 +91,6 @@
                     <mat-option value="Desktop">Desktop</mat-option>
                   </mat-select>
                 </mat-form-field>
-              </div>
-
-              <div class="form-row">
-                <mat-slide-toggle 
-                  [checked]="setupForm.get('status')?.value === 'Included'"
-                  (change)="onStatusToggleChange($event.checked)">
-                  {{ setupForm.get('status')?.value === 'Included' ? 'Included' : 'Excluded' }}
-                </mat-slide-toggle>
               </div>
 
               <div class="selected-info" *ngIf="selectedElement">
