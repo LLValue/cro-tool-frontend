@@ -407,7 +407,7 @@ export class ProjectsStoreService {
     });
   }
 
-  /** Deletes all variants for the given point. Returns an observable that completes when all deletes are done. */
+  /** Deletes all variants for the given point (hard delete). Returns an observable that completes when all deletes are done. */
   deleteAllVariantsForPoint(pointId: string): Observable<void> {
     const variants = this.variantsSubject.value.filter(v => v.optimizationPointId === pointId);
     if (variants.length === 0) {
@@ -417,6 +417,23 @@ export class ProjectsStoreService {
       this.variantsApi.deleteVariant(v.projectId, v.id)
     );
     return forkJoin(deletes).pipe(
+      tap(() => this.listVariants(pointId)),
+      map(() => undefined)
+    );
+  }
+
+  /** Discards all variants for the given point (soft delete, keeps history). Returns an observable that completes when all discards are done. */
+  discardAllVariantsForPoint(pointId: string): Observable<void> {
+    const variants = this.variantsSubject.value.filter(v =>
+      v.optimizationPointId === pointId && v.status !== 'discarded'
+    );
+    if (variants.length === 0) {
+      return of(undefined);
+    }
+    const discards = variants.map(v =>
+      this.variantsApi.discardVariant(v.projectId, v.id)
+    );
+    return forkJoin(discards).pipe(
       tap(() => this.listVariants(pointId)),
       map(() => undefined)
     );

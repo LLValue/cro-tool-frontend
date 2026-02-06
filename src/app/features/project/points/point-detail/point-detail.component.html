@@ -420,7 +420,7 @@
                   <mat-icon>auto_awesome</mat-icon>
                   Generate variants with AI
                 </button>
-                <button *ngIf="variants.length > 0" mat-raised-button (click)="deleteAllVariants()">Delete all variants</button>
+                <button *ngIf="hasNonDiscardedVariants" mat-raised-button (click)="deleteAllVariants()">Discard all variants</button>
               </div>
             </div>
 

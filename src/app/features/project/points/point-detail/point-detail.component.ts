@@ -299,6 +299,10 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     return this.variants.filter(v => v.status === 'approved');
   }
 
+  get hasNonDiscardedVariants(): boolean {
+    return this.variants.some(v => v.status !== 'discarded');
+  }
+
   getVariantDisplayId(variant: Variant): string {
     return variant.id.length > 8 ? variant.id.slice(-8) : variant.id;
   }
@@ -530,15 +534,16 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   deleteAllVariants(): void {
-    const count = this.variants.length;
+    const toDiscard = this.variants.filter(v => v.status !== 'discarded');
+    const count = toDiscard.length;
     if (count === 0) return;
     const pointName = this.point?.name ?? 'this point';
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
-        title: 'Delete all variants',
-        message: `Delete all ${count} variant${count === 1 ? '' : 's'} for "${pointName}"? This action cannot be undone.`,
-        confirmText: 'Delete',
+        title: 'Discard all variants',
+        message: `Discard all ${count} variant${count === 1 ? '' : 's'} for "${pointName}"? They will be moved to Discarded (history is kept).`,
+        confirmText: 'Discard all',
         cancelText: 'Cancel',
         confirmColor: 'primary'
       }
@@ -546,13 +551,13 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        this.store.deleteAllVariantsForPoint(this.pointId).subscribe({
+        this.store.discardAllVariantsForPoint(this.pointId).subscribe({
           next: () => {
-            this.toast.showSuccess(`${count} variant${count === 1 ? '' : 's'} deleted.`);
+            this.toast.showSuccess(`${count} variant${count === 1 ? '' : 's'} discarded.`);
             this.loadVariants();
           },
           error: () => {
-            this.toast.showError('Error deleting variants. Please try again.');
+            this.toast.showError('Error discarding variants. Please try again.');
           }
         });
       }
