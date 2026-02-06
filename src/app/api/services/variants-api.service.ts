@@ -1,6 +1,9 @@
 import { Injectable, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, timeout } from 'rxjs/operators';
+
+/** Max wait for variants/generate (backend + proxy can take several minutes). */
+const GENERATE_VARIANTS_TIMEOUT_MS = 10 * 60 * 1000;
 import { API_CLIENT } from '../api-client.token';
 import { ApiClient } from '../api-client';
 import {
@@ -31,6 +34,7 @@ export class VariantsApiService {
 
   generateVariants(projectId: string, pointId: string, req: GenerateVariantsRequest): Observable<Variant[]> {
     return this.apiClient.variantsGenerate(projectId, pointId, req).pipe(
+      timeout(GENERATE_VARIANTS_TIMEOUT_MS),
       map(dtos => dtos.map(dto => this.dtoToModel(dto)))
     );
   }

@@ -376,12 +376,15 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
   private handleError(err: any): void {
     const isPointBriefDraft = this.data.pointName === 'Point Brief Draft';
     const isBriefGeneration = this.data.pointName === 'Brief Generation';
+    const isTimeout = err?.name === 'TimeoutError' || /timeout/i.test(err?.message || '');
     const defaultError = isPointBriefDraft
       ? 'We couldn\'t generate a draft. Please try again.'
       : isBriefGeneration
         ? 'An error occurred while generating the draft brief. Please try again.'
-        : 'An error occurred while generating variants. Please try again.';
-    this.error = err?.message || defaultError;
+        : isTimeout
+          ? 'Generation took too long. Variants may have been created—check the Variants tab and refresh if needed.'
+          : 'An error occurred while generating variants. Please try again.';
+    this.error = isTimeout ? defaultError : (err?.message || defaultError);
     this.steps.forEach(step => {
       if (step.status === 'in-progress') {
         step.status = 'pending';

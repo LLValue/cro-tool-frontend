@@ -5,7 +5,8 @@
     "changeOrigin": true,
     "logLevel": "debug",
     "ws": true,
-    "xfwd": true
+    "xfwd": true,
+    "proxyTimeout": 600000,
+    "timeout": 600000
   }
 }
-
