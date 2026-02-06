@@ -741,9 +741,9 @@ export class ContextComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Parse array fields
+      // Parse array fields (API may send JSON array string e.g. "[\"a\",\"b\"]" for target_audiences etc.)
       let cleanValue = text.trim();
-      if (['valueProps', 'topObjections', 'allowedFacts', 'forbiddenWords', 'sensitiveClaims'].includes(fieldName)) {
+      if (['targetAudiences', 'valueProps', 'topObjections', 'allowedFacts', 'forbiddenWords', 'sensitiveClaims'].includes(fieldName)) {
         cleanValue = parseArrayField(cleanValue);
       }
 
