@@ -141,6 +141,17 @@
   padding: 24px;
 }
 
+.results-filters {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+
+  .filter-field {
+    min-width: 180px;
+  }
+}
+
 .charts-section {
   margin-bottom: 32px;
 }
@@ -485,9 +496,21 @@
 }
 
 .combination-table {
+  .mat-mdc-cell.cdk-column-combination,
+  .mat-mdc-header-cell.cdk-column-combination {
+    min-width: 0;
+    max-width: 100%;
+    width: 35%;
+  }
+
   tr.winner-row {
     background-color: #e8f5e9;
     border-left: 4px solid #4caf50;
+  }
+
+  tr.control-row {
+    background-color: rgba(33, 150, 243, 0.06);
+    border-left: 4px solid #2196f3;
   }
 
   tr.discarded-row {
@@ -509,12 +532,39 @@
 }
 
 // Combination table styles
+.metric-cell-right {
+  text-align: right;
+
+  .metric-value {
+    display: block;
+  }
+}
+
 .combination-cell {
+  min-width: 0;
+  max-width: 100%;
+
   .combination-text {
     font-size: 13px;
     line-height: 1.8;
-    max-width: 400px;
+    min-width: 0;
+    max-width: 100%;
     white-space: pre-line;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &.combo-name-cell:not(.expanded) {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      .combination-line {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
 
     &.expanded .combination-line {
       white-space: normal;
@@ -759,11 +809,17 @@
       flex-shrink: 0;
     }
   }
+
+  .drawer-header-content {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
   
   .drawer-content {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
+    padding: 12px;
   }
   
   .drawer-winner-badge {
@@ -872,17 +928,12 @@
   }
   
   .drawer-actions {
-    margin-bottom: 16px;
 
     button {
       display: inline-flex;
       align-items: center;
       gap: 8px;
     }
-  }
-
-  .drawer-preview {
-    margin-top: 24px;
   }
 }
 
@@ -894,6 +945,11 @@
   .combo-badges .discarded-badge {
     background: rgba(255, 255, 255, 0.15);
     color: rgba(255, 255, 255, 0.6);
+  }
+
+  .combination-table tr.control-row {
+    background-color: rgba(33, 150, 243, 0.12);
+    border-left-color: #42a5f5;
   }
 
   .combination-table tr.discarded-row {

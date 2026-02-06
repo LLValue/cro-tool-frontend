@@ -383,8 +383,7 @@
             </mat-card-content>
           </mat-card>
         </div>
-        <div *ngIf="!isCreateMode" class="two-column-layout variants-layout">
-          <div class="left-column">
+        <div *ngIf="!isCreateMode" class="variants-layout variants-full-width">
             <!-- Sticky: Enabled set (only if any enabled) -->
             <div class="enabled-strip" *ngIf="enabledVariants.length > 0">
               <span class="enabled-strip-label">Enabled set ({{ enabledVariants.length }})</span>
@@ -470,8 +469,8 @@
                         <div *ngIf="editingVariantId === variant.id" class="text-edit">
                           <textarea [(ngModel)]="editingVariantText" [ngModelOptions]="{standalone: true}" rows="2"></textarea>
                           <div class="inline-edit-actions">
-                            <button type="button" mat-button (click)="saveEditVariant()">Save</button>
-                            <button type="button" mat-button (click)="cancelEditVariant()">Cancel</button>
+                            <button type="button" mat-raised-button color="primary" (click)="saveEditVariant()">Save</button>
+                            <button type="button" mat-raised-button color="primary" (click)="cancelEditVariant()">Cancel</button>
                           </div>
                         </div>
                       </td>
@@ -519,25 +518,45 @@
                 </tbody>
               </table>
             </div>
-          </div>
-
-          <div class="right-column">
-            <app-preview-panel
-              [previewHtml]="previewHtml"
-              [previewUrl]="previewUrl"
-              [loading]="loadingPreview"
-              [useIframe]="true"
-              [showReset]="true"
-              [originalHtml]="originalPreviewHtml"
-              [highlightSelector]="highlightSelector"
-              (reload)="onPreviewReload()"
-              (reset)="onPreviewReset()">
-            </app-preview-panel>
-          </div>
         </div>
       </div>
     </mat-tab>
     </mat-tab-group>
   </mat-card>
 </div>
+
+<!-- Variants preview drawer (like Reporting) -->
+<mat-drawer-container *ngIf="previewDrawerOpen" class="preview-drawer-container" [hasBackdrop]="true" (backdropClick)="closePreviewDrawer()">
+  <mat-drawer #previewDrawer mode="over" position="end" [opened]="previewDrawerOpen" (closed)="closePreviewDrawer()" class="preview-drawer">
+    <div class="drawer-header">
+      <div class="drawer-header-content">
+        <h3>Preview</h3>
+        <div class="drawer-actions" *ngIf="point?.selector">
+          <button mat-raised-button color="primary" type="button" (click)="applyHighlightInDrawer()">
+            <mat-icon>highlight</mat-icon>
+            Apply highlight
+          </button>
+        </div>
+      </div>
+      
+      <button mat-icon-button (click)="closePreviewDrawer()" aria-label="Close preview" class="drawer-close-btn">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="drawer-content">
+      <app-preview-panel
+        [previewHtml]="previewHtml"
+        [previewUrl]="previewUrl"
+        [loading]="loadingPreview"
+        [useIframe]="true"
+        [showReset]="true"
+        [originalHtml]="originalPreviewHtml"
+        [highlightSelector]="highlightSelector"
+        (reload)="onPreviewReload()"
+        (reset)="onPreviewReset()">
+      </app-preview-panel>
+    </div>
+  </mat-drawer>
+  <mat-drawer-content class="preview-drawer-backdrop-area" (click)="closePreviewDrawer()"></mat-drawer-content>
+</mat-drawer-container>
 

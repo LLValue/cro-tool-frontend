@@ -51,6 +51,35 @@ const chartWinnerBadgePlugin = {
   }
 };
 Chart.register(chartWinnerBadgePlugin);
+
+/** Plugin: draws value (e.g. "87%") to the right of each bar in horizontal bar charts. */
+const chartBarValueRightPlugin = {
+  id: 'chartBarValueRight',
+  afterDatasetsDraw(chart: Chart) {
+    const opts = chart.options as { indexAxis?: string };
+    if (opts?.indexAxis !== 'y') return;
+    const meta = chart.getDatasetMeta(0);
+    if (!meta?.data?.length) return;
+    const ctx = chart.ctx;
+    const data = chart.data.datasets[0]?.data as number[] | undefined;
+    if (!data) return;
+    ctx.save();
+    ctx.font = '12px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    meta.data.forEach((bar: unknown, i: number) => {
+      const b = bar as { x: number; y: number; base: number };
+      const value = data[i];
+      const label = typeof value === 'number' ? value.toFixed(0) + '%' : String(value);
+      const x = Math.max(b.x, b.base) + 8;
+      ctx.fillText(label, x, b.y);
+    });
+    ctx.restore();
+  }
+};
+Chart.register(chartBarValueRightPlugin);
+
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint, Variant, ReportingMetrics, Goal } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
@@ -100,17 +129,17 @@ import {
     trigger('slideInOut', [
       transition('* => *', [
         query('tr.mat-mdc-row', [
-          style({ opacity: 0, transform: 'translateX(-20px)' }),
-          stagger(50, [
-            animate('400ms ease-out', style({ opacity: 1, transform: 'translateX(0)' }))
+          style({ opacity: 0, transform: 'translateX(-16px)' }),
+          stagger(60, [
+            animate('500ms cubic-bezier(0.25, 0.46, 0.45, 0.94)', style({ opacity: 1, transform: 'translateX(0)' }))
           ])
         ], { optional: true })
       ]),
       transition('out => in', [
         query('tr.mat-mdc-row', [
-          style({ opacity: 0.5, transform: 'translateY(-10px)' }),
-          stagger(30, [
-            animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+          style({ opacity: 0.5, transform: 'translateY(-8px)' }),
+          stagger(40, [
+            animate('400ms cubic-bezier(0.25, 0.46, 0.45, 0.94)', style({ opacity: 1, transform: 'translateY(0)' }))
           ])
         ], { optional: true })
       ])
@@ -130,6 +159,10 @@ export class ReportingComponent implements OnInit, OnDestroy {
   selectedPointId: string = '';
   selectedGoalType: string = 'all';
   selectedGoalId: string = 'all';
+  /** Filter for results table/charts: 'all' or point id. */
+  selectedPointIdFilter: string = 'all';
+  /** Filter for results: 'all' or goal id. */
+  selectedGoalIdFilter: string = 'all';
   simulating = false;
   isSimulating = false; // For 30-day simulation
   animatingMetrics = false;
@@ -172,6 +205,20 @@ export class ReportingComponent implements OnInit, OnDestroy {
   combinationColumnsWithExpand: string[] = ['expand', 'combination', 'users', 'conversions', 'conversionRate', 'uplift', 'winProbability', 'preview'];
   
   @ViewChild('combinationTable') combinationTable: MatTable<CombinationRow> | null = null;
+  @ViewChild('conversionRateChart') conversionRateChartRef: BaseChartDirective | null = null;
+  @ViewChild('winProbabilityChart') winProbabilityChartRef: BaseChartDirective | null = null;
+
+  /** Rows to display in the table (filtered by selectedPointIdFilter / selectedGoalIdFilter when set). */
+  get displayCombinationRows(): CombinationRow[] {
+    if (this.selectedPointIdFilter === 'all') return this.combinationRows;
+    return this.combinationRows.filter(c => c.points.some(p => p.pointId === this.selectedPointIdFilter));
+  }
+
+  /** Users count of first displayed combo (for KPI uplift formatting). */
+  get firstDisplayComboUsers(): number {
+    const first = this.displayCombinationRows[0];
+    return first?.metrics?.users ?? 0;
+  }
 
   // Track expanded rows
   expandedRows: Set<string> = new Set();
@@ -194,7 +241,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
   
   public winProbabilityChartData: ChartConfiguration<'bar'>['data'] = {
     labels: [],
-    datasets: []
+    datasets: [{ label: 'Win Probability', data: [], backgroundColor: [] as string[] }]
   };
   public winProbabilityChartOptions: ChartConfiguration<'bar'>['options'] = {};
 
@@ -344,8 +391,10 @@ export class ReportingComponent implements OnInit, OnDestroy {
     this.controlMetrics = detail.controlMetrics;
     this.controlComboId = detail.combinations.find(c => c.metrics.uplift === 0)?.comboId ?? null;
     this.currentSimulationId = detail.id?.trim() ? detail.id : null;
+    this.selectedPointIdFilter = 'all';
+    this.selectedGoalIdFilter = 'all';
     this.initializeCharts();
-    this.updateKPIs();
+    this.refreshFilteredChartsAndKPIs();
     this.markWinnersAndLosers();
     this.cdr.detectChanges();
   }
@@ -479,6 +528,55 @@ export class ReportingComponent implements OnInit, OnDestroy {
 
   onGoalChange(): void {
     this.recomputeMetrics();
+  }
+
+  onReportingGoalChange(): void {
+    this.refreshFilteredChartsAndKPIs();
+  }
+
+  onReportingPointChange(): void {
+    this.refreshFilteredChartsAndKPIs();
+  }
+
+  /** Rebuild charts and KPIs from current displayCombinationRows (filter result). */
+  private refreshFilteredChartsAndKPIs(): void {
+    this.updateKPIs();
+    const rows = this.displayCombinationRows;
+    const comboIds = new Set(rows.map(c => c.comboId));
+
+    const topCombos = [...rows]
+      .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
+      .slice(0, 8);
+    this.setWinProbabilityChartFromCombos(topCombos);
+
+    if (this.simulationFrames?.length) {
+      const labels: string[] = [];
+      const controlData: number[] = [];
+      const bestData: number[] = [];
+      this.simulationFrames.forEach(frame => {
+        labels.push(`Day ${frame.day}`);
+        const controlInFrame = this.controlComboId
+          ? frame.combos.find(c => c.comboId === this.controlComboId)
+          : null;
+        controlData.push(controlInFrame?.conversionRate ?? this.controlMetrics?.conversionRate ?? 0);
+        const filteredCombos = frame.combos.filter(c => comboIds.has(c.comboId));
+        const bestInFrame = filteredCombos.length
+          ? filteredCombos.reduce((best, c) => c.conversionRate > best.conversionRate ? c : best, filteredCombos[0])
+          : null;
+        bestData.push(bestInFrame?.conversionRate ?? 0);
+      });
+      const existing = this.conversionRateOverTimeChartData?.datasets ?? [];
+      this.conversionRateOverTimeChartData = {
+        labels,
+        datasets: [
+          { label: 'Control', data: controlData, borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.2)', tension: 0.1 },
+          { label: 'Best combination', data: bestData, borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.2)', tension: 0.1 }
+        ]
+      };
+    }
+
+    this.combinationTable?.renderRows();
+    this.cdr.detectChanges();
   }
 
   private applyGoalTypeFilter(metrics: ReportingMetrics[], goalType: string): ReportingMetrics[] {
@@ -1130,30 +1228,16 @@ export class ReportingComponent implements OnInit, OnDestroy {
       
       this.conversionRateOverTimeChartData.datasets[0].data.push(controlCR);
       this.conversionRateOverTimeChartData.datasets[1].data.push(bestCombo.conversionRate);
-      // Nueva referencia para que ng2-charts detecte el cambio (Angular OnPush / ngOnChanges)
-      this.conversionRateOverTimeChartData = {
-        labels: [...(this.conversionRateOverTimeChartData.labels || [])],
-        datasets: (this.conversionRateOverTimeChartData.datasets || []).map(ds => ({
-          ...ds,
-          data: [...(ds.data as number[])]
-        }))
-      };
+      // Update chart in place (no new reference) so only this chart redraws smoothly
+      this.conversionRateChartRef?.update('active');
     }
 
-    // Update win probability chart (reorder every 2-3 frames to avoid too much movement)
+    // Update win probability chart only (reorder every 2-3 frames)
     if (frame.day % 3 === 0) {
       const topCombos = [...this.combinationRows]
         .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
         .slice(0, 8);
-      this.topCombosForChart = topCombos;
-      this.winProbabilityChartData = {
-        labels: topCombos.map(c => this.getCombinationLabel(c)),
-        datasets: [{
-          label: 'Win Probability',
-          data: topCombos.map(c => c.metrics.winProbability * 100),
-          backgroundColor: topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)')
-        }]
-      };
+      this.setWinProbabilityChartFromCombos(topCombos);
     }
     this.cdr.detectChanges();
   }
@@ -1165,9 +1249,58 @@ export class ReportingComponent implements OnInit, OnDestroy {
       datasets: []
     };
     
+    const totalDuration = 2800;
+    const getDataLen = (ctx: { chart?: Chart }): number =>
+      (ctx.chart?.data?.labels?.length ?? ctx.chart?.data?.datasets?.[0]?.data?.length ?? 30);
+    const delayBetweenPoints = (ctx: { chart?: Chart; type?: string; index?: number; xStarted?: boolean; yStarted?: boolean; datasetIndex?: number }) => {
+      if (ctx.type !== 'data') return 0;
+      const len = getDataLen(ctx);
+      return (ctx.index ?? 0) * (totalDuration / Math.max(1, len));
+    };
+    const segmentDuration = (ctx: { chart?: Chart }) => totalDuration / Math.max(1, getDataLen(ctx));
+    const previousY = (ctx: { chart?: Chart; index?: number; datasetIndex?: number }) => {
+      const yScale = ctx.chart?.scales?.['y'];
+      if (!ctx.chart || ctx.index === 0) {
+        return yScale?.getPixelForValue(0) ?? 0;
+      }
+      const meta = ctx.chart.getDatasetMeta(ctx.datasetIndex ?? 0);
+      const prev = meta?.data?.[(ctx.index ?? 1) - 1];
+      const props = (prev as unknown as { getProps?(keys: string[], mode: boolean): Record<string, unknown> })?.getProps?.(['y'], true);
+      const py = props && 'y' in props ? props['y'] : undefined;
+      return (typeof py === 'number' ? py : yScale?.getPixelForValue(0)) ?? 0;
+    };
+
+    // Progressive line: points animate in one-by-one (Chart.js sample: options.animation.x / .y)
+    const progressiveAnimation = {
+      duration: totalDuration,
+      x: {
+        type: 'number' as const,
+        easing: 'easeOutQuart' as const,
+        duration: segmentDuration,
+        from: NaN,
+        delay(ctx: { type?: string; index?: number; xStarted?: boolean; chart?: Chart }) {
+          if (ctx.type !== 'data' || ctx.xStarted) return 0;
+          (ctx as { xStarted?: boolean }).xStarted = true;
+          return delayBetweenPoints(ctx);
+        }
+      },
+      y: {
+        type: 'number' as const,
+        easing: 'easeOutQuart' as const,
+        duration: segmentDuration,
+        from: previousY,
+        delay(ctx: { type?: string; index?: number; yStarted?: boolean; chart?: Chart; datasetIndex?: number }) {
+          if (ctx.type !== 'data' || ctx.yStarted) return 0;
+          (ctx as { yStarted?: boolean }).yStarted = true;
+          return delayBetweenPoints(ctx);
+        }
+      }
+    };
+
     this.conversionRateOverTimeChartOptions = {
       responsive: true,
       maintainAspectRatio: false,
+      animation: progressiveAnimation as unknown as typeof this.conversionRateOverTimeChartOptions extends { animation?: infer A } ? A : never,
       plugins: {
         legend: {
           display: true,
@@ -1193,20 +1326,12 @@ export class ReportingComponent implements OnInit, OnDestroy {
       }
     };
 
-    // Initialize win probability chart (and topCombosForChart for tooltip)
+    // Initialize win probability chart only (topCombosForChart for tooltip)
     const topCombos = [...this.combinationRows]
       .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
       .slice(0, 8);
-    this.topCombosForChart = topCombos;
-    this.winProbabilityChartData = {
-      labels: topCombos.map(c => this.getCombinationLabel(c)),
-      datasets: topCombos.length ? [{
-        label: 'Win Probability',
-        data: topCombos.map(c => c.metrics.winProbability * 100),
-        backgroundColor: topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)')
-      }] : []
-    };
-    
+    this.setWinProbabilityChartFromCombos(topCombos);
+
     this.winProbabilityChartOptions = {
       indexAxis: 'y',
       responsive: true,
@@ -1247,15 +1372,35 @@ export class ReportingComponent implements OnInit, OnDestroy {
     };
   }
 
+  /** Updates only the win probability chart (mutate in place + update('active')). Does not touch the line chart. */
+  private setWinProbabilityChartFromCombos(topCombos: CombinationRow[]): void {
+    this.topCombosForChart = topCombos;
+    const labels = topCombos.map(c => this.getCombinationLabel(c));
+    const data = topCombos.map(c => c.metrics.winProbability * 100);
+    const backgroundColor = topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)');
+    const d = this.winProbabilityChartData;
+    if (!d.datasets?.length || !d.labels) return;
+    d.labels.length = 0;
+    d.labels.push(...labels);
+    d.datasets[0].data.length = 0;
+    (d.datasets[0].data as number[]).push(...data);
+    (d.datasets[0].backgroundColor as string[]).length = 0;
+    (d.datasets[0].backgroundColor as string[]).push(...backgroundColor);
+    this.winProbabilityChartRef?.update('active');
+  }
+
   private updateKPIs(): void {
     if (this.controlMetrics) {
       this.controlCR = this.controlMetrics.conversionRate;
     }
-    
-    if (this.combinationRows.length > 0) {
-      const best = this.combinationRows[0];
+    const rows = this.displayCombinationRows;
+    if (rows.length > 0) {
+      const best = rows[0];
       this.bestCR = best.metrics.conversionRate;
       this.uplift = best.metrics.uplift;
+    } else {
+      this.bestCR = 0;
+      this.uplift = 0;
     }
   }
 
@@ -1437,16 +1582,21 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   isWinnerCombo(combo: CombinationRow): boolean {
-    return this.combinationRows.length > 0 && 
-           this.combinationRows[0].comboId === combo.comboId;
+    const rows = this.displayCombinationRows;
+    return rows.length > 0 && rows[0].comboId === combo.comboId;
+  }
+
+  isControlCombo(combo: CombinationRow): boolean {
+    return combo.metrics.uplift === 0;
   }
 
   isLoserCombo(combo: CombinationRow): boolean {
-    const bottomThreshold = Math.floor(this.combinationRows.length * 0.2);
-    const sorted = [...this.combinationRows].sort((a, b) => 
-      a.metrics.conversionRate - b.metrics.conversionRate
-    );
-    return sorted.slice(0, bottomThreshold).some(c => c.comboId === combo.comboId);
+    const rows = this.displayCombinationRows;
+    if (rows.length === 0) return false;
+    const bottomThreshold = Math.floor(rows.length * 0.2);
+    const bottomStart = rows.length - bottomThreshold;
+    const index = rows.findIndex(r => r.comboId === combo.comboId);
+    return index >= bottomStart && index >= 0;
   }
 
   trackByComboId(index: number, combo: CombinationRow): string {

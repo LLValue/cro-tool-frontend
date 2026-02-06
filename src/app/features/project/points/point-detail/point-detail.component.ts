@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, Inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -15,6 +15,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatSidenavModule } from '@angular/material/sidenav';
 import { PageHeaderComponent } from '../../../../shared/page-header/page-header.component';
 import { ChipsInputComponent } from '../../../../shared/chips-input/chips-input.component';
 import { InfoModalComponent } from '../../../../shared/info-modal/info-modal.component';
@@ -65,6 +66,7 @@ interface SelectedElement {
     MatTooltipModule,
     MatProgressBarModule,
     MatDialogModule,
+    MatSidenavModule,
     PageHeaderComponent,
     ChipsInputComponent,
     PreviewPanelComponent
@@ -126,6 +128,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   originalPreviewHtml: string = '';
   previewUrl: string = '';
   loadingPreview: boolean = false;
+  previewDrawerOpen: boolean = false;
   highlightSelector: string = '';
 
   // AI Brief Helper state
@@ -141,6 +144,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     private store: ProjectsStoreService,
     private fb: FormBuilder,
     private toast: ToastHelperService,
+    private cdr: ChangeDetectorRef,
     @Inject(API_CLIENT) private apiClient: ApiClient,
     private sanitizer: DomSanitizer,
     private projectsApi: ProjectsApiService,
@@ -1511,13 +1515,42 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     this.previewHtml = modifiedHtml;
     
     this.highlightSelector = '';
-    
+    this.previewDrawerOpen = true;
+    this.cdr.detectChanges();
     setTimeout(() => {
       if (this.point && this.point.selector) {
         this.highlightSelector = this.point.selector;
+        this.cdr.detectChanges();
       }
     }, 50);
     this.toast.showSuccess('Preview updated');
+  }
+
+  closePreviewDrawer(): void {
+    this.previewDrawerOpen = false;
+    this.highlightSelector = '';
+    this.cdr.detectChanges();
+  }
+
+  applyHighlightInDrawer(): void {
+    if (!this.point?.selector) return;
+    this.highlightSelector = '';
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.highlightSelector = this.point!.selector;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.highlightSelector = '';
+        this.cdr.detectChanges();
+      }, 1100);
+    }, 50);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.previewDrawerOpen) {
+      this.closePreviewDrawer();
+    }
   }
 
   onPreviewReload(): void {

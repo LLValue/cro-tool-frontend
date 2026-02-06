@@ -13,6 +13,22 @@
 
 <!-- Results section: KPI + Charts + Combination table (when simulation data exists) -->
 <section class="results-section" *ngIf="combinationRows.length > 0">
+  <div class="results-filters">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Goal</mat-label>
+      <mat-select [(ngModel)]="selectedGoalIdFilter" (selectionChange)="onReportingGoalChange()">
+        <mat-option value="all">All goals</mat-option>
+        <mat-option *ngFor="let g of goals" [value]="g.id">{{ g.name || g.type }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Optimization point</mat-label>
+      <mat-select [(ngModel)]="selectedPointIdFilter" (selectionChange)="onReportingPointChange()">
+        <mat-option value="all">All points</mat-option>
+        <mat-option *ngFor="let p of points" [value]="p.id">{{ p.name }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
   <div class="charts-section charts-row">
     <div class="kpi-cards">
       <mat-card class="kpi-card">
@@ -30,7 +46,7 @@
       <mat-card class="kpi-card">
         <mat-card-content>
           <div class="kpi-label">Uplift vs control</div>
-          <div class="kpi-value">{{ formatUplift(uplift, combinationRows[0].metrics.users) }}</div>
+          <div class="kpi-value">{{ formatUplift(uplift, firstDisplayComboUsers) }}</div>
         </mat-card-content>
       </mat-card>
     </div>
@@ -41,6 +57,7 @@
       </mat-card-header>
       <mat-card-content>
         <canvas baseChart
+          #conversionRateChart
           [data]="conversionRateOverTimeChartData"
           [options]="conversionRateOverTimeChartOptions"
           type="line">
@@ -63,7 +80,7 @@
   </div>
 
   <div class="table-section app-table-wrapper">
-    <table mat-table #combinationTable [dataSource]="combinationRows" class="metrics-table combination-table" multiTemplateDataRows>
+    <table mat-table #combinationTable [dataSource]="displayCombinationRows" class="metrics-table combination-table" multiTemplateDataRows>
       <ng-container matColumnDef="expand">
         <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
         <td mat-cell *matCellDef="let combo" (click)="$event.stopPropagation()">
@@ -79,11 +96,11 @@
             <span class="winner-badge" *ngIf="isWinnerCombo(combo)">Winner</span>
             <span class="discarded-badge" *ngIf="isLoserCombo(combo)">Discarded</span>
           </div>
-          <div class="combination-text" [class.expanded]="isCombinationExpanded(combo.comboId)">
+          <div class="combination-text combo-name-cell" [class.expanded]="isCombinationExpanded(combo.comboId)">
             <ng-container *ngIf="!isCombinationExpanded(combo.comboId)">
               <div *ngFor="let point of combo.points" class="combination-line">
                 <span class="point-name">{{ point.pointName }}:</span>
-                <span class="point-value">"{{ truncateText(point.variantText, 12) }}"</span>
+                <span class="point-value">{{ point.variantText }}</span>
               </div>
             </ng-container>
             <ng-container *ngIf="isCombinationExpanded(combo.comboId)">
@@ -121,7 +138,7 @@
       </ng-container>
       <ng-container matColumnDef="winProbability">
         <th mat-header-cell *matHeaderCellDef>Win probability</th>
-        <td mat-cell *matCellDef="let combo" [class.animating]="animatingMetrics" class="metric-cell">
+        <td mat-cell *matCellDef="let combo" [class.animating]="animatingMetrics" class="metric-cell metric-cell-right">
           <span class="metric-value">{{ formatWinProbability(combo.metrics.winProbability, combo.metrics.users) }}</span>
         </td>
       </ng-container>
@@ -184,7 +201,7 @@
                     <span class="point-sep">—</span>
                     <span class="variant-label">{{ point.variantName }}</span>
                   </div>
-                  <div class="point-text">"{{ point.variantText }}"</div>
+                  <div class="point-text">{{ point.variantText }}</div>
                 </div>
               </div>
             </div>
@@ -204,6 +221,7 @@
       <tr mat-row *matRowDef="let row; columns: combinationColumnsWithExpand;"
           [class.winner-row]="isWinnerCombo(row)"
           [class.discarded-row]="isLoserCombo(row)"
+          [class.control-row]="isControlCombo(row)"
           [class.animating-row]="animatingMetrics"
           (click)="toggleCombinationExpansion(row.comboId)"
           [@slideInOut]="animatingMetrics">
@@ -224,20 +242,22 @@
 <mat-drawer-container *ngIf="previewDrawerOpen" class="preview-drawer-container" [hasBackdrop]="true" (backdropClick)="closePreviewDrawer()">
   <mat-drawer #previewDrawer mode="over" position="end" [opened]="previewDrawerOpen" (closed)="closePreviewDrawer()" class="preview-drawer">
     <div class="drawer-header">
-      <h3>Preview</h3>
+      <div class="drawer-header-content">
+        <h3>Preview</h3>
+        <div class="drawer-actions" *ngIf="selectedCombinationForPreview">
+          <button mat-raised-button color="primary" (click)="applyHighlightInDrawer()">
+            <mat-icon>highlight</mat-icon>
+            Apply highlight
+          </button>
+        </div>
+      </div>
+      
       <button mat-icon-button (click)="closePreviewDrawer()" aria-label="Cerrar panel de preview" class="drawer-close-btn">
         <mat-icon>close</mat-icon>
       </button>
     </div>
     
     <div class="drawer-content" *ngIf="selectedCombinationForPreview">
-      <div class="drawer-actions" *ngIf="selectedCombinationForPreview">
-        <button mat-raised-button color="primary" (click)="applyHighlightInDrawer()">
-          <mat-icon>highlight</mat-icon>
-          Apply highlight
-        </button>
-      </div>
-      
       <!-- Preview Panel -->
       <div class="drawer-preview">
         <app-preview-panel

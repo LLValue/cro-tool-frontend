@@ -523,19 +523,29 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       return;
     }
 
-    const cleanSelector = this.cleanSelector(selector);
-
     try {
       const doc = iframe.contentDocument;
-      const elements = doc.querySelectorAll(cleanSelector);
+      // Support comma-separated selectors: query each part and collect all elements (so all combination points are highlighted)
+      const parts = selector.split(',').map(s => this.cleanSelector(s.trim())).filter(Boolean);
+      const seen = new Set<Element>();
+      const elements: Element[] = [];
+      for (const part of parts) {
+        doc.querySelectorAll(part).forEach(el => {
+          if (!seen.has(el)) {
+            seen.add(el);
+            elements.push(el);
+          }
+        });
+      }
 
       if (elements.length === 0) {
-        console.error('[PreviewPanel] No elements found for selector:', cleanSelector);
+        console.error('[PreviewPanel] No elements found for selector:', selector);
         return;
       }
 
       this.clearHighlight();
 
+      const toClear: Array<{ el: HTMLElement; outline: string; boxShadow: string; transition: string }> = [];
       elements.forEach((element: Element) => {
         const htmlElement = element as HTMLElement;
         const originalOutline = htmlElement.style.outline;
@@ -549,28 +559,30 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         htmlElement.style.outline = '3px solid #673ab7';
         htmlElement.style.outlineOffset = '2px';
         htmlElement.style.boxShadow = '0 0 0 4px rgba(103, 58, 183, 0.2)';
-        htmlElement.style.transition = 'all 0.3s ease-out';
+        htmlElement.style.transition = 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
         htmlElement.style.zIndex = '9999';
         htmlElement.style.position = 'relative';
-
-        if (!persistent && duration > 0) {
-          this.highlightTimeout = window.setTimeout(() => {
-            htmlElement.style.transition = 'all 0.8s ease-out';
-            htmlElement.style.outline = originalOutline;
-            htmlElement.style.outlineOffset = '0';
-            htmlElement.style.boxShadow = originalBoxShadow;
-
-            setTimeout(() => {
-              htmlElement.style.transition = originalTransition;
-              htmlElement.style.zIndex = '';
-              htmlElement.style.position = '';
-              delete (htmlElement as any).__originalOutline;
-              delete (htmlElement as any).__originalBoxShadow;
-              delete (htmlElement as any).__originalTransition;
-            }, 800);
-          }, Math.max(200, duration - 200));
-        }
+        toClear.push({ el: htmlElement, outline: originalOutline, boxShadow: originalBoxShadow, transition: originalTransition });
       });
+
+      if (!persistent && duration > 0 && toClear.length > 0) {
+        this.highlightTimeout = window.setTimeout(() => {
+          toClear.forEach(({ el, outline, boxShadow, transition }) => {
+            el.style.transition = 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            el.style.outline = outline;
+            el.style.outlineOffset = '0';
+            el.style.boxShadow = boxShadow;
+            setTimeout(() => {
+              el.style.transition = transition;
+              el.style.zIndex = '';
+              el.style.position = '';
+              delete (el as any).__originalOutline;
+              delete (el as any).__originalBoxShadow;
+              delete (el as any).__originalTransition;
+            }, 500);
+          });
+        }, Math.max(200, duration - 200));
+      }
     } catch (error) {
       console.warn('Could not highlight element in iframe', error);
     }
@@ -581,10 +593,20 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     if (!container) return;
 
     try {
-      const elements = container.querySelectorAll(selector);
-
+      const parts = selector.split(',').map(s => this.cleanSelector(s.trim())).filter(Boolean);
+      const seen = new Set<Element>();
+      const elements: Element[] = [];
+      for (const part of parts) {
+        container.querySelectorAll(part).forEach(el => {
+          if (!seen.has(el)) {
+            seen.add(el);
+            elements.push(el);
+          }
+        });
+      }
       if (elements.length === 0) return;
 
+      const toClear: Array<{ el: HTMLElement; outline: string; boxShadow: string; transition: string }> = [];
       elements.forEach((element: Element) => {
         const htmlElement = element as HTMLElement;
         const originalOutline = htmlElement.style.outline;
@@ -594,23 +616,25 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
         htmlElement.style.outline = '3px solid #673ab7';
         htmlElement.style.outlineOffset = '2px';
         htmlElement.style.boxShadow = '0 0 0 4px rgba(103, 58, 183, 0.2)';
-        htmlElement.style.transition = 'all 0.3s ease-out';
+        htmlElement.style.transition = 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
         htmlElement.style.zIndex = '9999';
         htmlElement.style.position = 'relative';
-
-        this.highlightTimeout = window.setTimeout(() => {
-          htmlElement.style.transition = 'all 0.8s ease-out';
-          htmlElement.style.outline = originalOutline;
-          htmlElement.style.outlineOffset = '0';
-          htmlElement.style.boxShadow = originalBoxShadow;
-
-          setTimeout(() => {
-            htmlElement.style.transition = originalTransition;
-            htmlElement.style.zIndex = '';
-            htmlElement.style.position = '';
-          }, 800);
-        }, 200);
+        toClear.push({ el: htmlElement, outline: originalOutline, boxShadow: originalBoxShadow, transition: originalTransition });
       });
+
+      this.highlightTimeout = window.setTimeout(() => {
+        toClear.forEach(({ el, outline, boxShadow, transition }) => {
+          el.style.transition = 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          el.style.outline = outline;
+          el.style.outlineOffset = '0';
+          el.style.boxShadow = boxShadow;
+          setTimeout(() => {
+            el.style.transition = transition;
+            el.style.zIndex = '';
+            el.style.position = '';
+          }, 500);
+        });
+      }, Math.max(200, duration - 200));
     } catch (error) {
       console.warn('Could not highlight element in div', error);
     }
