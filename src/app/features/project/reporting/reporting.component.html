@@ -62,7 +62,7 @@
     </mat-card>
   </div>
 
-  <div class="table-section">
+  <div class="table-section app-table-wrapper">
     <table mat-table #combinationTable [dataSource]="combinationRows" class="metrics-table combination-table" multiTemplateDataRows>
       <ng-container matColumnDef="expand">
         <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
@@ -150,7 +150,7 @@
             <div class="detail-section per-point-contribution" *ngIf="combo.points.length > 0">
               <h4>Per-point contribution</h4>
               <p class="subheader">Point uplift and win probability per optimization point.</p>
-              <div class="per-point-table-wrap">
+              <div class="per-point-table-wrap app-table-wrapper">
                 <table class="per-point-table">
                   <thead>
                     <tr>

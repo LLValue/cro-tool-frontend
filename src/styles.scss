@@ -36,7 +36,51 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-// Table column headers: bold across the app (native tables + Angular Material)
+// Unified table appearance (same as variants table)
+.app-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    vertical-align: middle;
+  }
+
+  th {
+    font-weight: 700 !important;
+    color: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.03);
+  }
+}
+
+// Angular Material tables (mat-table)
+.mat-mdc-table {
+  font-size: 13px;
+
+  .mat-mdc-header-cell {
+    padding: 10px 12px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    color: rgba(0, 0, 0, 0.7) !important;
+    background: rgba(0, 0, 0, 0.03) !important;
+    font-weight: 700 !important;
+  }
+
+  .mat-mdc-cell {
+    padding: 10px 12px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+}
+
+// Table column headers: bold (backup for any th not covered above)
 table th,
 .mat-mdc-header-cell {
   font-weight: 700 !important;
@@ -1101,19 +1145,34 @@ body.dark-mode {
     }
   }
 
+  .app-table-wrapper {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  table th {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  table td {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
   .mat-mdc-table {
     background: #1e1e1e;
     color: #ffffff;
   }
 
   .mat-mdc-header-cell {
-    color: #ffffff;
-    border-bottom-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
   }
 
   .mat-mdc-cell {
     color: #ffffff;
-    border-bottom-color: rgba(255, 255, 255, 0.12);
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
   }
 
   mat-divider {

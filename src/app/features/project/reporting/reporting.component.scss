@@ -679,24 +679,8 @@
   
   .per-point-table-wrap {
     overflow-x: auto;
-    
+
     .per-point-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      
-      th, td {
-        padding: 8px 12px;
-        text-align: left;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-      }
-      th {
-        font-weight: 600;
-        color: rgba(0, 0, 0, 0.6);
-        text-transform: uppercase;
-        font-size: 11px;
-        letter-spacing: 0.5px;
-      }
       .point-name-cell {
         display: inline-flex;
         align-items: center;

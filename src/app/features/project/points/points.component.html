@@ -20,7 +20,7 @@
     </button>
   </div>
 
-  <div *ngIf="points.length > 0" class="points-table-container">
+  <div *ngIf="points.length > 0" class="points-table-container app-table-wrapper">
     <table mat-table [dataSource]="pointsDataSource" class="points-table">
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef>Name</th>

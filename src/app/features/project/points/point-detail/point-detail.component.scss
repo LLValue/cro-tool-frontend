@@ -404,27 +404,10 @@
 
 .variants-table-wrapper {
   overflow-x: auto;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
 }
 
 .variants-table {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-
-  th, td {
-    padding: 10px 12px;
-    text-align: left;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    vertical-align: middle;
-  }
-
-  th {
-    font-weight: 600;
-    color: rgba(0, 0, 0, 0.7);
-    background: rgba(0, 0, 0, 0.03);
-  }
 
   .col-expand { width: 40px; }
   .col-id { width: 100px; }
@@ -585,12 +568,7 @@
     border-color: rgba(76, 175, 80, 0.35);
     .enabled-strip-label { color: #81c784; }
   }
-  .variants-table-wrapper {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
   .variants-table {
-    th { background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.8); }
-    td { border-bottom-color: rgba(255, 255, 255, 0.08); }
     .variant-row.discarded-row { background: rgba(255, 255, 255, 0.02); }
     .status-badge.disabled { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
     .status-badge.discarded { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); }
