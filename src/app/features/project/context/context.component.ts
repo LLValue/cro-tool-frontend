@@ -697,9 +697,7 @@ export class ContextComponent implements OnInit, OnDestroy {
         const confidence = (funnelStageData?.confidence === 'low' || nextActionData?.confidence === 'low')
           ? 'low'
           : (funnelStageData?.confidence || nextActionData?.confidence || 'medium');
-        const hasFormatIssue = funnelStageData?.format_issue || nextActionData?.format_issue || false;
-        
-        if (hasFormatIssue || reviewStatus === 'needs_review') {
+        if (reviewStatus === 'needs_review') {
           this.setFieldState('funnelStageAndNextAction', 'ai_draft', 'needs_review', confidence);
         } else {
           this.setFieldState('funnelStageAndNextAction', 'ai_draft', 'ok', confidence);
@@ -747,16 +745,15 @@ export class ContextComponent implements OnInit, OnDestroy {
         cleanValue = parseArrayField(cleanValue);
       }
 
-      // Determine review status and confidence from API response
+      // Determine review status and confidence from API response (only review_status drives badge, not format_issue)
       const reviewStatus = fieldData.review_status || 'ok';
       const confidence = fieldData.confidence || 'medium';
-      const hasFormatIssue = fieldData.format_issue || false;
 
       // Apply value to form
       this.globalForm.patchValue({ [fieldName]: cleanValue });
 
-      // Set field state based on API response
-      if (hasFormatIssue || reviewStatus === 'needs_review') {
+      // Set field state from API review_status only
+      if (reviewStatus === 'needs_review') {
         this.setFieldState(fieldName, 'ai_draft', 'needs_review', confidence);
       } else if (reviewStatus === 'missing') {
         this.setFieldState(fieldName, 'ai_draft', 'missing', confidence);
