@@ -19,6 +19,10 @@ export interface GenerateVariantsRequest {
   count?: number; // default 10
 }
 
+export interface CreateVariantRequest {
+  text: string;
+}
+
 export interface UpdateVariantRequest {
   text?: string;
   uxScore?: number;

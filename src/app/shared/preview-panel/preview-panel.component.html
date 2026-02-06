@@ -95,14 +95,16 @@
       </mat-select>
     </mat-form-field>
     <button 
+      type="button"
       mat-icon-button 
-      (click)="onReload()" 
-      matTooltip="Reload page"
+      (click)="onReload(); $event.preventDefault(); $event.stopPropagation()" 
+      matTooltip="Reload preview only"
       [disabled]="loading">
       <mat-icon>refresh</mat-icon>
     </button>
     <button 
       *ngIf="showReset && originalHtml" 
+      type="button"
       mat-icon-button 
       (click)="onReset()" 
       matTooltip="Reset to original"

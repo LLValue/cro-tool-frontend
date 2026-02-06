@@ -36,6 +36,12 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+// Table column headers: bold across the app (native tables + Angular Material)
+table th,
+.mat-mdc-header-cell {
+  font-weight: 700 !important;
+}
+
 // Material tabs underline (active indicator)
 // MDC uses border-color on the underline element; enforce our theme primary.
 .mat-mdc-tab .mdc-tab-indicator__content--underline,

@@ -37,11 +37,12 @@ mat-dialog-content {
   }
 
   .progress-text {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--theme-primary, #673ab7);
-    min-width: 50px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+    min-width: 52px;
     text-align: right;
+    letter-spacing: 0.02em;
   }
 }
 
@@ -227,6 +228,10 @@ mat-dialog-actions {
 
 // Dark mode
 :host-context(body.dark-mode) {
+  .progress-text {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
   .steps-list {
     background: #1e1e1e;
   }

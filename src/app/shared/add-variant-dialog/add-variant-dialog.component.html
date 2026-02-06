@@ -1,0 +1,10 @@
+<h2 mat-dialog-title>Add variant</h2>
+<mat-dialog-content>
+  <mat-form-field appearance="outline" class="full-width">
+    <textarea matInput [(ngModel)]="text" rows="4" placeholder="Enter the copy for this variant…"></textarea>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onAdd()" [disabled]="!text.trim()">Add</button>
+</mat-dialog-actions>

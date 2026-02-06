@@ -4,6 +4,8 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
+import { of } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { SidebarService } from '../../../core/sidebar.service';
 import { Project } from '../../../data/models';
@@ -34,13 +36,16 @@ export class ProjectShellComponent implements OnInit, AfterViewInit {
   ) {}
 
   ngOnInit(): void {
-
-    this.route.params.subscribe(params => {
-      this.projectId = params['projectId'];
-      this.project = this.store.getProject(this.projectId);
-      if (!this.project) {
-        this.router.navigate(['/projects']);
-      }
+    this.route.params.pipe(
+      switchMap(params => {
+        this.projectId = params['projectId'];
+        const fromStore = this.store.getProject(this.projectId);
+        if (fromStore) return of(fromStore);
+        return this.store.ensureProjectInStore(this.projectId);
+      })
+    ).subscribe({
+      next: (project) => { this.project = project; },
+      error: () => this.router.navigate(['/projects'])
     });
   }
 

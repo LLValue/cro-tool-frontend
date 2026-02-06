@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
-import { map, catchError, tap, switchMap, shareReplay } from 'rxjs/operators';
+import { map, catchError, tap, switchMap, shareReplay, take } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Project, BriefingGuardrails, OptimizationPoint, Variant, Goal, ReportingMetrics } from './models';
 import { ProjectsApiService } from '../api/services/projects-api.service';
@@ -212,6 +212,24 @@ export class ProjectsStoreService {
     return this.projectsSubject.value.find(p => p.id === id);
   }
 
+  /**
+   * Ensures the project exists in the store (e.g. after refresh). Fetches from API if missing.
+   * Use in project-shell so deep links / refresh keep the user on the same page.
+   */
+  ensureProjectInStore(projectId: string): Observable<Project> {
+    const existing = this.getProject(projectId);
+    if (existing) return of(existing);
+    return this.projectsApi.getProject(projectId).pipe(
+      take(1),
+      tap(project => {
+        const current = this.projectsSubject.value;
+        if (!current.some(p => p.id === project.id)) {
+          this.projectsSubject.next([...current, project]);
+        }
+      })
+    );
+  }
+
   // Points CRUD
               listPoints(projectId: string): Observable<OptimizationPoint[]> {
     if (!projectId) {
@@ -310,6 +328,38 @@ export class ProjectsStoreService {
       error: () => {} // Error handling done in components
     });
     return this.variants$;
+  }
+
+  addVariant(pointId: string, text: string, projectIdHint?: string): Observable<Variant> {
+    const point = this.getPoint(pointId);
+    const projectId = point?.projectId ?? projectIdHint;
+    if (!projectId) {
+      return throwError(() => new Error('Point not found'));
+    }
+    const addToStore = (variant: Variant) => {
+      const current = this.variantsSubject.value;
+      if (!current.some(v => v.id === variant.id)) {
+        this.variantsSubject.next([...current, variant]);
+      }
+    };
+    return this.variantsApi.createVariant(projectId, pointId, { text }).pipe(
+      tap(addToStore),
+      catchError(() =>
+        this.variantsApi.generateVariants(projectId, pointId, { count: 1 }).pipe(
+          switchMap(variants => {
+            if (!variants || variants.length === 0) {
+              return throwError(() => new Error('Failed to add variant'));
+            }
+            return this.variantsApi.updateVariant(projectId, variants[0].id, { text }).pipe(
+              tap(updated => {
+                addToStore(updated);
+                this.listVariants(pointId);
+              })
+            );
+          })
+        )
+      )
+    );
   }
 
   generateVariants(pointId: string, count: number = 10): Observable<Variant[]> {

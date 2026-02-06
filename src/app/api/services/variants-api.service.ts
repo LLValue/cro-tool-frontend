@@ -6,6 +6,7 @@ import { ApiClient } from '../api-client';
 import {
   VariantDto,
   GenerateVariantsRequest,
+  CreateVariantRequest,
   UpdateVariantRequest
 } from '../../api-contracts/variants.contracts';
 import { Variant } from '../../data/models';
@@ -19,6 +20,12 @@ export class VariantsApiService {
   listVariants(projectId: string, pointId: string): Observable<Variant[]> {
     return this.apiClient.variantsList(projectId, pointId).pipe(
       map(dtos => dtos.map(dto => this.dtoToModel(dto)))
+    );
+  }
+
+  createVariant(projectId: string, pointId: string, req: CreateVariantRequest): Observable<Variant> {
+    return this.apiClient.variantsCreate(projectId, pointId, req).pipe(
+      map(dto => this.dtoToModel(dto))
     );
   }
 

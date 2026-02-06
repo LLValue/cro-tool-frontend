@@ -1,6 +1,6 @@
 <app-page-header
   title="Results"
-  description="Analyze performance by combination. Simulate 30 days, preview combinations, and export results.">
+  description="Analyze performance by combination.">
   <div class="header-actions">
     <button mat-raised-button color="primary" (click)="simulateMonth()" [disabled]="isSimulating">
       Simulate 30 days
@@ -13,28 +13,27 @@
 
 <!-- Results section: KPI + Charts + Combination table (when simulation data exists) -->
 <section class="results-section" *ngIf="combinationRows.length > 0">
-  <div class="kpi-cards">
-    <mat-card class="kpi-card">
-      <mat-card-content>
-        <div class="kpi-label">Control conversion rate</div>
-        <div class="kpi-value">{{ (controlCR * 100).toFixed(2) }}%</div>
-      </mat-card-content>
-    </mat-card>
-    <mat-card class="kpi-card">
-      <mat-card-content>
-        <div class="kpi-label">Best conversion rate</div>
-        <div class="kpi-value">{{ (bestCR * 100).toFixed(2) }}%</div>
-      </mat-card-content>
-    </mat-card>
-    <mat-card class="kpi-card">
-      <mat-card-content>
-        <div class="kpi-label">Uplift vs control</div>
-        <div class="kpi-value">{{ formatUplift(uplift, combinationRows[0].metrics.users) }}</div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
   <div class="charts-section charts-row">
+    <div class="kpi-cards">
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Control conversion rate</div>
+          <div class="kpi-value">{{ (controlCR * 100).toFixed(2) }}%</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Best conversion rate</div>
+          <div class="kpi-value">{{ (bestCR * 100).toFixed(2) }}%</div>
+        </mat-card-content>
+      </mat-card>
+      <mat-card class="kpi-card">
+        <mat-card-content>
+          <div class="kpi-label">Uplift vs control</div>
+          <div class="kpi-value">{{ formatUplift(uplift, combinationRows[0].metrics.users) }}</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
     <mat-card class="chart-card chart-main">
       <mat-card-header>
         <mat-card-title>Conversion rate over time</mat-card-title>
@@ -64,7 +63,6 @@
   </div>
 
   <div class="table-section">
-    <h3 class="table-title">Page performance (combinations)</h3>
     <table mat-table #combinationTable [dataSource]="combinationRows" class="metrics-table combination-table" multiTemplateDataRows>
       <ng-container matColumnDef="expand">
         <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
@@ -233,52 +231,6 @@
     </div>
     
     <div class="drawer-content" *ngIf="selectedCombinationForPreview">
-      <!-- Combination metrics -->
-      <mat-card class="drawer-metrics-card" *ngIf="isWinnerCombo(selectedCombinationForPreview)">
-        <mat-card-content>
-          <span class="winner-badge">Winner</span>
-        </mat-card-content>
-      </mat-card>
-      
-      <div class="drawer-metrics">
-        <div class="metric-item">
-          <span class="metric-label">Users</span>
-          <span class="metric-value">{{ selectedCombinationForPreview.metrics.users }}</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-label">Conversions</span>
-          <span class="metric-value">{{ selectedCombinationForPreview.metrics.conversions }}</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-label">Conversion rate</span>
-          <span class="metric-value">{{ formatConversionRate(selectedCombinationForPreview.metrics.conversionRate, selectedCombinationForPreview.metrics.users) }}</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-label">Uplift vs control</span>
-          <span class="metric-value">{{ formatUplift(selectedCombinationForPreview.metrics.uplift, selectedCombinationForPreview.metrics.users) }}</span>
-        </div>
-        <div class="metric-item">
-          <span class="metric-label">Win probability</span>
-          <span class="metric-value">{{ formatWinProbability(selectedCombinationForPreview.metrics.winProbability, selectedCombinationForPreview.metrics.users) }}</span>
-        </div>
-      </div>
-      
-      <!-- Combination details -->
-      <div class="drawer-combination-details">
-        <h4>Combination details</h4>
-        <p class="subheader">Copy used across optimization points</p>
-        <div class="combination-details-list">
-          <div *ngFor="let point of selectedCombinationForPreview.points" class="point-detail-item">
-            <div class="point-header">
-              <span class="point-name">{{ point.pointName }}</span>
-              <span class="point-sep">—</span>
-              <span class="variant-label">{{ point.variantName }}</span>
-            </div>
-            <div class="point-text">"{{ point.variantText }}"</div>
-          </div>
-        </div>
-      </div>
-      
       <div class="drawer-actions" *ngIf="selectedCombinationForPreview">
         <button mat-raised-button color="primary" (click)="applyHighlightInDrawer()">
           <mat-icon>highlight</mat-icon>

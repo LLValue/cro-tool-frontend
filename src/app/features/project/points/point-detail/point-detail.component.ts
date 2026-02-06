@@ -20,6 +20,7 @@ import { ChipsInputComponent } from '../../../../shared/chips-input/chips-input.
 import { InfoModalComponent } from '../../../../shared/info-modal/info-modal.component';
 import { GenerateVariantsProgressComponent, GenerateVariantsProgressData } from '../../../../shared/generate-variants-progress/generate-variants-progress.component';
 import { ConfirmDialogComponent } from '../../../../shared/confirm-dialog/confirm-dialog.component';
+import { AddVariantDialogComponent } from '../../../../shared/add-variant-dialog/add-variant-dialog.component';
 import { PreviewPanelComponent } from '../../../../shared/preview-panel/preview-panel.component';
 import { PreviewService } from '../../../../shared/preview.service';
 import { ProjectsStoreService } from '../../../../data/projects-store.service';
@@ -28,7 +29,7 @@ import { PointsApiService } from '../../../../api/services/points-api.service';
 import { GoalsApiService } from '../../../../api/services/goals-api.service';
 import { OptimizationPoint, Variant, Goal } from '../../../../data/models';
 import { PointBriefDraftRequest, PointBriefDraftResponse } from '../../../../api-contracts/points.contracts';
-import { of, timer } from 'rxjs';
+import { of, timer, forkJoin } from 'rxjs';
 import { catchError, take, switchMap } from 'rxjs/operators';
 import { ToastHelperService } from '../../../../shared/toast-helper.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -81,7 +82,13 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   variants: Variant[] = [];
   filteredVariants: Variant[] = [];
   variantFilter: string = 'all';
-  
+  variantSearchText = '';
+  expandedVariantId: string | null = null;
+  editingVariantId: string | null = null;
+  editingVariantText = '';
+  addVariantLoading = false;
+  readonly Math = Math;
+
   setupForm: FormGroup;
   briefForm: FormGroup;
   
@@ -186,14 +193,14 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   loadPoint(): void {
-    if (!this.pointId) return;
-    
+    if (!this.pointId || !this.projectId) return;
+    this.store.listPoints(this.projectId).subscribe();
     const sub = this.store.points$.subscribe(points => {
       this.point = points.find(p => p.id === this.pointId) || null;
       if (this.point) {
         this.setupForm.patchValue({
           name: this.point.name || '',
-          elementType: this.point.elementType || this.elementTypes[0],
+          elementType: this.getDisplayElementType(this.point.elementType) || this.elementTypes[0],
           selector: this.point.selector || '',
           deviceScope: this.point.deviceScope || 'All',
           status: this.point.status || 'Included'
@@ -225,6 +232,9 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     this.subscriptions.add(sub);
   }
 
+  /** Index of the Variants tab (0=Point Setup, 1=Optimization Brief, 2=Variants). */
+  private readonly VARIANTS_TAB_INDEX = 2;
+
   loadVariants(): void {
     if (!this.pointId) return;
 
@@ -243,28 +253,142 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     });
     this.subscriptions.add(sub);
 
-    this.store.listVariants(this.pointId).subscribe();
+    this.refreshVariantsFromApi();
+  }
+
+  /** Triggers the GET .../variants API call so the store has the latest list. Call on init and when switching to Variants tab. */
+  refreshVariantsFromApi(): void {
+    if (this.pointId && !this.isCreateMode) {
+      this.store.listVariants(this.pointId).subscribe();
+    }
+  }
+
+  onTabIndexChange(index: number): void {
+    if (index === this.VARIANTS_TAB_INDEX) {
+      this.refreshVariantsFromApi();
+    }
   }
 
   filterVariants(): void {
-    let filtered: Variant[];
+    let filtered = this.variants;
     if (this.variantFilter === 'all') {
-      filtered = this.variants;
+      filtered = filtered.filter(v => v.status !== 'discarded');
     } else {
-      filtered = this.variants.filter(v => {
-        if (this.variantFilter === 'approved') return v.status === 'approved';
+      filtered = filtered.filter(v => {
+        if (this.variantFilter === 'enabled') return v.status === 'approved';
+        if (this.variantFilter === 'disabled') return v.status === 'pending';
         if (this.variantFilter === 'discarded') return v.status === 'discarded';
         return true;
       });
     }
+    const q = (this.variantSearchText || '').trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter(v =>
+        v.id.toLowerCase().includes(q) || (v.text || '').toLowerCase().includes(q)
+      );
+    }
     this.filteredVariants = filtered.sort((a, b) => {
-      if (b.uxScore !== a.uxScore) {
-        return b.uxScore - a.uxScore;
-      }
+      if (b.uxScore !== a.uxScore) return b.uxScore - a.uxScore;
       if (a.status === 'approved' && b.status !== 'approved') return -1;
       if (a.status !== 'approved' && b.status === 'approved') return 1;
       return 0;
     });
+  }
+
+  get enabledVariants(): Variant[] {
+    return this.variants.filter(v => v.status === 'approved');
+  }
+
+  getVariantDisplayId(variant: Variant): string {
+    return variant.id.length > 8 ? variant.id.slice(-8) : variant.id;
+  }
+
+  /** Returns flags to display; excludes "none" and empty so the Flags section only shows when there are meaningful flags. */
+  getComplianceFlags(variant: Variant): string[] {
+    const raw = variant.riskFlags ?? [];
+    return raw.filter(f => {
+      const s = (f || '').trim().toLowerCase();
+      return s.length > 0 && s !== 'none';
+    });
+  }
+
+  hasComplianceWarning(variant: Variant): boolean {
+    return (variant.complianceScore < 7) || !!((variant.riskFlags?.length ?? 0) > 0);
+  }
+
+  toggleExpand(variantId: string): void {
+    this.expandedVariantId = this.expandedVariantId === variantId ? null : variantId;
+  }
+
+  isExpanded(variantId: string): boolean {
+    return this.expandedVariantId === variantId;
+  }
+
+  startEditVariant(variant: Variant): void {
+    this.editingVariantId = variant.id;
+    this.editingVariantText = variant.text;
+  }
+
+  cancelEditVariant(): void {
+    this.editingVariantId = null;
+    this.editingVariantText = '';
+  }
+
+  saveEditVariant(): void {
+    if (!this.editingVariantId) return;
+    const text = this.editingVariantText.trim();
+    const v = this.variants.find(x => x.id === this.editingVariantId);
+    if (!v || !text) {
+      this.cancelEditVariant();
+      return;
+    }
+    this.store.updateVariant(this.editingVariantId, { text });
+    v.text = text;
+    this.toast.showSuccess('Variant updated');
+    this.cancelEditVariant();
+  }
+
+  copyVariantId(variantId: string, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    navigator.clipboard?.writeText(variantId).then(() => this.toast.showSuccess('ID copied'));
+  }
+
+  openAddVariantModal(): void {
+    const dialogRef = this.dialog.open(AddVariantDialogComponent, {
+      width: '480px',
+      data: {}
+    });
+    dialogRef.afterClosed().subscribe((text: string | null) => {
+      if (text) this.addVariantManualWithText(text);
+    });
+  }
+
+  addVariantManualWithText(text: string): void {
+    if (!this.pointId) return;
+    this.addVariantLoading = true;
+    this.store.addVariant(this.pointId, text, this.projectId).subscribe({
+      next: () => {
+        this.toast.showSuccess('Variant added.');
+        this.loadVariants();
+      },
+      error: () => this.toast.showError('Failed to add variant. Please try again.')
+    }).add(() => { this.addVariantLoading = false; });
+  }
+
+  scrollToVariantAndPreview(variant: Variant): void {
+    const el = document.getElementById('variant-row-' + variant.id);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    this.previewVariant(variant);
+  }
+
+  onVariantUseInExperimentChange(variant: Variant, useInExperiment: boolean): void {
+    if (variant.status === 'discarded') return;
+    if (useInExperiment) {
+      this.approveVariant(variant.id);
+    } else {
+      this.unapproveVariant(variant.id);
+    }
   }
 
   saveSetup(): void {
@@ -273,20 +397,9 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     const status = this.setupForm.get('status')?.value ? 'Included' : 'Excluded';
     
     const elementTypeValue = this.setupForm.get('elementType')?.value;
-    let elementType: 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other' | undefined;
-    if (elementTypeValue) {
-      if (elementTypeValue.includes('H1') || elementTypeValue.includes('Headline')) {
-        elementType = 'Title';
-      } else if (elementTypeValue.includes('CTA') || elementTypeValue.includes('Call to Action')) {
-        elementType = 'CTA';
-      } else if (elementTypeValue.includes('H2') || elementTypeValue.includes('Subheadline') || elementTypeValue.includes('Subheader')) {
-        elementType = 'Subheadline';
-      } else if (elementTypeValue.includes('Form Labels') || elementTypeValue.includes('Helper Text') || elementTypeValue.includes('Trust & Assurance') || elementTypeValue.includes('Supporting Copy')) {
-        elementType = 'Microcopy';
-      } else {
-        elementType = 'Other';
-      }
-    }
+    const elementType = elementTypeValue
+      ? (this.mapElementTypeForApi(elementTypeValue) as 'Title' | 'CTA' | 'Subheadline' | 'Microcopy' | 'Other')
+      : undefined;
 
     const generationRules = {
       goodIdeas: Array.isArray(this.goodIdeas) ? this.goodIdeas : [],
@@ -351,6 +464,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     this.store.updatePoint(this.pointId, {
       objective: this.briefForm.get('objective')?.value,
+      context: this.briefForm.get('context')?.value ?? '',
       generationRules: JSON.stringify(generationRules),
       updatedAt: new Date()
     });
@@ -390,17 +504,18 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   unapproveVariant(variantId: string): void {
-    this.store.updateVariant(variantId, { status: 'discarded' });
+    this.store.updateVariant(variantId, { status: 'pending' });
     this.toast.showSuccess('Variant disabled');
   }
 
+  /** Discard variant (soft delete): sets status to discarded. It stays in history and appears when filtering by Discarded. */
   deleteVariant(variantId: string): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
-        title: 'Delete Variant',
-        message: 'Are you sure you want to delete this variant? This action cannot be undone.',
-        confirmText: 'Delete',
+        title: 'Discard this variant?',
+        message: 'It will be kept for history. You can view it by filtering by Discarded.',
+        confirmText: 'Discard',
         cancelText: 'Cancel',
         confirmColor: 'primary'
       }
@@ -408,13 +523,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        try {
-          this.store.deleteVariant(variantId);
-          this.toast.showSuccess('Variant deleted successfully');
-          this.loadVariants();
-        } catch (error) {
-          this.toast.showError('Failed to delete variant');
-        }
+        this.store.updateVariant(variantId, { status: 'discarded' });
+        this.toast.showSuccess('Variant discarded.');
       }
     });
   }
@@ -422,14 +532,14 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   deleteAllVariants(): void {
     const count = this.variants.length;
     if (count === 0) return;
-    const pointName = this.point?.name ?? 'este punto';
+    const pointName = this.point?.name ?? 'this point';
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
-        title: 'Borrar todas las variantes',
-        message: `¿Borrar las ${count} variante${count === 1 ? '' : 's'} del punto "${pointName}"? Esta acción no se puede deshacer.`,
-        confirmText: 'Borrar',
-        cancelText: 'Cancelar',
+        title: 'Delete all variants',
+        message: `Delete all ${count} variant${count === 1 ? '' : 's'} for "${pointName}"? This action cannot be undone.`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
         confirmColor: 'primary'
       }
     });
@@ -438,11 +548,11 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       if (confirmed) {
         this.store.deleteAllVariantsForPoint(this.pointId).subscribe({
           next: () => {
-            this.toast.showSuccess(`Se han borrado ${count} variante${count === 1 ? '' : 's'}.`);
+            this.toast.showSuccess(`${count} variant${count === 1 ? '' : 's'} deleted.`);
             this.loadVariants();
           },
           error: () => {
-            this.toast.showError('Error al borrar las variantes. Inténtalo de nuevo.');
+            this.toast.showError('Error deleting variants. Please try again.');
           }
         });
       }
@@ -483,13 +593,20 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     if (!date) return 'Unknown';
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return 'Unknown';
-    return d.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
     });
+  }
+
+  formatDateShort(date: Date | string | undefined): string {
+    if (!date) return '—';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   }
 
   goBack(): void {
@@ -757,10 +874,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       text
     };
 
-    this.setupForm.patchValue({
-      selector,
-      name: this.generateDefaultName(target, text)
-    });
+    this.setupForm.patchValue({ selector });
+    // Name is never auto-filled; user must enter it manually.
 
     this.selectionMode = false;
     this.toast.showSuccess('Element selected! Review the details below.');
@@ -888,10 +1003,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       text: event.text
     };
 
-    this.setupForm.patchValue({
-      selector: event.selector,
-      name: this.generateDefaultName(null, event.text)
-    });
+    this.setupForm.patchValue({ selector: event.selector });
+    // Name is never auto-filled; user must enter it manually.
 
     this.selectionMode = false;
     this.toast.showSuccess('Element selected! Review the details below.');
@@ -1073,9 +1186,11 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.briefDraftLoading = true;
-    const obs = this.goalsApi.getGoals(this.projectId).pipe(
-      take(1),
-      switchMap(goals => {
+    const obs = forkJoin({
+      guardrails: this.store.getBriefingGuardrails(this.projectId).pipe(take(1)),
+      goals: this.goalsApi.getGoals(this.projectId).pipe(take(1))
+    }).pipe(
+      switchMap(({ guardrails, goals }) => {
         const primary = goals.find((g: Goal) => g.isPrimary);
         const primaryGoalPayload: { type: 'clickSelector' | 'urlReached' | 'dataLayerEvent'; label: string; selector?: string } = primary
           ? {
@@ -1084,7 +1199,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
               selector: primary.type === 'clickSelector' ? primary.value : undefined
             }
           : { type: 'urlReached', label: 'Not specified' };
-        const req = this.buildBriefDraftRequest(mode, primaryGoalPayload);
+        const targetLanguage = guardrails?.language?.trim() || 'en-US';
+        const req = this.buildBriefDraftRequest(mode, primaryGoalPayload, targetLanguage);
         return USE_MOCK_BRIEF_DRAFT
           ? timer(5500).pipe(switchMap(() => of(this.getMockBriefDraftResponse(req))))
           : this.pointsApi.getBriefDraft(this.projectId, this.pointId, req).pipe(
@@ -1145,7 +1261,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
   private buildBriefDraftRequest(
     mode: 'suggest' | 'improve',
-    primaryGoal: { type: 'clickSelector' | 'urlReached' | 'dataLayerEvent'; label: string; selector?: string }
+    primaryGoal: { type: 'clickSelector' | 'urlReached' | 'dataLayerEvent'; label: string; selector?: string },
+    targetLanguage: string = 'en-US'
   ): PointBriefDraftRequest {
     const pointName = this.setupForm.get('name')?.value || this.point?.name || 'Point';
     const elementTypeRaw = this.setupForm.get('elementType')?.value || this.point?.elementType || 'Other';
@@ -1162,7 +1279,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
 
     return {
       mode,
-      targetLanguage: 'en-US',
+      targetLanguage,
       point: {
         pointName,
         elementType,
@@ -1182,6 +1299,20 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       },
       projectContext: { primaryGoal }
     };
+  }
+
+  /** Map API elementType to the display string used in the dropdown (elementTypes). */
+  private getDisplayElementType(apiValue?: string): string | undefined {
+    if (!apiValue) return undefined;
+    const v = String(apiValue);
+    const map: Record<string, string> = {
+      Title: 'Headline (H1)',
+      CTA: 'Call to Action (CTA) Button',
+      Subheadline: 'Subheadline / Subheader (H2)',
+      Microcopy: 'Supporting Copy / Body Text',
+      Other: 'Other'
+    };
+    return map[v] ?? this.elementTypes.find(display => this.mapElementTypeForApi(display) === v) ?? undefined;
   }
 
   private mapElementTypeForApi(value: string): string {
@@ -1374,20 +1505,10 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     
     setTimeout(() => {
       if (this.point && this.point.selector) {
-        console.log('[PointDetail] Setting highlightSelector:', this.point.selector);
         this.highlightSelector = this.point.selector;
-        
-        console.log('[PointDetail] Current state after update:', {
-          previewHtmlLength: this.previewHtml.length,
-          highlightSelector: this.highlightSelector,
-          loadingPreview: this.loadingPreview
-        });
-      } else {
-        console.warn('[PointDetail] Point or selector not available for highlight');
       }
     }, 50);
-    
-    console.log('[PointDetail] ==================== END PREVIEW VARIANT ====================');
+    this.toast.showSuccess('Preview updated');
   }
 
   onPreviewReload(): void {

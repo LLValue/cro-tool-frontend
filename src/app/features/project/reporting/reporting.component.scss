@@ -1,8 +1,7 @@
 // KPI Cards
 .kpi-cards {
-  display: flex;
-  gap: 16px;
-  padding: 0 0 12px 0;
+  display: grid;
+  gap: 12px;
   margin-bottom: 0;
 }
 
@@ -404,9 +403,9 @@
 
 .charts-row {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
+  grid-template-columns: 0.5fr 1.5fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
 
   .chart-main {
     min-width: 0;
@@ -417,7 +416,6 @@
 }
 
 .table-section {
-  margin-top: 24px;
 
   .table-title {
     margin: 0 0 16px 0;

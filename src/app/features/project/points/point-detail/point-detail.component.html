@@ -9,25 +9,14 @@
 
 <div class="point-detail-container">
   <mat-card class="tabs-card">
-    <mat-tab-group>
+    <mat-tab-group (selectedIndexChange)="onTabIndexChange($event)">
     <mat-tab label="Point Setup">
       <div class="tab-content">
-        <div class="two-column-layout" *ngIf="!loading">
+        <div class="two-column-layout">
           <div class="left-column">
             <div class="form-section">
               <div class="field-label-row">
                 <h3>Point Details</h3>
-                <div class="selector-actions">
-                  <button 
-                    mat-raised-button 
-                    color="primary" 
-                    type="button" 
-                    (click)="toggleSelectionMode()" 
-                    [class.active]="selectionMode">
-                    <mat-icon>{{ selectionMode ? 'close' : 'touch_app' }}</mat-icon>
-                    {{ selectionMode ? 'Cancel Selection' : 'Select Element' }}
-                  </button>
-                </div>
               </div>
             <form [formGroup]="setupForm" (ngSubmit)="saveSetup()">
               <div class="form-field-wrapper">
@@ -64,6 +53,17 @@
                     CSS Selector
                     <span class="required-asterisk">*</span>
                   </span>                  
+                  <div class="selector-actions">
+                    <button 
+                      mat-raised-button 
+                      color="primary" 
+                      type="button" 
+                      (click)="toggleSelectionMode()" 
+                      [class.active]="selectionMode">
+                      <mat-icon>{{ selectionMode ? 'close' : 'touch_app' }}</mat-icon>
+                      {{ selectionMode ? 'Cancel Selection' : 'Select Element' }}
+                    </button>
+                  </div>
                 </label>
                 <p class="field-helper">Enter the CSS selector for the element (e.g., .hero-title, #cta-button, h1).</p>
                 <mat-form-field appearance="outline" class="brief-input">
@@ -123,255 +123,253 @@
           </app-preview-panel>
         </div>
       </div>
-
-      <div class="loading-overlay" *ngIf="loading">
-        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-        <p>Loading page preview...</p>
-      </div>
       </div>
     </mat-tab>
 
     <mat-tab label="Optimization Brief">
       <div class="tab-content">
-        <!-- AI Brief Helper toolbar -->
-        <div class="ai-brief-helper-toolbar">
-          <div class="ai-brief-helper-heading">
-            <h3 class="ai-brief-helper-title">AI brief helper</h3>
-            <p class="ai-brief-helper-subtitle">Draft a stronger objective and context for this optimization point.</p>
+        <div class="optimization-brief-container">
+          <!-- AI Brief Helper toolbar -->
+          <div class="ai-brief-helper-toolbar">
+            <div class="ai-brief-helper-heading">
+              <h3 class="ai-brief-helper-title">AI brief helper</h3>
+              <p class="ai-brief-helper-subtitle">Draft a stronger objective and context for this optimization point.</p>
+            </div>
+            <div class="ai-brief-helper-actions">
+              <button mat-raised-button color="primary" type="button" (click)="requestBriefDraft('suggest')" [disabled]="briefDraftLoading">
+                Suggest brief
+              </button>
+              <button *ngIf="canShowImproveBrief" mat-raised-button color="primary" type="button" (click)="requestBriefDraft('improve')" [disabled]="briefDraftLoading">
+                Improve my brief
+              </button>
+              <button mat-button type="button" (click)="openWhatWillBeFilledModal()">
+                What will be filled?
+              </button>
+            </div>
           </div>
-          <div class="ai-brief-helper-actions">
-            <button mat-raised-button color="primary" type="button" (click)="requestBriefDraft('suggest')" [disabled]="briefDraftLoading">
-              Suggest brief
-            </button>
-            <button *ngIf="canShowImproveBrief" mat-raised-button color="primary" type="button" (click)="requestBriefDraft('improve')" [disabled]="briefDraftLoading">
-              Improve my brief
-            </button>
-            <button mat-button type="button" (click)="openWhatWillBeFilledModal()">
-              What will be filled?
-            </button>
-          </div>
+
+          <p class="mandatory-note">The mandatory fields are marked with an asterisk <span class="asterisk-red">*</span></p>
+          <form [formGroup]="briefForm" (ngSubmit)="saveBrief()">
+            <!-- Qualitative objective (mandatory) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('objective')">
+              <label class="field-label">
+                <div>
+                  <span>Qualitative objective <span class="required-asterisk">*</span></span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Qualitative objective', 'objective')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('objective')" [class]="getBadgeClass('objective')">{{ getBadgeLabel('objective') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('objective')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">State the outcome you want this element to drive (e.g., improve clarity, increase trust, drive clicks) in 1–2 sentences.</p>
+              <mat-form-field appearance="outline" class="brief-input">
+                <textarea matInput formControlName="objective" rows="2" (input)="onBriefFieldInput('objective')"></textarea>
+                <mat-error *ngIf="briefForm.get('objective')?.hasError('required')">
+                  Qualitative objective is required
+                </mat-error>
+                <mat-hint align="end">
+                  <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('objective') }} / {{ getMaxChars() }} characters</span>
+                  <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('objective') }} characters</span>
+                </mat-hint>
+              </mat-form-field>
+            </div>
+
+            <!-- Element context (mandatory) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('context')">
+              <label class="field-label">
+                <div>
+                  <span>Element context <span class="required-asterisk">*</span></span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Element context', 'context')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('context')" [class]="getBadgeClass('context')">{{ getBadgeLabel('context') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('context')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">Describe the user mindset and surrounding content so the AI can write copy that fits this exact spot on the page.</p>
+              <mat-form-field appearance="outline" class="brief-input">
+                <textarea matInput formControlName="context" rows="2" (input)="onBriefFieldInput('context'); briefForm.get('context')?.updateValueAndValidity()"></textarea>
+                <mat-error *ngIf="briefForm.get('context')?.hasError('required')">
+                  Element context is required
+                </mat-error>
+                <mat-hint align="end">
+                  <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('context') }} / {{ getMaxChars() }} characters</span>
+                  <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('context') }} characters</span>
+                </mat-hint>
+              </mat-form-field>
+            </div>
+
+            <!-- Good ideas (optional) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('goodIdeas')">
+              <label class="field-label">
+                <div>
+                  <span>Good ideas</span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Good ideas', 'goodIdeas')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('goodIdeas')" [class]="getBadgeClass('goodIdeas')">{{ getBadgeLabel('goodIdeas') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('goodIdeas')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">List angles or copy patterns you want to explore (e.g., reassurance-first, benefit-first, process clarity, social proof).</p>
+              <app-chips-input
+                [(ngModel)]="goodIdeas"
+                [ngModelOptions]="{standalone: true}"
+                label=""
+                (ngModelChange)="onBriefFieldInput('goodIdeas')"
+                >
+              </app-chips-input>
+            </div>
+
+            <!-- Things to avoid (optional) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('thingsToAvoid')">
+              <label class="field-label">
+                <div>
+                  <span>Things to avoid</span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Things to avoid', 'thingsToAvoid')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('thingsToAvoid')" [class]="getBadgeClass('thingsToAvoid')">{{ getBadgeLabel('thingsToAvoid') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('thingsToAvoid')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">List words, tones, or claims to avoid (e.g., overpromising, jargon, sensitive claims, aggressive urgency).</p>
+              <app-chips-input
+                [(ngModel)]="thingsToAvoid"
+                [ngModelOptions]="{standalone: true}"
+                label=""
+                (ngModelChange)="onBriefFieldInput('thingsToAvoid')"
+                >
+              </app-chips-input>
+            </div>
+
+            <!-- Must include keywords (optional) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('mustIncludeKeywords')">
+              <label class="field-label">
+                <div>
+                  <span>Must include keywords</span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must include keywords', 'mustIncludeKeywords')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('mustIncludeKeywords')" [class]="getBadgeClass('mustIncludeKeywords')">{{ getBadgeLabel('mustIncludeKeywords') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('mustIncludeKeywords')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">Add any words or phrases that must appear in the variant (use sparingly).</p>
+              <app-chips-input
+                [(ngModel)]="mustIncludeKeywords"
+                [ngModelOptions]="{standalone: true}"
+                label=""
+                (ngModelChange)="onBriefFieldInput('mustIncludeKeywords')"
+                >
+              </app-chips-input>
+            </div>
+
+            <!-- Must avoid terms (optional) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('mustAvoidTerms')">
+              <label class="field-label">
+                <div>
+                  <span>Must avoid terms</span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must avoid terms', 'mustAvoidTerms')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('mustAvoidTerms')" [class]="getBadgeClass('mustAvoidTerms')">{{ getBadgeLabel('mustAvoidTerms') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('mustAvoidTerms')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">Add words or phrases to avoid for this specific element (in addition to global forbidden terms).</p>
+              <app-chips-input
+                [(ngModel)]="mustAvoidTerms"
+                [ngModelOptions]="{standalone: true}"
+                label=""
+                (ngModelChange)="onBriefFieldInput('mustAvoidTerms')"
+                >
+              </app-chips-input>
+            </div>
+
+            <!-- Min chars (optional) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('minChars')">
+              <label class="field-label">
+                <div>
+                  <span>Min chars</span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Min chars', 'minChars')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('minChars')" [class]="getBadgeClass('minChars')">{{ getBadgeLabel('minChars') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('minChars')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">Set the minimum character length for this element to fit the layout and UX.</p>
+              <mat-form-field appearance="outline" class="brief-input-number">
+                <input matInput type="number" formControlName="minChars" min="0" (input)="onBriefFieldInput('minChars')">
+                <mat-error *ngIf="briefForm.get('minChars')?.hasError('pattern')">
+                  Only numeric values are allowed
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <!-- Max chars (optional) -->
+            <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('maxChars')">
+              <label class="field-label">
+                <div>
+                  <span>Max chars</span>
+                  <span class="field-label-right">
+                    <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Max chars', 'maxChars')" matTooltip="More information">
+                      <mat-icon>info</mat-icon>
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('maxChars')" [class]="getBadgeClass('maxChars')">{{ getBadgeLabel('maxChars') }}</span>
+                  <span class="brief-edited" *ngIf="isManualField('maxChars')">Edited</span>
+                </div>
+              </label>
+              <p class="field-helper">Set the maximum character length for this element to fit the layout and UX.</p>
+              <mat-form-field appearance="outline" class="brief-input-number">
+                <input matInput type="number" formControlName="maxChars" min="0" (input)="onBriefFieldInput('maxChars')">
+                <mat-error *ngIf="briefForm.get('maxChars')?.hasError('pattern')">
+                  Only numeric values are allowed
+                </mat-error>
+              </mat-form-field>
+            </div>
+
+            <div class="actions">
+              <button mat-raised-button color="primary" type="submit" [disabled]="briefForm.invalid">
+                Save
+              </button>
+            </div>
+          </form>
         </div>
-
-        <p class="mandatory-note">The mandatory fields are marked with an asterisk <span class="asterisk-red">*</span></p>
-        <form [formGroup]="briefForm" (ngSubmit)="saveBrief()">
-          <!-- Qualitative objective (mandatory) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('objective')">
-            <label class="field-label">
-              <div>
-                <span>Qualitative objective <span class="required-asterisk">*</span></span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Qualitative objective', 'objective')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('objective')" [class]="getBadgeClass('objective')">{{ getBadgeLabel('objective') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('objective')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">State the outcome you want this element to drive (e.g., improve clarity, increase trust, drive clicks) in 1–2 sentences.</p>
-            <mat-form-field appearance="outline" class="brief-input">
-              <textarea matInput formControlName="objective" rows="2" (input)="onBriefFieldInput('objective')"></textarea>
-              <mat-error *ngIf="briefForm.get('objective')?.hasError('required')">
-                Qualitative objective is required
-              </mat-error>
-              <mat-hint align="end">
-                <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('objective') }} / {{ getMaxChars() }} characters</span>
-                <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('objective') }} characters</span>
-              </mat-hint>
-            </mat-form-field>
-          </div>
-
-          <!-- Element context (mandatory) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('context')">
-            <label class="field-label">
-              <div>
-                <span>Element context <span class="required-asterisk">*</span></span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Element context', 'context')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('context')" [class]="getBadgeClass('context')">{{ getBadgeLabel('context') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('context')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">Describe the user mindset and surrounding content so the AI can write copy that fits this exact spot on the page.</p>
-            <mat-form-field appearance="outline" class="brief-input">
-              <textarea matInput formControlName="context" rows="2" (input)="onBriefFieldInput('context'); briefForm.get('context')?.updateValueAndValidity()"></textarea>
-              <mat-error *ngIf="briefForm.get('context')?.hasError('required')">
-                Element context is required
-              </mat-error>
-              <mat-hint align="end">
-                <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('context') }} / {{ getMaxChars() }} characters</span>
-                <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('context') }} characters</span>
-              </mat-hint>
-            </mat-form-field>
-          </div>
-
-          <!-- Good ideas (optional) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('goodIdeas')">
-            <label class="field-label">
-              <div>
-                <span>Good ideas</span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Good ideas', 'goodIdeas')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('goodIdeas')" [class]="getBadgeClass('goodIdeas')">{{ getBadgeLabel('goodIdeas') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('goodIdeas')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">List angles or copy patterns you want to explore (e.g., reassurance-first, benefit-first, process clarity, social proof).</p>
-            <app-chips-input
-              [(ngModel)]="goodIdeas"
-              [ngModelOptions]="{standalone: true}"
-              label=""
-              (ngModelChange)="onBriefFieldInput('goodIdeas')"
-              >
-            </app-chips-input>
-          </div>
-
-          <!-- Things to avoid (optional) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('thingsToAvoid')">
-            <label class="field-label">
-              <div>
-                <span>Things to avoid</span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Things to avoid', 'thingsToAvoid')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('thingsToAvoid')" [class]="getBadgeClass('thingsToAvoid')">{{ getBadgeLabel('thingsToAvoid') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('thingsToAvoid')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">List words, tones, or claims to avoid (e.g., overpromising, jargon, sensitive claims, aggressive urgency).</p>
-            <app-chips-input
-              [(ngModel)]="thingsToAvoid"
-              [ngModelOptions]="{standalone: true}"
-              label=""
-              (ngModelChange)="onBriefFieldInput('thingsToAvoid')"
-              >
-            </app-chips-input>
-          </div>
-
-          <!-- Must include keywords (optional) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('mustIncludeKeywords')">
-            <label class="field-label">
-              <div>
-                <span>Must include keywords</span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must include keywords', 'mustIncludeKeywords')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('mustIncludeKeywords')" [class]="getBadgeClass('mustIncludeKeywords')">{{ getBadgeLabel('mustIncludeKeywords') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('mustIncludeKeywords')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">Add any words or phrases that must appear in the variant (use sparingly).</p>
-            <app-chips-input
-              [(ngModel)]="mustIncludeKeywords"
-              [ngModelOptions]="{standalone: true}"
-              label=""
-              (ngModelChange)="onBriefFieldInput('mustIncludeKeywords')"
-              >
-            </app-chips-input>
-          </div>
-
-          <!-- Must avoid terms (optional) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('mustAvoidTerms')">
-            <label class="field-label">
-              <div>
-                <span>Must avoid terms</span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Must avoid terms', 'mustAvoidTerms')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('mustAvoidTerms')" [class]="getBadgeClass('mustAvoidTerms')">{{ getBadgeLabel('mustAvoidTerms') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('mustAvoidTerms')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">Add words or phrases to avoid for this specific element (in addition to global forbidden terms).</p>
-            <app-chips-input
-              [(ngModel)]="mustAvoidTerms"
-              [ngModelOptions]="{standalone: true}"
-              label=""
-              (ngModelChange)="onBriefFieldInput('mustAvoidTerms')"
-              >
-            </app-chips-input>
-          </div>
-
-          <!-- Min chars (optional) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('minChars')">
-            <label class="field-label">
-              <div>
-                <span>Min chars</span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Min chars', 'minChars')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('minChars')" [class]="getBadgeClass('minChars')">{{ getBadgeLabel('minChars') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('minChars')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">Set the minimum character length for this element to fit the layout and UX.</p>
-            <mat-form-field appearance="outline" class="brief-input-number">
-              <input matInput type="number" formControlName="minChars" min="0" (input)="onBriefFieldInput('minChars')">
-              <mat-error *ngIf="briefForm.get('minChars')?.hasError('pattern')">
-                Only numeric values are allowed
-              </mat-error>
-            </mat-form-field>
-          </div>
-
-          <!-- Max chars (optional) -->
-          <div class="form-field-wrapper" [class.brief-field-highlight]="isFieldHighlighted('maxChars')">
-            <label class="field-label">
-              <div>
-                <span>Max chars</span>
-                <span class="field-label-right">
-                  <button mat-icon-button type="button" class="info-icon" (click)="openInfoModal('Max chars', 'maxChars')" matTooltip="More information">
-                    <mat-icon>info</mat-icon>
-                  </button>
-                </span>
-              </div>
-              <div>
-                <span class="brief-badge" *ngIf="getBadgeLabel('maxChars')" [class]="getBadgeClass('maxChars')">{{ getBadgeLabel('maxChars') }}</span>
-                <span class="brief-edited" *ngIf="isManualField('maxChars')">Edited</span>
-              </div>
-            </label>
-            <p class="field-helper">Set the maximum character length for this element to fit the layout and UX.</p>
-            <mat-form-field appearance="outline" class="brief-input-number">
-              <input matInput type="number" formControlName="maxChars" min="0" (input)="onBriefFieldInput('maxChars')">
-              <mat-error *ngIf="briefForm.get('maxChars')?.hasError('pattern')">
-                Only numeric values are allowed
-              </mat-error>
-            </mat-form-field>
-          </div>
-
-          <div class="actions">
-            <button mat-raised-button color="primary" type="submit" [disabled]="briefForm.invalid">
-              Save
-            </button>
-          </div>
-        </form>
+        
       </div>
     </mat-tab>
 
@@ -388,85 +386,142 @@
             </mat-card-content>
           </mat-card>
         </div>
-        <div *ngIf="!isCreateMode" class="two-column-layout">
+        <div *ngIf="!isCreateMode" class="two-column-layout variants-layout">
           <div class="left-column">
-            <div class="variants-header">
-              <mat-form-field appearance="outline" floatLabel="always" class="filter-field">
-                <mat-select [(ngModel)]="variantFilter" [ngModelOptions]="{standalone: true}" (selectionChange)="filterVariants()">
-                  <mat-option value="all">All</mat-option>
-                  <mat-option value="pending">Pending</mat-option>
-                  <mat-option value="approved">Approved</mat-option>
-                  <mat-option value="discarded">Discarded</mat-option>
-                </mat-select>
-              </mat-form-field>
+            <!-- Sticky: Enabled set (only if any enabled) -->
+            <div class="enabled-strip" *ngIf="enabledVariants.length > 0">
+              <span class="enabled-strip-label">Enabled set ({{ enabledVariants.length }})</span>
+              <mat-chip-set class="enabled-chips">
+                <mat-chip *ngFor="let v of enabledVariants" (click)="scrollToVariantAndPreview(v)">
+                  {{ getVariantDisplayId(v) }}
+                </mat-chip>
+              </mat-chip-set>
+            </div>
+
+            <!-- Top controls -->
+            <div class="variants-controls">
+              <div class="variants-filters">
+                <mat-form-field appearance="outline" floatLabel="always" class="filter-field">
+                  <mat-select [(ngModel)]="variantFilter" [ngModelOptions]="{standalone: true}" (selectionChange)="filterVariants()">
+                    <mat-option value="all">All</mat-option>
+                    <mat-option value="enabled">Enabled</mat-option>
+                    <mat-option value="disabled">Disabled</mat-option>
+                    <mat-option value="discarded">Discarded</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" floatLabel="always" class="search-field">
+                  <mat-label>Search</mat-label>
+                  <input matInput [(ngModel)]="variantSearchText" [ngModelOptions]="{standalone: true}" (ngModelChange)="filterVariants()" placeholder="Search by ID or text…">
+                </mat-form-field>
+              </div>
               <div class="variants-actions">
+                <button mat-raised-button (click)="openAddVariantModal()" [disabled]="addVariantLoading">Add variant</button>
                 <button mat-raised-button color="primary" (click)="generateVariants()">
                   <mat-icon>auto_awesome</mat-icon>
-                  Generate Variants
+                  Generate variants with AI
                 </button>
-                <button *ngIf="variants.length > 0" mat-raised-button (click)="deleteAllVariants()">
-                  Borrar todas
-                </button>
+                <button *ngIf="variants.length > 0" mat-raised-button (click)="deleteAllVariants()">Delete all variants</button>
               </div>
             </div>
 
             <div *ngIf="filteredVariants.length === 0" class="empty-variants">
-              <p>No variants found. Click "Generate Variants" to create 10 variants.</p>
+              <p>No variants found. Add one manually or generate with AI.</p>
             </div>
 
-            <mat-card *ngFor="let variant of filteredVariants" class="variant-card">
-              <mat-card-content>
-                <div class="variant-header">
-                  <div class="variant-scores">
-                    <div class="score">
-                      <span class="score-label">UX Score:</span>
-                      <span class="score-value">{{ variant.uxScore }}/10</span>
-                    </div>
-                    <div class="score">
-                      <span class="score-label">Compliance:</span>
-                      <span class="score-value">{{ variant.complianceScore }}/10</span>
-                    </div>
-                    <mat-chip-set>
-                      <mat-chip
-                        [class.active]="variant.status === 'approved'"
-                        [class.discarded]="variant.status === 'discarded'">
-                        {{ variant.status }}
-                      </mat-chip>
-                    </mat-chip-set>
-                  </div>
-                  <div class="variant-actions">
-                    <button mat-raised-button color="primary" (click)="previewVariant(variant)">
-                      <mat-icon>visibility</mat-icon>
-                      Preview
-                    </button>
-                    <button *ngIf="variant.status !== 'approved'" mat-icon-button (click)="approveVariant(variant.id)" matTooltip="Approve">
-                      <mat-icon>check_circle</mat-icon>
-                    </button>
-                    <button *ngIf="variant.status === 'approved'" mat-icon-button (click)="unapproveVariant(variant.id)" matTooltip="Disable">
-                      <mat-icon>remove_circle</mat-icon>
-                    </button>
-                    <button mat-icon-button color="primary" (click)="deleteVariant(variant.id)" matTooltip="Delete">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </div>
-                </div>
-                <mat-form-field appearance="outline" floatLabel="always" class="full-width variant-text">
-                  <textarea 
-                    matInput 
-                    [(ngModel)]="variant.text" 
-                    [ngModelOptions]="{standalone: true}"
-                    [readonly]="variant.status === 'approved'"
-                    (blur)="updateVariant(variant)"
-                    rows="2">
-                  </textarea>
-                </mat-form-field>
-                <div class="variant-details">
-                  <p><strong>UX Rationale:</strong> {{ variant.uxRationale }}</p>
-                  <p><strong>Compliance Rationale:</strong> {{ variant.complianceRationale }}</p>
-                  <p class="variant-date">Created: {{ formatDate(variant.createdAt) }}</p>
-                </div>
-              </mat-card-content>
-            </mat-card>
+            <div class="variants-table-wrapper" *ngIf="filteredVariants.length > 0">
+              <table class="variants-table">
+                <thead>
+                  <tr>
+                    <th class="col-expand"></th>
+                    <th class="col-id">ID</th>
+                    <th class="col-status">Status</th>
+                    <th class="col-text">Variant text</th>
+                    <th class="col-ux">UX score</th>
+                    <th class="col-compliance">Compliance score</th>
+                    <th class="col-created">Created</th>
+                    <th class="col-links">Links</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <ng-container *ngFor="let variant of filteredVariants">
+                    <tr [id]="'variant-row-' + variant.id" [class.discarded-row]="variant.status === 'discarded'" class="variant-row">
+                      <td class="col-expand">
+                        <button type="button" mat-icon-button (click)="toggleExpand(variant.id)" [attr.aria-label]="isExpanded(variant.id) ? 'Collapse' : 'Expand'">
+                          <mat-icon>{{ isExpanded(variant.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                        </button>
+                      </td>
+                      <td class="col-id">
+                        <span class="variant-id-text">{{ getVariantDisplayId(variant) }}</span>
+                        <button type="button" mat-icon-button (click)="copyVariantId(variant.id, $event)" matTooltip="Copy ID">
+                          <mat-icon>content_copy</mat-icon>
+                        </button>
+                      </td>
+                      <td class="col-status">
+                        <span class="status-badge" [class.enabled]="variant.status === 'approved'" [class.disabled]="variant.status === 'pending'" [class.discarded]="variant.status === 'discarded'">
+                          {{ variant.status === 'approved' ? '✓ Enabled' : variant.status === 'pending' ? 'Disabled' : 'Discarded' }}
+                        </span>
+                        <div class="toggle-label">Use in experiment</div>
+                        <mat-slide-toggle
+                          [checked]="variant.status === 'approved'"
+                          [disabled]="variant.status === 'discarded'"
+                          (change)="onVariantUseInExperimentChange(variant, $event.checked)"
+                          [matTooltip]="variant.status === 'discarded' ? 'Discarded variants are kept for history.' : ''">
+                        </mat-slide-toggle>
+                      </td>
+                      <td class="col-text">
+                        <div *ngIf="editingVariantId !== variant.id" class="text-preview" (click)="startEditVariant(variant)">{{ variant.text }}</div>
+                        <div *ngIf="editingVariantId === variant.id" class="text-edit">
+                          <textarea [(ngModel)]="editingVariantText" [ngModelOptions]="{standalone: true}" rows="2"></textarea>
+                          <div class="inline-edit-actions">
+                            <button type="button" mat-button (click)="saveEditVariant()">Save</button>
+                            <button type="button" mat-button (click)="cancelEditVariant()">Cancel</button>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="col-ux"><span class="score-pill">{{ variant.uxScore }}/10</span></td>
+                      <td class="col-compliance">
+                        <span class="score-pill" [class.warning]="hasComplianceWarning(variant)">
+                          {{ variant.complianceScore }}/10
+                        </span>
+                        <mat-icon *ngIf="hasComplianceWarning(variant)" class="warning-icon" matTooltip="Needs review">warning</mat-icon>
+                      </td>
+                      <td class="col-created">{{ formatDateShort(variant.createdAt) }}</td>
+                      <td class="col-links">
+                        <a href="#" class="table-link" (click)="previewVariant(variant); $event.preventDefault()">Preview</a>
+                        <a href="#" class="table-link" (click)="deleteVariant(variant.id); $event.preventDefault()">Discard</a>
+                      </td>
+                    </tr>
+                    <tr *ngIf="isExpanded(variant.id)" class="details-row">
+                      <td colspan="8" class="details-panel">
+                        <div class="details-section">
+                          <h4>Full variant text</h4>
+                          <p class="details-full-text">{{ variant.text }}</p>
+                        </div>
+                        <div class="details-section">
+                          <h4>UX rationale</h4>
+                          <p>{{ variant.uxRationale || 'No UX rationale available.' }}</p>
+                        </div>
+                        <div class="details-section">
+                          <h4>Compliance rationale</h4>
+                          <p>{{ variant.complianceRationale || 'No compliance rationale available.' }}</p>
+                        </div>
+                        <div class="details-section" *ngIf="getComplianceFlags(variant).length">
+                          <h4>Flags</h4>
+                          <mat-chip-set>
+                            <mat-chip *ngFor="let flag of getComplianceFlags(variant)">{{ flag }}</mat-chip>
+                          </mat-chip-set>
+                          <p class="details-helper">This variant may require manual review.</p>
+                        </div>
+                        <div class="details-section details-meta">
+                          <p><strong>Variant ID:</strong> {{ variant.id }}</p>
+                          <p><strong>Created:</strong> {{ formatDate(variant.createdAt) }}</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-container>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div class="right-column">
@@ -487,12 +542,5 @@
     </mat-tab>
     </mat-tab-group>
   </mat-card>
-
-  <div class="bottom-actions" *ngIf="!isCreateMode">
-    <button mat-raised-button color="primary" (click)="toggleStatus()">
-      <mat-icon>{{ point?.status === 'Excluded' ? 'play_arrow' : 'pause' }}</mat-icon>
-      {{ point?.status === 'Excluded' ? 'Include Point' : 'Exclude Point' }}
-    </button>
-  </div>
 </div>
 

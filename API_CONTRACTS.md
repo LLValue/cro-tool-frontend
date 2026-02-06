@@ -86,6 +86,7 @@ Create/Update body: `productDescription?`, `targetAudiences?`, `valueProps?`, `t
 | Method | Path | Request | Response |
 |--------|------|---------|----------|
 | GET | `/projects/:projectId/points/:pointId/variants` | — | `VariantDto[]` |
+| POST | `/projects/:projectId/points/:pointId/variants` | `{ text: string }` | `VariantDto` (manual variant) |
 | POST | `/projects/:projectId/points/:pointId/variants/generate` | `{ count?: number }` | `VariantDto[]` |
 | PATCH | `/projects/:projectId/variants/:variantId` | `UpdateVariantRequest` | `VariantDto` |
 | POST | `/projects/:projectId/variants/:variantId/approve` | `{}` | `VariantDto` |

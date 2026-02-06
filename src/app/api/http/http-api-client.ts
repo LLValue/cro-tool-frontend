@@ -31,6 +31,7 @@ import {
 import {
   VariantDto,
   GenerateVariantsRequest,
+  CreateVariantRequest,
   UpdateVariantRequest
 } from '../../api-contracts/variants.contracts';
 import {
@@ -145,6 +146,10 @@ export class HttpApiClient implements ApiClient {
   // Variants
   variantsList(projectId: string, pointId: string): Observable<VariantDto[]> {
     return this.http.get<VariantDto[]>(`${this.baseUrl}/projects/${projectId}/points/${pointId}/variants`);
+  }
+
+  variantsCreate(projectId: string, pointId: string, req: CreateVariantRequest): Observable<VariantDto> {
+    return this.http.post<VariantDto>(`${this.baseUrl}/projects/${projectId}/points/${pointId}/variants`, req);
   }
 
   variantsGenerate(projectId: string, pointId: string, req: GenerateVariantsRequest): Observable<VariantDto[]> {

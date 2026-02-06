@@ -27,6 +27,7 @@ import {
 import {
   VariantDto,
   GenerateVariantsRequest,
+  CreateVariantRequest,
   UpdateVariantRequest
 } from '../api-contracts/variants.contracts';
 import {
@@ -74,6 +75,7 @@ export interface ApiClient {
 
   // Variants
   variantsList(projectId: string, pointId: string): Observable<VariantDto[]>;
+  variantsCreate(projectId: string, pointId: string, req: CreateVariantRequest): Observable<VariantDto>;
   variantsGenerate(projectId: string, pointId: string, req: GenerateVariantsRequest): Observable<VariantDto[]>;
   variantsUpdate(projectId: string, variantId: string, req: UpdateVariantRequest): Observable<VariantDto>;
   variantsApprove(projectId: string, variantId: string): Observable<VariantDto>;
