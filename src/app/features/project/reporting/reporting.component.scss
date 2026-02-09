@@ -141,6 +141,23 @@
   padding: 24px;
 }
 
+.results-view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+
+  .view-label {
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.7);
+  }
+
+  button.active {
+    background: rgba(25, 118, 210, 0.12);
+    color: #1976d2;
+  }
+}
+
 .results-filters {
   display: flex;
   gap: 16px;
@@ -427,6 +444,12 @@
 }
 
 .table-section {
+
+  .point-view-description {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.7);
+  }
 
   .table-title {
     margin: 0 0 16px 0;

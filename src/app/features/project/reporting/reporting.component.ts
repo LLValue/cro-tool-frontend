@@ -104,6 +104,19 @@ import {
   SimulationDetailResponse
 } from '../../../api-contracts/reporting.contracts';
 
+/** One row in the by-point view: a variant of the selected point with aggregated combo metrics. */
+export interface PointVariantRow {
+  variantId: string;
+  variantName: string;
+  variantText: string;
+  combosCount: number;
+  bestConversionRate: number;
+  avgConversionRate: number;
+  bestWinProbability: number;
+  totalUsers: number;
+  totalConversions: number;
+}
+
 @Component({
   selector: 'app-reporting',
   standalone: true,
@@ -161,8 +174,10 @@ export class ReportingComponent implements OnInit, OnDestroy {
   selectedGoalId: string = 'all';
   /** Filter for results table/charts: 'all' or point id. */
   selectedPointIdFilter: string = 'all';
-  /** Filter for results: 'all' or goal id. */
+  /** Filter for results: 'all' or goal id. Default view uses primary goal. */
   selectedGoalIdFilter: string = 'all';
+  /** 'byGoal' = all combinations for selected goal (default); 'byPoint' = each point separately. */
+  reportingViewMode: 'byGoal' | 'byPoint' = 'byGoal';
   simulating = false;
   isSimulating = false; // For 30-day simulation
   animatingMetrics = false;
@@ -183,8 +198,21 @@ export class ReportingComponent implements OnInit, OnDestroy {
   /** Current top combos for chart 2 tooltip (CR · Uplift). */
   topCombosForChart: CombinationRow[] = [];
   
-  // KPI cards data
+  // KPI cards: by goal = combo-based, by point = variant-based (same as charts)
   controlCR = 0;
+  /** By goal: best CR and uplift from top combination. */
+  bestCRByGoal = 0;
+  upliftByGoal = 0;
+  usersForUpliftByGoal = 0;
+  /** By point: best CR and uplift from best variant of selected point. */
+  bestCRByPoint = 0;
+  upliftByPoint = 0;
+  usersForUpliftByPoint = 0;
+  /** Values actually shown in KPI cards (set explicitly when switching view). */
+  displayedBestCR = 0;
+  displayedUplift = 0;
+  displayedUsersForUplift = 0;
+  /** Legacy single set (used where view is implicit). */
   bestCR = 0;
   uplift = 0;
   previousMetrics: ReportingMetrics[] = [];
@@ -203,21 +231,77 @@ export class ReportingComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   displayedColumnsWithExpand: string[] = ['expand', 'variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   combinationColumnsWithExpand: string[] = ['expand', 'combination', 'users', 'conversions', 'conversionRate', 'uplift', 'winProbability', 'preview'];
-  
+  pointVariantColumns: string[] = ['variantText', 'combosCount', 'totalUsers', 'totalConversions', 'bestConversionRate', 'bestWinProbability'];
+
   @ViewChild('combinationTable') combinationTable: MatTable<CombinationRow> | null = null;
-  @ViewChild('conversionRateChart') conversionRateChartRef: BaseChartDirective | null = null;
+  @ViewChild('conversionRateChartGoal') conversionRateChartGoalRef: BaseChartDirective | null = null;
+  @ViewChild('conversionRateChartPoint') conversionRateChartPointRef: BaseChartDirective | null = null;
   @ViewChild('winProbabilityChart') winProbabilityChartRef: BaseChartDirective | null = null;
 
-  /** Rows to display in the table (filtered by selectedPointIdFilter / selectedGoalIdFilter when set). */
-  get displayCombinationRows(): CombinationRow[] {
-    if (this.selectedPointIdFilter === 'all') return this.combinationRows;
-    return this.combinationRows.filter(c => c.points.some(p => p.pointId === this.selectedPointIdFilter));
+  /** Line chart ref for the current view mode (by goal vs by point use separate canvas so chart is recreated). */
+  private get conversionRateChartRef(): BaseChartDirective | null {
+    return this.reportingViewMode === 'byGoal' ? this.conversionRateChartGoalRef : this.conversionRateChartPointRef;
   }
 
-  /** Users count of first displayed combo (for KPI uplift formatting). */
+  /** Rows to display: byGoal = all combos (goal filter for selected goal); byPoint = combos for selected point. */
+  get displayCombinationRows(): CombinationRow[] {
+    if (this.reportingViewMode === 'byPoint') {
+      if (!this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') return [];
+      const sid = String(this.selectedPointIdFilter);
+      return this.combinationRows.filter(c => c.points.some(p => String(p.pointId) === sid));
+    }
+    return this.combinationRows;
+  }
+
+  /** Users count for uplift formatting in by-goal view. */
   get firstDisplayComboUsers(): number {
-    const first = this.displayCombinationRows[0];
-    return first?.metrics?.users ?? 0;
+    return this.usersForUpliftByGoal;
+  }
+
+  /** KPI values shown in the cards: derived from current view mode so they always match. */
+  get kpiBestCR(): number {
+    return this.reportingViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
+  }
+  get kpiUplift(): number {
+    return this.reportingViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
+  }
+  get kpiUsersForUplift(): number {
+    return this.reportingViewMode === 'byPoint' ? this.usersForUpliftByPoint : this.usersForUpliftByGoal;
+  }
+
+  /** Rows for by-point view: one row per variant of the selected point (aggregated from combos). */
+  get pointVariantRows(): PointVariantRow[] {
+    if (this.reportingViewMode !== 'byPoint' || !this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') return [];
+    const sid = String(this.selectedPointIdFilter);
+    const combosWithPoint = this.combinationRows.filter(c => c.points.some(p => String(p.pointId) === sid));
+    const byVariant = new Map<string, { variantId: string; variantName: string; variantText: string; combos: CombinationRow[] }>();
+    for (const combo of combosWithPoint) {
+      const pointInCombo = combo.points.find(p => String(p.pointId) === sid);
+      if (!pointInCombo) continue;
+      const key = pointInCombo.variantId;
+      if (!byVariant.has(key)) {
+        byVariant.set(key, { variantId: pointInCombo.variantId, variantName: pointInCombo.variantName, variantText: pointInCombo.variantText, combos: [] });
+      }
+      byVariant.get(key)!.combos.push(combo);
+    }
+    return Array.from(byVariant.values()).map(({ variantId, variantName, variantText, combos }) => {
+      const bestCR = combos.length ? Math.max(...combos.map(c => c.metrics.conversionRate)) : 0;
+      const bestWP = combos.length ? Math.max(...combos.map(c => c.metrics.winProbability)) : 0;
+      const totalUsers = combos.reduce((s, c) => s + c.metrics.users, 0);
+      const totalConversions = combos.reduce((s, c) => s + c.metrics.conversions, 0);
+      const avgCR = totalUsers > 0 ? totalConversions / totalUsers : 0;
+      return {
+        variantId,
+        variantName,
+        variantText,
+        combosCount: combos.length,
+        bestConversionRate: bestCR,
+        avgConversionRate: avgCR,
+        bestWinProbability: bestWP,
+        totalUsers,
+        totalConversions
+      };
+    }).sort((a, b) => b.bestConversionRate - a.bestConversionRate);
   }
 
   // Track expanded rows
@@ -234,6 +318,11 @@ export class ReportingComponent implements OnInit, OnDestroy {
 
   // Chart data for simulation (ticket)
   public conversionRateOverTimeChartData: ChartConfiguration<'line'>['data'] = {
+    labels: [],
+    datasets: []
+  };
+  /** Dedicated data for by-goal line chart (separate canvas) so it always shows Control + Best. */
+  public conversionRateOverTimeChartDataByGoal: ChartConfiguration<'line'>['data'] = {
     labels: [],
     datasets: []
   };
@@ -330,6 +419,10 @@ export class ReportingComponent implements OnInit, OnDestroy {
     const goalsSub = this.store.getGoals(this.projectId).subscribe({
       next: goals => {
         this.goals = goals;
+        if (goals.length > 0 && this.selectedGoalIdFilter === 'all') {
+          const primary = goals.find(g => g.isPrimary) || goals[0];
+          this.selectedGoalIdFilter = primary.id;
+        }
       },
       error: () => {
         this.goals = [];
@@ -392,7 +485,8 @@ export class ReportingComponent implements OnInit, OnDestroy {
     this.controlComboId = detail.combinations.find(c => c.metrics.uplift === 0)?.comboId ?? null;
     this.currentSimulationId = detail.id?.trim() ? detail.id : null;
     this.selectedPointIdFilter = 'all';
-    this.selectedGoalIdFilter = 'all';
+    const primary = this.goals.find(g => g.isPrimary) || this.goals[0];
+    this.selectedGoalIdFilter = primary?.id ?? 'all';
     this.initializeCharts();
     this.refreshFilteredChartsAndKPIs();
     this.markWinnersAndLosers();
@@ -534,49 +628,199 @@ export class ReportingComponent implements OnInit, OnDestroy {
     this.refreshFilteredChartsAndKPIs();
   }
 
-  onReportingPointChange(): void {
+  onReportingViewModeChange(): void {
+    if (this.reportingViewMode === 'byPoint') {
+      if (!this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') {
+        this.selectedPointIdFilter = this.points.length > 0 ? String(this.points[0].id) : '';
+      }
+    }
     this.refreshFilteredChartsAndKPIs();
+    this.cdr.detectChanges();
+    // Second pass after view/ngIf updated so KPIs bindings refresh
+    setTimeout(() => {
+      this.updateKPIs();
+      this.applyDisplayedKPIsForCurrentView();
+      this.cdr.detectChanges();
+    }, 0);
   }
 
-  /** Rebuild charts and KPIs from current displayCombinationRows (filter result). */
+  onReportingPointChange(): void {
+    this.refreshFilteredChartsAndKPIs();
+    this.cdr.detectChanges();
+    setTimeout(() => {
+      this.updateKPIs();
+      this.applyDisplayedKPIsForCurrentView();
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  /** Sets displayed KPI values from current view mode (by goal vs by point). */
+  private applyDisplayedKPIsForCurrentView(): void {
+    if (this.reportingViewMode === 'byPoint') {
+      this.displayedBestCR = this.bestCRByPoint;
+      this.displayedUplift = this.upliftByPoint;
+      this.displayedUsersForUplift = this.usersForUpliftByPoint;
+    } else {
+      this.displayedBestCR = this.bestCRByGoal;
+      this.displayedUplift = this.upliftByGoal;
+      this.displayedUsersForUplift = this.usersForUpliftByGoal;
+    }
+  }
+
+  getSelectedPointName(): string {
+    const p = this.points.find(pt => pt.id === this.selectedPointIdFilter);
+    return p?.name ?? '';
+  }
+
+  /** Rebuild charts and KPIs: by goal = combos; by point = variants of selected point only. */
   private refreshFilteredChartsAndKPIs(): void {
     this.updateKPIs();
-    const rows = this.displayCombinationRows;
-    const comboIds = new Set(rows.map(c => c.comboId));
 
-    const topCombos = [...rows]
-      .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
-      .slice(0, 8);
-    this.setWinProbabilityChartFromCombos(topCombos);
-
-    if (this.simulationFrames?.length) {
-      const labels: string[] = [];
-      const controlData: number[] = [];
-      const bestData: number[] = [];
-      this.simulationFrames.forEach(frame => {
-        labels.push(`Day ${frame.day}`);
-        const controlInFrame = this.controlComboId
-          ? frame.combos.find(c => c.comboId === this.controlComboId)
-          : null;
-        controlData.push(controlInFrame?.conversionRate ?? this.controlMetrics?.conversionRate ?? 0);
-        const filteredCombos = frame.combos.filter(c => comboIds.has(c.comboId));
-        const bestInFrame = filteredCombos.length
-          ? filteredCombos.reduce((best, c) => c.conversionRate > best.conversionRate ? c : best, filteredCombos[0])
-          : null;
-        bestData.push(bestInFrame?.conversionRate ?? 0);
-      });
-      const existing = this.conversionRateOverTimeChartData?.datasets ?? [];
-      this.conversionRateOverTimeChartData = {
-        labels,
-        datasets: [
-          { label: 'Control', data: controlData, borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.2)', tension: 0.1 },
-          { label: 'Best combination', data: bestData, borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.2)', tension: 0.1 }
-        ]
-      };
+    if (this.reportingViewMode === 'byPoint') {
+      this.refreshChartsForByPoint();
+      this.updateKPIs();
+      this.applyDisplayedKPIsForCurrentView();
+      this.combinationTable?.renderRows();
+      this.cdr.detectChanges();
+      return;
     }
 
-    this.combinationTable?.renderRows();
-    this.cdr.detectChanges();
+    {
+      // By goal: restore combo-based charts and titles
+      if (this.conversionRateOverTimeChartOptions?.plugins?.title) {
+        (this.conversionRateOverTimeChartOptions.plugins.title as { text?: string }).text = 'Conversion rate over time';
+      }
+      if (this.winProbabilityChartOptions?.plugins?.title) {
+        (this.winProbabilityChartOptions.plugins.title as { text?: string }).text = 'Top combinations (win probability)';
+      }
+
+      const rows = this.displayCombinationRows;
+      const comboIds = new Set(rows.map(c => c.comboId));
+      const topCombos = [...rows]
+        .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
+        .slice(0, 8);
+      this.setWinProbabilityChartFromCombos(topCombos);
+
+      if (this.simulationFrames?.length) {
+        const labels: string[] = [];
+        const controlData: number[] = [];
+        const bestData: number[] = [];
+        this.simulationFrames.forEach(frame => {
+          labels.push(`Day ${frame.day}`);
+          const controlInFrame = this.controlComboId
+            ? frame.combos.find(c => c.comboId === this.controlComboId)
+            : null;
+          controlData.push(controlInFrame?.conversionRate ?? this.controlMetrics?.conversionRate ?? 0);
+          const filteredCombos = frame.combos.filter(c => comboIds.has(c.comboId));
+          const bestInFrame = filteredCombos.length
+            ? filteredCombos.reduce((best, c) => c.conversionRate > best.conversionRate ? c : best, filteredCombos[0])
+            : null;
+          bestData.push(bestInFrame?.conversionRate ?? 0);
+        });
+        this.conversionRateOverTimeChartDataByGoal = {
+          labels,
+          datasets: [
+            { label: 'Control', data: controlData, borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.2)', tension: 0.1 },
+            { label: 'Best combination', data: bestData, borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.2)', tension: 0.1 }
+          ]
+        };
+      } else {
+        this.conversionRateOverTimeChartDataByGoal = { labels: [], datasets: [] };
+      }
+
+      this.applyDisplayedKPIsForCurrentView();
+      this.combinationTable?.renderRows();
+      this.cdr.detectChanges();
+
+      // By-goal line chart is in a separate canvas (*ngIf); it's created after detectChanges.
+      // Force update in next tick so the new chart instance receives and draws the data.
+      setTimeout(() => {
+        this.conversionRateChartGoalRef?.update('active');
+        this.winProbabilityChartRef?.update('active');
+        this.cdr.detectChanges();
+      }, 0);
+    }
+  }
+
+  /** Charts for by-point view: line = CR over time per variant, bar = variants win probability. */
+  private refreshChartsForByPoint(framesToUse?: SimulationFrame[]): void {
+    const frames = framesToUse ?? this.simulationFrames ?? [];
+    const pointId = this.selectedPointIdFilter;
+    if (!pointId || pointId === 'all' || !frames.length) {
+      this.setWinProbabilityChartFromPointVariants([]);
+      if (this.conversionRateOverTimeChartOptions?.plugins?.title) {
+        (this.conversionRateOverTimeChartOptions.plugins.title as { text?: string }).text = 'Conversion rate over time';
+      }
+      return;
+    }
+    const pointIdStr = String(pointId);
+
+    const comboToVariant = new Map<string, string>();
+    for (const combo of this.combinationRows) {
+      const p = combo.points.find(pt => String(pt.pointId) === pointIdStr);
+      if (p) comboToVariant.set(combo.comboId, p.variantId);
+    }
+
+    const variantOrder = [...new Set(comboToVariant.values())];
+    const variantLabels = new Map<string, string>();
+    for (const combo of this.combinationRows) {
+      const p = combo.points.find(pt => String(pt.pointId) === pointIdStr);
+      if (p && !variantLabels.has(p.variantId)) variantLabels.set(p.variantId, p.variantText.length > 20 ? p.variantText.slice(0, 20) + '…' : p.variantText);
+    }
+
+    const colors = ['rgb(255, 99, 132)', 'rgb(75, 192, 192)', 'rgb(255, 205, 86)', 'rgb(54, 162, 235)', 'rgb(153, 102, 255)'];
+    const labels: string[] = [];
+    const datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; tension: number }[] = [];
+
+    frames.forEach(frame => {
+      labels.push(`Day ${frame.day}`);
+    });
+
+    variantOrder.forEach((variantId, idx) => {
+      const data: number[] = [];
+      frames.forEach(frame => {
+        const rates = frame.combos
+          .filter(c => comboToVariant.get(c.comboId) === variantId)
+          .map(c => c.conversionRate);
+        const avg = rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : 0;
+        data.push(avg);
+      });
+      const color = colors[idx % colors.length];
+      datasets.push({
+        label: variantLabels.get(variantId) ?? variantId,
+        data,
+        borderColor: color,
+        backgroundColor: color.replace('rgb', 'rgba').replace(')', ', 0.2)'),
+        tension: 0.1
+      });
+    });
+
+    this.conversionRateOverTimeChartData = { labels, datasets };
+    if (this.conversionRateOverTimeChartOptions?.plugins?.title) {
+      (this.conversionRateOverTimeChartOptions.plugins.title as { text?: string }).text = 'Conversion rate over time (by variant)';
+    }
+
+    const variantRows = this.pointVariantRows;
+    this.setWinProbabilityChartFromPointVariants(variantRows);
+    if (this.winProbabilityChartOptions?.plugins?.title) {
+      (this.winProbabilityChartOptions.plugins.title as { text?: string }).text = 'Variants (win probability)';
+    }
+  }
+
+  /** Updates win probability chart with variant rows (by-point view). */
+  private setWinProbabilityChartFromPointVariants(rows: PointVariantRow[]): void {
+    const d = this.winProbabilityChartData;
+    if (!d.datasets?.length || !d.labels) return;
+    const labelList = rows.map(r => r.variantText.length > 25 ? r.variantText.slice(0, 25) + '…' : r.variantText);
+    const data = rows.map(r => r.bestWinProbability * 100);
+    const backgroundColor = rows.map((_, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)');
+    d.labels.length = 0;
+    d.labels.push(...labelList);
+    d.datasets[0].data.length = 0;
+    (d.datasets[0].data as number[]).push(...data);
+    (d.datasets[0].backgroundColor as string[]).length = 0;
+    (d.datasets[0].backgroundColor as string[]).push(...backgroundColor);
+    this.winProbabilityChartRef?.update('active');
   }
 
   private applyGoalTypeFilter(metrics: ReportingMetrics[], goalType: string): ReportingMetrics[] {
@@ -1187,38 +1431,46 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   private updateChartsFromFrame(frame: SimulationFrame): void {
-    // Update conversion rate over time chart
+    if (this.reportingViewMode === 'byPoint') {
+      this.refreshChartsForByPoint(this.simulationFrames.slice(0, this.currentFrameIndex + 1));
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const rows = this.displayCombinationRows;
+    const comboIds = new Set(rows.map(c => c.comboId));
+
     const dayLabel = `Day ${frame.day}`;
     const controlInFrame = this.controlComboId
       ? frame.combos.find(c => c.comboId === this.controlComboId)
       : null;
     const controlCR = controlInFrame?.conversionRate ?? this.controlMetrics?.conversionRate ?? 0;
 
-    // Find best combination CR for this frame
-    const bestCombo = frame.combos.reduce((best, current) => 
-      current.conversionRate > best.conversionRate ? current : best,
-      frame.combos[0] || { conversionRate: 0 }
-    );
+    const filteredFrameCombos = frame.combos.filter(c => comboIds.has(c.comboId));
+    const bestInFrame = filteredFrameCombos.length
+      ? filteredFrameCombos.reduce((best, c) => c.conversionRate > best.conversionRate ? c : best, filteredFrameCombos[0])
+      : null;
+    const bestCR = bestInFrame?.conversionRate ?? 0;
 
-    // Add data point to chart
-    if (!this.conversionRateOverTimeChartData.labels) {
-      this.conversionRateOverTimeChartData.labels = [];
+    const chartData = this.conversionRateOverTimeChartDataByGoal;
+    if (!chartData.labels) {
+      chartData.labels = [];
     }
-    if (this.conversionRateOverTimeChartData.labels.length < frame.day) {
-      this.conversionRateOverTimeChartData.labels.push(dayLabel);
+    if (chartData.labels.length < frame.day) {
+      chartData.labels.push(dayLabel);
       
-      if (this.conversionRateOverTimeChartData.datasets.length === 0) {
-        this.conversionRateOverTimeChartData.datasets = [
+      if (!chartData.datasets?.length) {
+        chartData.datasets = [
           {
             label: 'Control',
-            data: [],
+            data: [] as number[],
             borderColor: 'rgb(75, 192, 192)',
             backgroundColor: 'rgba(75, 192, 192, 0.2)',
             tension: 0.1
           },
           {
             label: 'Best combination',
-            data: [],
+            data: [] as number[],
             borderColor: 'rgb(255, 99, 132)',
             backgroundColor: 'rgba(255, 99, 132, 0.2)',
             tension: 0.1
@@ -1226,15 +1478,13 @@ export class ReportingComponent implements OnInit, OnDestroy {
         ];
       }
       
-      this.conversionRateOverTimeChartData.datasets[0].data.push(controlCR);
-      this.conversionRateOverTimeChartData.datasets[1].data.push(bestCombo.conversionRate);
-      // Update chart in place (no new reference) so only this chart redraws smoothly
-      this.conversionRateChartRef?.update('active');
+      (chartData.datasets[0].data as number[]).push(controlCR);
+      (chartData.datasets[1].data as number[]).push(bestCR);
+      this.conversionRateChartGoalRef?.update('active');
     }
 
-    // Update win probability chart only (reorder every 2-3 frames)
     if (frame.day % 3 === 0) {
-      const topCombos = [...this.combinationRows]
+      const topCombos = [...rows]
         .sort((a, b) => b.metrics.winProbability - a.metrics.winProbability)
         .slice(0, 8);
       this.setWinProbabilityChartFromCombos(topCombos);
@@ -1243,12 +1493,9 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   private initializeCharts(): void {
-    // Initialize conversion rate over time chart
-    this.conversionRateOverTimeChartData = {
-      labels: [],
-      datasets: []
-    };
-    
+    this.conversionRateOverTimeChartData = { labels: [], datasets: [] };
+    this.conversionRateOverTimeChartDataByGoal = { labels: [], datasets: [] };
+
     const totalDuration = 2800;
     const getDataLen = (ctx: { chart?: Chart }): number =>
       (ctx.chart?.data?.labels?.length ?? ctx.chart?.data?.datasets?.[0]?.data?.length ?? 30);
@@ -1393,15 +1640,33 @@ export class ReportingComponent implements OnInit, OnDestroy {
     if (this.controlMetrics) {
       this.controlCR = this.controlMetrics.conversionRate;
     }
-    const rows = this.displayCombinationRows;
+    const rows = this.combinationRows;
     if (rows.length > 0) {
-      const best = rows[0];
-      this.bestCR = best.metrics.conversionRate;
-      this.uplift = best.metrics.uplift;
+      const bestCombo = rows[0];
+      this.bestCRByGoal = bestCombo.metrics.conversionRate;
+      this.upliftByGoal = bestCombo.metrics.uplift;
+      this.usersForUpliftByGoal = bestCombo.metrics.users;
     } else {
-      this.bestCR = 0;
-      this.uplift = 0;
+      this.bestCRByGoal = 0;
+      this.upliftByGoal = 0;
+      this.usersForUpliftByGoal = 0;
     }
+    const variantRows = this.pointVariantRows;
+    if (variantRows.length > 0) {
+      const bestVariant = variantRows.reduce((a, b) => a.bestConversionRate >= b.bestConversionRate ? a : b);
+      this.bestCRByPoint = bestVariant.bestConversionRate;
+      this.upliftByPoint = this.controlCR > 0 ? (this.bestCRByPoint - this.controlCR) / this.controlCR : 0;
+      this.usersForUpliftByPoint = bestVariant.totalUsers;
+    } else {
+      this.bestCRByPoint = 0;
+      this.upliftByPoint = 0;
+      this.usersForUpliftByPoint = 0;
+    }
+    this.bestCR = this.reportingViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
+    this.uplift = this.reportingViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
+    this.displayedBestCR = this.reportingViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
+    this.displayedUplift = this.reportingViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
+    this.displayedUsersForUplift = this.reportingViewMode === 'byPoint' ? this.usersForUpliftByPoint : this.usersForUpliftByGoal;
   }
 
   private markWinnersAndLosers(): void {
