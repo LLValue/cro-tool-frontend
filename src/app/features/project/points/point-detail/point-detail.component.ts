@@ -1015,7 +1015,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   getMaxChars(): number {
-    return 1000;
+    return 3000;
   }
 
   getInfoModalContent(field: string): string {
