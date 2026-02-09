@@ -69,6 +69,9 @@ export class ContextComponent implements OnInit, OnDestroy {
   uploadedFiles: { name: string; file: File }[] = [];
   urlInputControl: any;
 
+  /** Label for AI auto-filled fields (shown with ai icon). */
+  readonly autoFilledLabel = 'Auto filled';
+
   // Field states for badges
   fieldStates: { [key: string]: { source: 'manual' | 'ai_draft'; reviewStatus: 'ok' | 'needs_review' | 'missing'; confidence: 'high' | 'medium' | 'low' } } = {};
 
@@ -836,7 +839,7 @@ export class ContextComponent implements OnInit, OnDestroy {
       return 'Needs review';
     }
     if (state.source === 'ai_draft' && state.reviewStatus === 'ok') {
-      return 'Auto-filled (Draft)';
+      return this.autoFilledLabel;
     }
     if (state.reviewStatus === 'missing') {
       return 'Missing';

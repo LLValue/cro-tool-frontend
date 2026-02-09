@@ -136,6 +136,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   // AI Brief Helper state
   readonly MIN_CHARS_FOR_IMPROVE = 10;
   briefDraftLoading = false;
+  /** Label for AI auto-filled fields (shown with ai icon). */
+  readonly autoFilledLabel = 'Auto filled';
   briefFieldState: Record<string, { source: 'manual' | 'ai_draft'; reviewStatus: 'ok' | 'needs_review' | 'missing'; lastUpdatedAt?: number }> = {};
   private highlightFieldsSet = new Set<string>();
   private highlightTimeoutIds: ReturnType<typeof setTimeout>[] = [];
@@ -1133,7 +1135,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     if (state.source === 'manual') return 'Manual';
     if (state.reviewStatus === 'missing') return 'Missing';
     if (state.reviewStatus === 'needs_review') return 'Needs review';
-    if (state.source === 'ai_draft') return 'Auto-filled (Draft)';
+    if (state.source === 'ai_draft') return 'Auto filled';
     return '';
   }
 

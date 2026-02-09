@@ -160,7 +160,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('objective')" [class]="getBadgeClass('objective')">{{ getBadgeLabel('objective') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('objective')" [class]="getBadgeClass('objective')"><img *ngIf="getBadgeLabel('objective') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('objective') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('objective')">Edited</span>
                 </div>
               </label>
@@ -189,7 +189,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('context')" [class]="getBadgeClass('context')">{{ getBadgeLabel('context') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('context')" [class]="getBadgeClass('context')"><img *ngIf="getBadgeLabel('context') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('context') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('context')">Edited</span>
                 </div>
               </label>
@@ -218,7 +218,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('goodIdeas')" [class]="getBadgeClass('goodIdeas')">{{ getBadgeLabel('goodIdeas') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('goodIdeas')" [class]="getBadgeClass('goodIdeas')"><img *ngIf="getBadgeLabel('goodIdeas') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('goodIdeas') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('goodIdeas')">Edited</span>
                 </div>
               </label>
@@ -244,7 +244,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('thingsToAvoid')" [class]="getBadgeClass('thingsToAvoid')">{{ getBadgeLabel('thingsToAvoid') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('thingsToAvoid')" [class]="getBadgeClass('thingsToAvoid')"><img *ngIf="getBadgeLabel('thingsToAvoid') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('thingsToAvoid') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('thingsToAvoid')">Edited</span>
                 </div>
               </label>
@@ -270,7 +270,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('mustIncludeKeywords')" [class]="getBadgeClass('mustIncludeKeywords')">{{ getBadgeLabel('mustIncludeKeywords') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('mustIncludeKeywords')" [class]="getBadgeClass('mustIncludeKeywords')"><img *ngIf="getBadgeLabel('mustIncludeKeywords') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('mustIncludeKeywords') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('mustIncludeKeywords')">Edited</span>
                 </div>
               </label>
@@ -296,7 +296,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('mustAvoidTerms')" [class]="getBadgeClass('mustAvoidTerms')">{{ getBadgeLabel('mustAvoidTerms') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('mustAvoidTerms')" [class]="getBadgeClass('mustAvoidTerms')"><img *ngIf="getBadgeLabel('mustAvoidTerms') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('mustAvoidTerms') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('mustAvoidTerms')">Edited</span>
                 </div>
               </label>
@@ -322,7 +322,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('minChars')" [class]="getBadgeClass('minChars')">{{ getBadgeLabel('minChars') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('minChars')" [class]="getBadgeClass('minChars')"><img *ngIf="getBadgeLabel('minChars') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('minChars') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('minChars')">Edited</span>
                 </div>
               </label>
@@ -347,7 +347,7 @@
                   </span>
                 </div>
                 <div>
-                  <span class="brief-badge" *ngIf="getBadgeLabel('maxChars')" [class]="getBadgeClass('maxChars')">{{ getBadgeLabel('maxChars') }}</span>
+                  <span class="brief-badge" *ngIf="getBadgeLabel('maxChars')" [class]="getBadgeClass('maxChars')"><img *ngIf="getBadgeLabel('maxChars') === autoFilledLabel" src="assets/icons/ai.svg" class="brief-badge-ai-icon" alt="">{{ getBadgeLabel('maxChars') }}</span>
                   <span class="brief-edited" *ngIf="isManualField('maxChars')">Edited</span>
                 </div>
               </label>

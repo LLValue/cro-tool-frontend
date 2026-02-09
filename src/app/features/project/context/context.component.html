@@ -145,10 +145,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('productDescription')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('productDescription') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('productDescription') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('productDescription') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('productDescription') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('productDescription') === 'Missing'">
+                <img *ngIf="getFieldBadge('productDescription') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('productDescription') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('productDescription')">Edited</span>
@@ -177,10 +178,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('targetAudiences')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('targetAudiences') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('targetAudiences') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('targetAudiences') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('targetAudiences') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('targetAudiences') === 'Missing'">
+                <img *ngIf="getFieldBadge('targetAudiences') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('targetAudiences') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('targetAudiences')">Edited</span>
@@ -209,10 +211,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('valueProps')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('valueProps') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('valueProps') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('valueProps') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('valueProps') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('valueProps') === 'Missing'">
+                <img *ngIf="getFieldBadge('valueProps') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('valueProps') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('valueProps')">Edited</span>
@@ -235,10 +238,11 @@
           <div class="field-label-row">
             <label class="field-label">Top objections</label>
             <div class="field-badges" *ngIf="getFieldBadge('topObjections')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('topObjections') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('topObjections') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('topObjections') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('topObjections') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('topObjections') === 'Missing'">
+                <img *ngIf="getFieldBadge('topObjections') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('topObjections') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('topObjections')">Edited</span>
@@ -277,10 +281,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('language')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('language') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('language') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('language') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('language') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('language') === 'Missing'">
+                <img *ngIf="getFieldBadge('language') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('language') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('language')">Edited</span>
@@ -310,10 +315,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('toneAndStyle')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('toneAndStyle') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('toneAndStyle') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('toneAndStyle') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('toneAndStyle') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('toneAndStyle') === 'Missing'">
+                <img *ngIf="getFieldBadge('toneAndStyle') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('toneAndStyle') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('toneAndStyle')">Edited</span>
@@ -342,10 +348,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('pageContextAndGoal')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('pageContextAndGoal') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('pageContextAndGoal') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('pageContextAndGoal') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('pageContextAndGoal') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('pageContextAndGoal') === 'Missing'">
+                <img *ngIf="getFieldBadge('pageContextAndGoal') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('pageContextAndGoal') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('pageContextAndGoal')">Edited</span>
@@ -373,10 +380,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('funnelStageAndNextAction')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('funnelStageAndNextAction') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('funnelStageAndNextAction') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('funnelStageAndNextAction') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('funnelStageAndNextAction') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('funnelStageAndNextAction') === 'Missing'">
+                <img *ngIf="getFieldBadge('funnelStageAndNextAction') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('funnelStageAndNextAction') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('funnelStageAndNextAction')">Edited</span>
@@ -412,10 +420,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('brandGuidelines')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('brandGuidelines') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('brandGuidelines') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('brandGuidelines') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('brandGuidelines') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('brandGuidelines') === 'Missing'">
+                <img *ngIf="getFieldBadge('brandGuidelines') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('brandGuidelines') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('brandGuidelines')">Edited</span>
@@ -440,10 +449,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('allowedFacts')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('allowedFacts') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('allowedFacts') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('allowedFacts') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('allowedFacts') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('allowedFacts') === 'Missing'">
+                <img *ngIf="getFieldBadge('allowedFacts') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('allowedFacts') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('allowedFacts')">Edited</span>
@@ -468,10 +478,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('forbiddenWords')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('forbiddenWords') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('forbiddenWords') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('forbiddenWords') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('forbiddenWords') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('forbiddenWords') === 'Missing'">
+                <img *ngIf="getFieldBadge('forbiddenWords') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('forbiddenWords') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('forbiddenWords')">Edited</span>
@@ -496,10 +507,11 @@
               </button>
             </label>
             <div class="field-badges" *ngIf="getFieldBadge('sensitiveClaims')">
-              <span class="field-badge" [class.badge-draft]="getFieldBadge('sensitiveClaims') === 'Auto-filled (Draft)'"
+              <span class="field-badge" [class.badge-draft]="getFieldBadge('sensitiveClaims') === autoFilledLabel"
                     [class.badge-review]="getFieldBadge('sensitiveClaims') === 'Needs review'"
                     [class.badge-manual]="getFieldBadge('sensitiveClaims') === 'Manual'"
                     [class.badge-missing]="getFieldBadge('sensitiveClaims') === 'Missing'">
+                <img *ngIf="getFieldBadge('sensitiveClaims') === autoFilledLabel" src="assets/icons/ai.svg" class="field-badge-ai-icon" alt="">
                 {{ getFieldBadge('sensitiveClaims') }}
               </span>
               <span class="field-badge-edited" *ngIf="hasFieldBeenEdited('sensitiveClaims')">Edited</span>
