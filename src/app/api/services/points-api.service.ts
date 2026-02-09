@@ -52,6 +52,7 @@ export class PointsApiService {
       selector: dto.selector,
       text: dto.text || '',
       objective: dto.objective,
+      context: dto.context,
       generationRules: dto.generationRules || '',
       elementType: dto.elementType,
       deviceScope: dto.deviceScope,

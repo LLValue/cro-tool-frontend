@@ -18,6 +18,8 @@
               <div class="field-label-row">
                 <h3>Point Details</h3>
                 <mat-slide-toggle
+                  class="point-status-toggle"
+                  [class.included]="setupForm.get('status')?.value === 'Included'"
                   [checked]="setupForm.get('status')?.value === 'Included'"
                   (change)="onStatusToggleChange($event.checked)">
                   {{ setupForm.get('status')?.value === 'Included' ? 'Included' : 'Excluded' }}
@@ -58,27 +60,26 @@
                     CSS Selector
                     <span class="required-asterisk">*</span>
                   </span>                  
-                  <div class="selector-actions">
-                    <button 
-                      mat-raised-button 
-                      color="primary" 
-                      type="button" 
-                      (click)="toggleSelectionMode()" 
-                      [class.active]="selectionMode">
-                      <mat-icon>{{ selectionMode ? 'close' : 'touch_app' }}</mat-icon>
-                      {{ selectionMode ? 'Cancel Selection' : 'Select Element' }}
-                    </button>
-                  </div>
                 </label>
                 <p class="field-helper">Enter the CSS selector for the element (e.g., .hero-title, #cta-button, h1).</p>
                 <mat-form-field appearance="outline" class="brief-input">
                   <input matInput formControlName="selector" required>
                   <mat-hint *ngIf="selectedElement">Generated from selected element - you can edit it manually</mat-hint>
-                  <mat-hint *ngIf="!selectedElement">Select an element or enter manually</mat-hint>
                   <mat-error *ngIf="setupForm.get('selector')?.hasError('required')">
                     CSS Selector is required
                   </mat-error>
                 </mat-form-field>
+                <div class="selector-actions">
+                  <button 
+                    mat-raised-button 
+                    color="primary" 
+                    type="button" 
+                    (click)="toggleSelectionMode()" 
+                    [class.active]="selectionMode">
+                    <mat-icon>{{ selectionMode ? 'close' : 'touch_app' }}</mat-icon>
+                    {{ selectionMode ? 'Cancel Selection' : 'Select Element' }}
+                  </button>
+                </div>
               </div>
 
               <div class="form-field-wrapper">
@@ -416,7 +417,6 @@
                   <mat-icon>auto_awesome</mat-icon>
                   Generate variants with AI
                 </button>
-                <button *ngIf="hasNonDiscardedVariants" mat-raised-button (click)="deleteAllVariants()">Discard all variants</button>
               </div>
             </div>
 
@@ -448,21 +448,21 @@
                       </td>
                       <td class="col-id">
                         <span class="variant-id-text">{{ getVariantDisplayId(variant) }}</span>
-                        <button type="button" mat-icon-button (click)="copyVariantId(variant.id, $event)" matTooltip="Copy ID">
-                          <mat-icon>content_copy</mat-icon>
-                        </button>
                       </td>
                       <td class="col-status">
-                        <span class="status-badge" [class.enabled]="variant.status === 'approved'" [class.disabled]="variant.status === 'pending'" [class.discarded]="variant.status === 'discarded'">
-                          {{ variant.status === 'approved' ? '✓ Enabled' : variant.status === 'pending' ? 'Disabled' : 'Discarded' }}
-                        </span>
-                        <div class="toggle-label">Use in experiment</div>
-                        <mat-slide-toggle
-                          [checked]="variant.status === 'approved'"
-                          [disabled]="variant.status === 'discarded'"
-                          (change)="onVariantUseInExperimentChange(variant, $event.checked)"
-                          [matTooltip]="variant.status === 'discarded' ? 'Discarded variants are kept for history.' : ''">
-                        </mat-slide-toggle>
+                        <div class="status-toggle-row">
+                          <mat-slide-toggle
+                            class="variant-use-toggle"
+                            [class.approved]="variant.status === 'approved'"
+                            [checked]="variant.status === 'approved'"
+                            [disabled]="variant.status === 'discarded'"
+                            (change)="onVariantUseInExperimentChange(variant, $event.checked)"
+                            [matTooltip]="variant.status === 'discarded' ? 'Discarded variants are kept for history.' : 'Use in experiment'">
+                          </mat-slide-toggle>
+                          <span class="status-badge" [class.enabled]="variant.status === 'approved'" [class.disabled]="variant.status === 'pending'" [class.discarded]="variant.status === 'discarded'">
+                            {{ variant.status === 'approved' ? '✓ Enabled' : variant.status === 'pending' ? 'Disabled' : 'Discarded' }}
+                          </span>
+                        </div>
                       </td>
                       <td class="col-text">
                         <div *ngIf="editingVariantId !== variant.id" class="text-preview" (click)="startEditVariant(variant)">{{ variant.text }}</div>

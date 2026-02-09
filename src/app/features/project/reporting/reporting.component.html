@@ -15,23 +15,23 @@
 <section class="results-section" *ngIf="combinationRows.length > 0">
   <div class="results-view-switcher">
     <span class="view-label">View</span>
-    <button mat-stroked-button [class.active]="reportingViewMode === 'byGoal'" (click)="reportingViewMode = 'byGoal'; onReportingViewModeChange()">
+    <button mat-stroked-button [class.active]="resultsViewMode === 'byGoal'" (click)="resultsViewMode = 'byGoal'; onResultsViewModeChange()">
       By goal
     </button>
-    <button mat-stroked-button [class.active]="reportingViewMode === 'byPoint'" (click)="reportingViewMode = 'byPoint'; onReportingViewModeChange()">
+    <button mat-stroked-button [class.active]="resultsViewMode === 'byPoint'" (click)="resultsViewMode = 'byPoint'; onResultsViewModeChange()">
       By point
     </button>
   </div>
   <div class="results-filters">
-    <mat-form-field *ngIf="reportingViewMode === 'byGoal'" appearance="outline" class="filter-field">
+    <mat-form-field *ngIf="resultsViewMode === 'byGoal'" appearance="outline" class="filter-field">
       <mat-label>Goal</mat-label>
-      <mat-select [(ngModel)]="selectedGoalIdFilter" (selectionChange)="onReportingGoalChange()">
+      <mat-select [(ngModel)]="selectedGoalIdFilter" (selectionChange)="onResultsGoalChange()">
         <mat-option *ngFor="let g of goals" [value]="g.id">{{ g.name || g.type }}</mat-option>
       </mat-select>
     </mat-form-field>
-    <mat-form-field *ngIf="reportingViewMode === 'byPoint'" appearance="outline" class="filter-field">
+    <mat-form-field *ngIf="resultsViewMode === 'byPoint'" appearance="outline" class="filter-field">
       <mat-label>Optimization point</mat-label>
-      <mat-select [(ngModel)]="selectedPointIdFilter" (ngModelChange)="onReportingPointChange()">
+      <mat-select [(ngModel)]="selectedPointIdFilter" (ngModelChange)="onResultsPointChange()">
         <mat-option *ngFor="let p of points" [value]="p.id">{{ p.name }}</mat-option>
       </mat-select>
     </mat-form-field>
@@ -63,14 +63,14 @@
         <span class="chart-badge">30-day simulation</span>
       </mat-card-header>
       <mat-card-content>
-        <canvas *ngIf="reportingViewMode === 'byGoal'"
+        <canvas *ngIf="resultsViewMode === 'byGoal'"
           baseChart
           #conversionRateChartGoal
           [data]="conversionRateOverTimeChartDataByGoal"
           [options]="conversionRateOverTimeChartOptions"
           type="line">
         </canvas>
-        <canvas *ngIf="reportingViewMode === 'byPoint'"
+        <canvas *ngIf="resultsViewMode === 'byPoint'"
           baseChart
           #conversionRateChartPoint
           [data]="conversionRateOverTimeChartData"
@@ -81,8 +81,11 @@
     </mat-card>
     <mat-card class="chart-card chart-secondary">
       <mat-card-header>
-        <mat-card-title>Top combinations (win probability)</mat-card-title>
-        <mat-card-subtitle>Higher = more likely to be best given current traffic.</mat-card-subtitle>
+        <mat-card-title>Win probability
+          <button mat-icon-button type="button" class="info-icon" (click)="openWinProbabilityInfoModal()" matTooltip="More information" aria-label="More information">
+            <mat-icon>info</mat-icon>
+          </button>
+        </mat-card-title>
       </mat-card-header>
       <mat-card-content>
         <canvas baseChart
@@ -96,7 +99,7 @@
   </div>
 
   <!-- By goal: combination table -->
-  <div class="table-section app-table-wrapper" *ngIf="reportingViewMode === 'byGoal'">
+  <div class="table-section app-table-wrapper" *ngIf="resultsViewMode === 'byGoal'">
     <table mat-table #combinationTable [dataSource]="displayCombinationRows" class="metrics-table combination-table" multiTemplateDataRows>
       <ng-container matColumnDef="expand">
         <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
@@ -248,7 +251,7 @@
   </div>
 
   <!-- By point: variants of the selected point (no combinations) -->
-  <div class="table-section app-table-wrapper" *ngIf="reportingViewMode === 'byPoint'">
+  <div class="table-section app-table-wrapper" *ngIf="resultsViewMode === 'byPoint'">
     <table mat-table [dataSource]="pointVariantRows" class="metrics-table point-variant-table">
       <ng-container matColumnDef="variantText">
         <th mat-header-cell *matHeaderCellDef>Variant</th>

@@ -586,12 +586,6 @@ export class ContextComponent implements OnInit, OnDestroy {
     this.uploadedFiles.splice(index, 1);
   }
 
-  clearSources(): void {
-    this.urls = [];
-    this.uploadedFiles = [];
-    this.urlInputControl.setValue('');
-  }
-
   generateDraftBrief(): void {
     if (this.urls.length === 0 && this.uploadedFiles.length === 0) {
       this.toast.showError('Please add at least one source (URL or document)');

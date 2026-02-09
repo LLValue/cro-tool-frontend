@@ -92,6 +92,7 @@ import { API_CLIENT } from '../../../api/api-client.token';
 import { ApiClient } from '../../../api/api-client';
 import { take } from 'rxjs/operators';
 import { MatDialog } from '@angular/material/dialog';
+import { InfoModalComponent } from '../../../shared/info-modal/info-modal.component';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { SimulationProgressComponent } from '../../../shared/simulation-progress/simulation-progress.component';
@@ -161,7 +162,7 @@ export interface PointVariantRow {
   templateUrl: './reporting.component.html',
   styleUrls: ['./reporting.component.scss']
 })
-export class ReportingComponent implements OnInit, OnDestroy {
+export class ResultsComponent implements OnInit, OnDestroy {
   projectId: string = '';
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
@@ -177,7 +178,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
   /** Filter for results: 'all' or goal id. Default view uses primary goal. */
   selectedGoalIdFilter: string = 'all';
   /** 'byGoal' = all combinations for selected goal (default); 'byPoint' = each point separately. */
-  reportingViewMode: 'byGoal' | 'byPoint' = 'byGoal';
+  resultsViewMode: 'byGoal' | 'byPoint' = 'byGoal';
   simulating = false;
   isSimulating = false; // For 30-day simulation
   animatingMetrics = false;
@@ -240,12 +241,12 @@ export class ReportingComponent implements OnInit, OnDestroy {
 
   /** Line chart ref for the current view mode (by goal vs by point use separate canvas so chart is recreated). */
   private get conversionRateChartRef(): BaseChartDirective | null {
-    return this.reportingViewMode === 'byGoal' ? this.conversionRateChartGoalRef : this.conversionRateChartPointRef;
+    return this.resultsViewMode === 'byGoal' ? this.conversionRateChartGoalRef : this.conversionRateChartPointRef;
   }
 
   /** Rows to display: byGoal = all combos (goal filter for selected goal); byPoint = combos for selected point. */
   get displayCombinationRows(): CombinationRow[] {
-    if (this.reportingViewMode === 'byPoint') {
+    if (this.resultsViewMode === 'byPoint') {
       if (!this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') return [];
       const sid = String(this.selectedPointIdFilter);
       return this.combinationRows.filter(c => c.points.some(p => String(p.pointId) === sid));
@@ -260,18 +261,18 @@ export class ReportingComponent implements OnInit, OnDestroy {
 
   /** KPI values shown in the cards: derived from current view mode so they always match. */
   get kpiBestCR(): number {
-    return this.reportingViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
+    return this.resultsViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
   }
   get kpiUplift(): number {
-    return this.reportingViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
+    return this.resultsViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
   }
   get kpiUsersForUplift(): number {
-    return this.reportingViewMode === 'byPoint' ? this.usersForUpliftByPoint : this.usersForUpliftByGoal;
+    return this.resultsViewMode === 'byPoint' ? this.usersForUpliftByPoint : this.usersForUpliftByGoal;
   }
 
   /** Rows for by-point view: one row per variant of the selected point (aggregated from combos). */
   get pointVariantRows(): PointVariantRow[] {
-    if (this.reportingViewMode !== 'byPoint' || !this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') return [];
+    if (this.resultsViewMode !== 'byPoint' || !this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') return [];
     const sid = String(this.selectedPointIdFilter);
     const combosWithPoint = this.combinationRows.filter(c => c.points.some(p => String(p.pointId) === sid));
     const byVariant = new Map<string, { variantId: string; variantName: string; variantText: string; combos: CombinationRow[] }>();
@@ -624,12 +625,12 @@ export class ReportingComponent implements OnInit, OnDestroy {
     this.recomputeMetrics();
   }
 
-  onReportingGoalChange(): void {
+  onResultsGoalChange(): void {
     this.refreshFilteredChartsAndKPIs();
   }
 
-  onReportingViewModeChange(): void {
-    if (this.reportingViewMode === 'byPoint') {
+  onResultsViewModeChange(): void {
+    if (this.resultsViewMode === 'byPoint') {
       if (!this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') {
         this.selectedPointIdFilter = this.points.length > 0 ? String(this.points[0].id) : '';
       }
@@ -644,7 +645,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  onReportingPointChange(): void {
+  onResultsPointChange(): void {
     this.refreshFilteredChartsAndKPIs();
     this.cdr.detectChanges();
     setTimeout(() => {
@@ -654,9 +655,19 @@ export class ReportingComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
+  openWinProbabilityInfoModal(): void {
+    this.dialog.open(InfoModalComponent, {
+      width: '600px',
+      data: {
+        title: 'Win probability',
+        content: '<p>Higher = more likely to be best given current traffic.</p>'
+      }
+    });
+  }
+
   /** Sets displayed KPI values from current view mode (by goal vs by point). */
   private applyDisplayedKPIsForCurrentView(): void {
-    if (this.reportingViewMode === 'byPoint') {
+    if (this.resultsViewMode === 'byPoint') {
       this.displayedBestCR = this.bestCRByPoint;
       this.displayedUplift = this.upliftByPoint;
       this.displayedUsersForUplift = this.usersForUpliftByPoint;
@@ -676,7 +687,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
   private refreshFilteredChartsAndKPIs(): void {
     this.updateKPIs();
 
-    if (this.reportingViewMode === 'byPoint') {
+    if (this.resultsViewMode === 'byPoint') {
       this.refreshChartsForByPoint();
       this.updateKPIs();
       this.applyDisplayedKPIsForCurrentView();
@@ -691,7 +702,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
         (this.conversionRateOverTimeChartOptions.plugins.title as { text?: string }).text = 'Conversion rate over time';
       }
       if (this.winProbabilityChartOptions?.plugins?.title) {
-        (this.winProbabilityChartOptions.plugins.title as { text?: string }).text = 'Top combinations (win probability)';
+        (this.winProbabilityChartOptions.plugins.title as { text?: string }).text = 'Win probability';
       }
 
       const rows = this.displayCombinationRows;
@@ -885,7 +896,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `reporting-${this.projectId}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `results-${this.projectId}-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -1085,14 +1096,14 @@ export class ReportingComponent implements OnInit, OnDestroy {
                 // Now apply the variant
                 this.applyVariantToPreview(variantId, variant, point);
               } else {
-                console.error('[Reporting] Empty HTML response');
+                console.error('[Results] Empty HTML response');
                 this.variantLoading.set(variantId, false);
                 this.toast.showError('Could not load page preview');
               }
               this.loadingPreview = false;
             },
             error: (err) => {
-              console.error('[Reporting] Error loading preview:', err);
+              console.error('[Results] Error loading preview:', err);
               this.variantLoading.set(variantId, false);
               this.toast.showError('Could not load page preview');
               this.loadingPreview = false;
@@ -1113,7 +1124,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
                       // Now apply the variant
                       this.applyVariantToPreview(variantId, variant, point);
                     } else {
-                      console.error('[Reporting] Empty HTML response');
+                      console.error('[Results] Empty HTML response');
                       this.variantLoading.set(variantId, false);
                       this.toast.showError('Could not load page preview');
                     }
@@ -1127,13 +1138,13 @@ export class ReportingComponent implements OnInit, OnDestroy {
                   }
                 });
               } else {
-                console.error('[Reporting] No pageUrl in project');
+                console.error('[Results] No pageUrl in project');
                 this.variantLoading.set(variantId, false);
                 this.loadingPreview = false;
               }
             },
             error: (err) => {
-              console.error('[Reporting] Error getting project:', err);
+              console.error('[Results] Error getting project:', err);
               this.variantLoading.set(variantId, false);
               this.loadingPreview = false;
             }
@@ -1141,7 +1152,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        console.error('[Reporting] Error listing projects:', err);
+        console.error('[Results] Error listing projects:', err);
         this.variantLoading.set(variantId, false);
         this.loadingPreview = false;
       }
@@ -1431,7 +1442,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
   }
 
   private updateChartsFromFrame(frame: SimulationFrame): void {
-    if (this.reportingViewMode === 'byPoint') {
+    if (this.resultsViewMode === 'byPoint') {
       this.refreshChartsForByPoint(this.simulationFrames.slice(0, this.currentFrameIndex + 1));
       this.cdr.detectChanges();
       return;
@@ -1592,7 +1603,7 @@ export class ReportingComponent implements OnInit, OnDestroy {
         },
         title: {
           display: true,
-          text: 'Top combinations (win probability)'
+          text: 'Win probability'
         },
         tooltip: {
           callbacks: {
@@ -1662,11 +1673,11 @@ export class ReportingComponent implements OnInit, OnDestroy {
       this.upliftByPoint = 0;
       this.usersForUpliftByPoint = 0;
     }
-    this.bestCR = this.reportingViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
-    this.uplift = this.reportingViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
-    this.displayedBestCR = this.reportingViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
-    this.displayedUplift = this.reportingViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
-    this.displayedUsersForUplift = this.reportingViewMode === 'byPoint' ? this.usersForUpliftByPoint : this.usersForUpliftByGoal;
+    this.bestCR = this.resultsViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
+    this.uplift = this.resultsViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
+    this.displayedBestCR = this.resultsViewMode === 'byPoint' ? this.bestCRByPoint : this.bestCRByGoal;
+    this.displayedUplift = this.resultsViewMode === 'byPoint' ? this.upliftByPoint : this.upliftByGoal;
+    this.displayedUsersForUplift = this.resultsViewMode === 'byPoint' ? this.usersForUpliftByPoint : this.usersForUpliftByGoal;
   }
 
   private markWinnersAndLosers(): void {

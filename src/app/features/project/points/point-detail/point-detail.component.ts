@@ -130,6 +130,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   loadingPreview: boolean = false;
   previewDrawerOpen: boolean = false;
   highlightSelector: string = '';
+  /** Cache by page URL so we don't refetch when opening variant preview or switching tabs. */
+  private pageHtmlCache = new Map<string, string>();
 
   // AI Brief Helper state
   readonly MIN_CHARS_FOR_IMPROVE = 10;
@@ -179,12 +181,10 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       
       if (this.isCreateMode) {
         this.loadPreview();
-        this.loadProjectPreview();
       } else {
         this.loadPoint();
         this.loadVariants();
         this.loadPreview();
-        this.loadProjectPreview();
       }
     });
   }
@@ -537,37 +537,6 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  deleteAllVariants(): void {
-    const toDiscard = this.variants.filter(v => v.status !== 'discarded');
-    const count = toDiscard.length;
-    if (count === 0) return;
-    const pointName = this.point?.name ?? 'this point';
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Discard all variants',
-        message: `Discard all ${count} variant${count === 1 ? '' : 's'} for "${pointName}"? They will be moved to Discarded (history is kept).`,
-        confirmText: 'Discard all',
-        cancelText: 'Cancel',
-        confirmColor: 'primary'
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(confirmed => {
-      if (confirmed) {
-        this.store.discardAllVariantsForPoint(this.pointId).subscribe({
-          next: () => {
-            this.toast.showSuccess(`${count} variant${count === 1 ? '' : 's'} discarded.`);
-            this.loadVariants();
-          },
-          error: () => {
-            this.toast.showError('Error discarding variants. Please try again.');
-          }
-        });
-      }
-    });
-  }
-
   updateVariant(variant: Variant): void {
     if (variant.status === 'approved') return;
     
@@ -683,13 +652,17 @@ export class PointDetailComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.html = this.removeCookiePopupsFromHtml(response.html);
-        this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(this.html);
+        const processedHtml = this.removeCookiePopupsFromHtml(response.html);
+        this.pageHtmlCache.set(pageUrl, processedHtml);
         this.loading = false;
-        
-        setTimeout(() => {
-          this.injectSelectionScript();
-        }, 500);
+        this.cdr.detectChanges();
+        // Assign HTML in next frame so the preview iframe exists before we pass content (avoids intermittent blank iframe).
+        requestAnimationFrame(() => {
+          this.html = processedHtml;
+          this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(this.html);
+          this.cdr.detectChanges();
+          setTimeout(() => this.injectSelectionScript(), 500);
+        });
       },
       error: (err: any) => {
         this.loading = false;
@@ -1429,101 +1402,145 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     );
   }
 
-  loadProjectPreview(): void {
-    console.log('[PointDetail] loadProjectPreview called', { projectId: this.projectId });
-    if (!this.projectId) {
-      console.log('[PointDetail] No projectId, returning');
-      return;
+  /**
+   * Load page HTML for the Variants drawer. Uses cache when available unless forceRefresh is true.
+   * @param onLoaded Called when HTML is ready (from cache or fetch).
+   * @param forceRefresh If true, always fetch from the server (Reload button); ignores cache.
+   */
+  loadProjectPreview(onLoaded?: (html: string) => void, forceRefresh = false): void {
+    if (!this.projectId) return;
+
+    const pageUrl = this.projectPageUrl?.trim();
+    if (pageUrl && !forceRefresh) {
+      const cached = this.pageHtmlCache.get(pageUrl);
+      if (cached) {
+        this.previewHtml = cached;
+        this.originalPreviewHtml = cached;
+        this.loadingPreview = false;
+        onLoaded?.(cached);
+        return;
+      }
+    }
+
+    if (forceRefresh && pageUrl) {
+      this.pageHtmlCache.delete(pageUrl);
     }
 
     this.loadingPreview = true;
+    this.cdr.detectChanges();
     this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
       next: (project) => {
-        console.log('[PointDetail] Project loaded', { pageUrl: project.pageUrl, hasPreviewHtml: !!project.previewHtml });
-        if (project.pageUrl) {
-          console.log('[PointDetail] Fetching HTML from proxy', project.pageUrl);
-          this.apiClient.proxyFetch(project.pageUrl).subscribe({
-            next: (response) => {
-              console.log('[PointDetail] Proxy fetch response', { hasHtml: !!response.html, htmlLength: response.html?.length });
-              if (response.html && response.html.trim().length > 0) {
-                const processedHtml = this.removeCookiePopupsFromHtml(response.html);
-                this.previewHtml = processedHtml;
-                this.originalPreviewHtml = processedHtml;
-                console.log('[PointDetail] Preview HTML set', { previewHtmlLength: this.previewHtml.length, originalLength: this.originalPreviewHtml.length });
-              }
-              this.loadingPreview = false;
-            },
-            error: (err) => {
-              console.error('[PointDetail] Proxy fetch error', err);
-              this.toast.showError('Could not load page preview');
-              this.loadingPreview = false;
-            }
-          });
-        } else {
-          console.log('[PointDetail] No pageUrl in project');
+        const url = (project.pageUrl || '').trim();
+        if (!url) {
           this.toast.showError('No page URL configured for this project');
           this.loadingPreview = false;
+          this.cdr.detectChanges();
+          return;
         }
+        this.projectPageUrl = url;
+        this.previewUrl = url;
+
+        if (forceRefresh) {
+          this.pageHtmlCache.delete(url);
+        }
+        if (!forceRefresh) {
+          const cached = this.pageHtmlCache.get(url);
+          if (cached) {
+            this.previewHtml = cached;
+            this.originalPreviewHtml = cached;
+            this.loadingPreview = false;
+            onLoaded?.(cached);
+            this.cdr.detectChanges();
+            return;
+          }
+        }
+
+        this.apiClient.proxyFetch(url).subscribe({
+          next: (response) => {
+            if (response.html && response.html.trim().length > 0) {
+              const processedHtml = this.removeCookiePopupsFromHtml(response.html);
+              this.pageHtmlCache.set(url, processedHtml);
+              this.previewHtml = processedHtml;
+              this.originalPreviewHtml = processedHtml;
+              onLoaded?.(processedHtml);
+            }
+            this.loadingPreview = false;
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            this.toast.showError('Could not load page preview');
+            this.loadingPreview = false;
+            this.cdr.detectChanges();
+          }
+        });
       },
-      error: (err) => {
-        console.error('[PointDetail] Get project error', err);
+      error: () => {
         this.loadingPreview = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
   previewVariant(variant: Variant): void {
-    console.log('[PointDetail] ==================== PREVIEW VARIANT CLICKED ====================');
-    console.log('[PointDetail] Variant:', variant);
-    console.log('[PointDetail] Point:', this.point);
-    console.log('[PointDetail] Preview HTML length:', this.previewHtml?.length);
-    console.log('[PointDetail] Original HTML length:', this.originalPreviewHtml?.length);
-    console.log('[PointDetail] Current highlightSelector:', this.highlightSelector);
-    
     if (!this.point || !this.point.selector) {
-      console.error('[PointDetail] ERROR: Point or selector not found', { point: this.point });
       this.toast.showError('Point selector not found');
       return;
     }
 
-    if (!this.previewHtml && !this.originalPreviewHtml) {
-      console.error('[PointDetail] ERROR: No preview HTML available');
-      this.toast.showError('No preview available. Please wait for the preview to load.');
+    this.previewDrawerOpen = true;
+    this.highlightSelector = '';
+    this.previewUrl = this.projectPageUrl || '';
+    this.cdr.detectChanges();
+
+    const applyVariantAndShow = (): void => {
+      const baseHtml = this.originalPreviewHtml || this.previewHtml;
+      if (!baseHtml) return;
+      const modifiedHtml = this.previewService.applyVariantsToHtml(baseHtml, [variant], [this.point!]);
+      this.previewHtml = modifiedHtml;
+      this.loadingPreview = false;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        if (this.point?.selector) {
+          this.highlightSelector = this.point.selector;
+          this.cdr.detectChanges();
+        }
+      }, 50);
+      this.toast.showSuccess('Preview updated');
+    };
+
+    const pageUrl = this.projectPageUrl?.trim();
+    if (pageUrl) {
+      const cached = this.pageHtmlCache.get(pageUrl);
+      if (cached) {
+        this.originalPreviewHtml = cached;
+        this.previewHtml = cached;
+        applyVariantAndShow();
+        return;
+      }
+    }
+
+    this.loadingPreview = true;
+    this.cdr.detectChanges();
+    if (!this.projectPageUrl && this.projectId) {
+      this.projectsApi.getProject(this.projectId).pipe(take(1)).subscribe({
+        next: (project) => {
+          this.projectPageUrl = (project.pageUrl || '').trim();
+          this.previewUrl = this.projectPageUrl;
+          this.tryLoadAndApplyVariant(variant, applyVariantAndShow);
+        },
+        error: () => {
+          this.loadingPreview = false;
+          this.toast.showError('Could not load project');
+          this.cdr.detectChanges();
+        }
+      });
       return;
     }
+    this.tryLoadAndApplyVariant(variant, applyVariantAndShow);
+  }
 
-    if (!this.originalPreviewHtml && this.previewHtml) {
-      console.log('[PointDetail] Setting originalPreviewHtml from previewHtml');
-      this.originalPreviewHtml = this.previewHtml;
-    }
-
-    const baseHtml = this.originalPreviewHtml || this.previewHtml;
-    console.log('[PointDetail] Using base HTML:', baseHtml.substring(0, 200));
-    console.log('[PointDetail] Applying variant with selector:', this.point.selector, 'and text:', variant.text);
-
-    const modifiedHtml = this.previewService.applyVariantsToHtml(
-      baseHtml,
-      [variant],
-      [this.point]
-    );
-
-    console.log('[PointDetail] Modified HTML length:', modifiedHtml?.length);
-    console.log('[PointDetail] HTML changed:', baseHtml !== modifiedHtml);
-    console.log('[PointDetail] Modified HTML preview:', modifiedHtml.substring(0, 200));
-
-    console.log('[PointDetail] Setting previewHtml (this should trigger ngOnChanges in PreviewPanel)');
-    this.previewHtml = modifiedHtml;
-    
-    this.highlightSelector = '';
-    this.previewDrawerOpen = true;
-    this.cdr.detectChanges();
-    setTimeout(() => {
-      if (this.point && this.point.selector) {
-        this.highlightSelector = this.point.selector;
-        this.cdr.detectChanges();
-      }
-    }, 50);
-    this.toast.showSuccess('Preview updated');
+  private tryLoadAndApplyVariant(variant: Variant, applyVariantAndShow: () => void): void {
+    this.loadProjectPreview(() => applyVariantAndShow());
   }
 
   closePreviewDrawer(): void {
@@ -1554,7 +1571,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   onPreviewReload(): void {
-    this.loadProjectPreview();
+    this.loadProjectPreview(undefined, true);
   }
 
   onPreviewReset(): void {

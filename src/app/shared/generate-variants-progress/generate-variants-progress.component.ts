@@ -416,8 +416,4 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
       this.dialogRef.close({ action: 'close' });
     }
   }
-
-  onGenerateFallback(): void {
-    this.dialogRef.close({ action: 'fallback' });
-  }
 }

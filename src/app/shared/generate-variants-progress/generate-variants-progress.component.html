@@ -55,13 +55,6 @@
     </div>
     <h3>{{ data.pointName === 'Point Brief Draft' ? 'Draft Failed' : (data.pointName === 'Brief Generation' ? 'Brief Generation Failed' : 'Generation Failed') }}</h3>
     <p class="error-message">{{ error }}</p>
-    <a
-      *ngIf="data.pointName !== 'Point Brief Draft'"
-      class="fallback-link"
-      href="#"
-      (click)="$event.preventDefault(); onGenerateFallback()">
-      {{ data.pointName === 'Brief Generation' ? 'Generate fallback brief' : 'Generate fallback variants' }}
-    </a>
   </div>
 </mat-dialog-content>
 
@@ -86,10 +79,6 @@
     Close
   </button>
   <ng-container *ngIf="error">
-    <button mat-button (click)="onClose()">Close</button>
-    <button mat-raised-button color="primary" (click)="onRetry()">
-      <mat-icon>refresh</mat-icon>
-      Retry
-    </button>
+    <button mat-raised-button color="primary" (click)="onClose()">Close</button>
   </ng-container>
 </mat-dialog-actions>

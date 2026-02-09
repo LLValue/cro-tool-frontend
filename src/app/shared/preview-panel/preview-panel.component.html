@@ -20,9 +20,8 @@
            #deviceFrame
            [style.transform]="viewMode === 'mobile' ? 'scale(' + currentScale + ')' : null">
         <iframe 
-          *ngIf="useIframe && safeIframeHtml && !loading" 
+          *ngIf="useIframe && previewHtml && !loading" 
           #previewIframe
-          [srcdoc]="safeIframeHtml" 
           sandbox="allow-same-origin"
           class="preview-iframe"
           [class.mobile-view]="viewMode === 'mobile'"

@@ -42,7 +42,7 @@ export const routes: Routes = [
       },
       {
         path: 'reporting',
-        loadComponent: () => import('./features/project/reporting/reporting.component').then(m => m.ReportingComponent)
+        loadComponent: () => import('./features/project/reporting/reporting.component').then(m => m.ResultsComponent)
       },
       {
         path: 'activation',

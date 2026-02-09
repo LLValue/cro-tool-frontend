@@ -1,11 +1,14 @@
 :host {
   display: block;
   width: 100%;
+  min-width: 0;
 }
 
 .chips-input-wrapper {
   width: 100%;
+  min-width: 0;
   display: block;
+  overflow: hidden;
 }
 
 .chips-input-wrapper.full-width {
@@ -18,5 +21,38 @@
 
 .chips-input-wrapper ::ng-deep .mat-mdc-text-field-wrapper {
   width: 100%;
+}
+
+.chips-input-wrapper ::ng-deep .mat-mdc-form-field-infix {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.chips-input-wrapper ::ng-deep .mat-mdc-chip-set,
+.chips-input-wrapper ::ng-deep .mdc-evolution-chip-set__chips {
+  overflow: hidden;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.chips-input-wrapper ::ng-deep .mat-mdc-chip-row,
+.chips-input-wrapper ::ng-deep .mat-mdc-chip {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Chip primary cell and label: truncate long text so chips stay inside the box */
+.chips-input-wrapper ::ng-deep .mat-mdc-chip-row .mdc-evolution-chip__cell--primary,
+.chips-input-wrapper ::ng-deep .mat-mdc-chip .mdc-evolution-chip__cell--primary {
+  min-width: 0;
+  overflow: hidden;
+}
+.chips-input-wrapper ::ng-deep .mat-mdc-chip-row .mdc-evolution-chip__text-label,
+.chips-input-wrapper ::ng-deep .mat-mdc-chip .mdc-evolution-chip__text-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
 }
 

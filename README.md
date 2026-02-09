@@ -1,4 +1,4 @@
-# CRO Tool Frontend
+# Agentic CRO Frontend
 
 Angular-based frontend application for CRO (Conversion Rate Optimization) management using Angular Material components.
 

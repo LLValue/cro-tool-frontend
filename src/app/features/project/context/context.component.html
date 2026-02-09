@@ -38,9 +38,6 @@
               [formControl]="urlInputControl"
               (keydown.enter)="addUrl($event)">
           </mat-form-field>
-          <button mat-raised-button color="primary" type="button" (click)="addUrlFromButton()" [disabled]="urls.length >= 5">
-            Add URL
-          </button>
         </div>
 
         <!-- URL Chips -->
@@ -53,6 +50,13 @@
               </button>
             </mat-chip>
           </mat-chip-set>
+        </div>
+
+        <!-- Add URL Button -->
+        <div class="upload-section">
+          <button mat-raised-button color="primary" type="button" (click)="addUrlFromButton()" [disabled]="urls.length >= 5">
+            Add URL
+          </button>
         </div>
 
         <!-- Upload Button -->
@@ -117,9 +121,6 @@
       <div class="ai-assistant-actions-footer">
         <button mat-raised-button color="primary" type="button" (click)="generateDraftBrief()" [disabled]="urls.length === 0 && uploadedFiles.length === 0">
           Generate draft brief
-        </button>
-        <button mat-raised-button type="button" (click)="clearSources()">
-          Clear sources
         </button>
       </div>
     </form>

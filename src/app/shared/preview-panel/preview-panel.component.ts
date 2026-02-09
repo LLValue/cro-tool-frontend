@@ -74,6 +74,8 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   private resizeObserver?: ResizeObserver;
   private selectionStyleElement?: HTMLStyleElement;
   private selectionEventListeners: { type: string; listener: (e: Event) => void }[] = [];
+  private iframeWriteRetryCount = 0;
+  private readonly MAX_IFRAME_WRITE_RETRIES = 4;
 
   constructor(private sanitizer: DomSanitizer) {}
 
@@ -125,6 +127,10 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['previewHtml'] || changes['previewUrl']) {
       this.updateSafeHtml();
+      this.iframeWriteRetryCount = 0;
+      if (this.previewHtml?.trim() && this.useIframe && !this.loading) {
+        this.scheduleIframeWriteRetries();
+      }
       setTimeout(() => this.updateFitScale(), 200);
     }
     if (changes['zoomMode'] || changes['viewMode']) {
@@ -195,6 +201,9 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   onIframeLoad(): void {
+    if (this.previewHtml?.trim() && this.previewIframe?.nativeElement) {
+      this.writeIframeContent();
+    }
     if (this.highlightSelector && this.previewIframe?.nativeElement?.contentWindow) {
       setTimeout(() => this.highlightElementInIframe(this.highlightSelector), 100);
     }
@@ -202,6 +211,40 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       setTimeout(() => this.setupSelectionMode(), 200);
     }
     setTimeout(() => this.updateFitScale(), 100);
+  }
+
+  /** Schedule several write attempts so one of them runs when the iframe is ready (avoids intermittent blank). */
+  private scheduleIframeWriteRetries(): void {
+    const delays = [0, 80, 180, 350];
+    delays.forEach((ms, i) => {
+      setTimeout(() => {
+        if (this.iframeWriteRetryCount >= this.MAX_IFRAME_WRITE_RETRIES) return;
+        if (!this.previewHtml?.trim() || this.loading) return;
+        const wrote = this.writeIframeContent();
+        if (wrote) this.iframeWriteRetryCount = this.MAX_IFRAME_WRITE_RETRIES;
+      }, ms);
+    });
+  }
+
+  /** Write previewHtml into the iframe via contentDocument. Returns true if write was done. Skips if doc already has substantial content. */
+  private writeIframeContent(): boolean {
+    const iframe = this.previewIframe?.nativeElement;
+    if (!iframe || !this.previewHtml?.trim()) return false;
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) return false;
+      const bodyLength = doc.body?.innerHTML?.length ?? 0;
+      if (bodyLength > 500) return true; // already has content, consider success
+      doc.open();
+      doc.write(this.previewHtml);
+      doc.close();
+      this.iframeWriteRetryCount++;
+      void iframe.offsetHeight;
+      requestAnimationFrame(() => this.updateFitScale());
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   private setupSelectionMode(): void {
