@@ -171,8 +171,7 @@
                   Qualitative objective is required
                 </mat-error>
                 <mat-hint align="end">
-                  <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('objective') }} / {{ getMaxChars() }} characters</span>
-                  <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('objective') }} characters</span>
+                  <span>1000 characters</span>
                 </mat-hint>
               </mat-form-field>
             </div>
@@ -200,8 +199,7 @@
                   Element context is required
                 </mat-error>
                 <mat-hint align="end">
-                  <span *ngIf="getMaxChars() > 0">{{ getCharacterCount('context') }} / {{ getMaxChars() }} characters</span>
-                  <span *ngIf="getMaxChars() === 0">{{ getCharacterCount('context') }} characters</span>
+                  <span>1000 characters</span>
                 </mat-hint>
               </mat-form-field>
             </div>
