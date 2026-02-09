@@ -1007,7 +1007,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   getMaxChars(): number {
-    return this.briefForm.get('maxChars')?.value || 0;
+    return 1000;
   }
 
   getInfoModalContent(field: string): string {
