@@ -494,6 +494,22 @@
   }
 }
 
+.win-probability-label-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 360px;
+  padding: 10px 12px;
+  background: rgba(33, 33, 33, 0.95);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .table-section {
 
   .point-view-description {
@@ -548,6 +564,16 @@
   display: flex;
   gap: 8px;
   margin-top: 6px;
+
+  .control-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #1976d2;
+    color: white;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+  }
 
   .winner-badge {
     display: inline-block;
@@ -1014,6 +1040,11 @@
 :host-context(body.dark-mode) {
   .table-section .table-title {
     color: rgba(255, 255, 255, 0.87);
+  }
+
+  .combo-badges .control-badge {
+    background: #42a5f5;
+    color: white;
   }
 
   .combo-badges .discarded-badge {

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, Inject, HostListener, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ChangeDetectorRef, Inject, HostListener, ViewChild } from '@angular/core';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatTable, MatTableModule } from '@angular/material/table';
@@ -15,10 +15,11 @@ import { Subscription, combineLatest } from 'rxjs';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { Chart, ChartConfiguration } from 'chart.js';
 
-/** Plugin: draws "Winner" badge next to the first bar in horizontal bar charts. */
+/** Plugin: draws "Winner" badge next to the first bar in horizontal bar charts. Skipped for win probability chart (that chart shows % only, bar stays green). */
 const chartWinnerBadgePlugin = {
   id: 'chartWinnerBadge',
   afterDraw(chart: Chart) {
+    if ((chart as unknown as { canvas?: { id?: string } }).canvas?.id === 'winProbabilityChart') return;
     const cfg = (chart as unknown as { config?: { type?: string } }).config;
     if (cfg?.type !== 'bar' || !chart.options?.indexAxis || chart.options.indexAxis !== 'y') return;
     const meta = chart.getDatasetMeta(0);
@@ -79,6 +80,78 @@ const chartBarValueRightPlugin = {
   }
 };
 Chart.register(chartBarValueRightPlugin);
+
+/** Store label tooltip data and current chart by canvas so hover works even when the chart instance is recreated. */
+const winProbabilityLabelDataByCanvas = new WeakMap<HTMLCanvasElement, string[][]>();
+const winProbabilityChartByCanvas = new WeakMap<HTMLCanvasElement, Chart>();
+
+/** Plugin: custom tooltip with full combination texts when hovering over Y-axis labels (Combination 1, 2, 3...). Bar hover keeps the chart tooltip (Win %, CR, Uplift). */
+function createWinProbabilityLabelHoverPlugin(): { id: string; afterInit: (chart: Chart) => void } {
+  return {
+    id: 'winProbabilityLabelHover',
+    afterInit(chart: Chart) {
+      const canvas = chart.canvas as HTMLCanvasElement & { id?: string };
+      if (canvas.id !== 'winProbabilityChart') return;
+      if ((canvas as unknown as { _winProbLabelListener?: boolean })._winProbLabelListener) return;
+      (canvas as unknown as { _winProbLabelListener?: boolean })._winProbLabelListener = true;
+      let el = document.getElementById('win-probability-label-tooltip');
+      if (!el) {
+        el = document.createElement('div');
+        el.setAttribute('id', 'win-probability-label-tooltip');
+        el.style.cssText = 'position:fixed;display:none;max-width:360px;padding:10px 12px;background:rgba(33,33,33,0.95);color:#fff;font-size:12px;line-height:1.4;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.25);z-index:9999;pointer-events:none;white-space:pre-wrap;word-break:break-word;';
+        document.body.appendChild(el);
+      }
+      const show = (lines: string[], clientX: number, clientY: number) => {
+        el!.textContent = lines.join('\n');
+        el!.style.display = 'block';
+        el!.style.left = `${Math.min(clientX + 12, window.innerWidth - 380)}px`;
+        el!.style.top = `${Math.max(8, clientY - 8)}px`;
+      };
+      const hide = () => { el!.style.display = 'none'; };
+      const onMouseMove = (e: MouseEvent) => {
+        const targetCanvas = e.currentTarget as HTMLCanvasElement;
+        const currentChart = winProbabilityChartByCanvas.get(targetCanvas) ?? chart;
+        const rect = targetCanvas.getBoundingClientRect();
+        const displayX = e.clientX - rect.left;
+        const displayY = e.clientY - rect.top;
+        const scaleX = targetCanvas.width / rect.width;
+        const scaleY = targetCanvas.height / rect.height;
+        const x = displayX * scaleX;
+        const y = displayY * scaleY;
+        const yScale = currentChart.scales['y'];
+        const xScale = currentChart.scales['x'];
+        if (!yScale || !xScale) return;
+        const chartArea = currentChart.chartArea;
+        const chartLeft = chartArea?.left ?? 0;
+        const chartRight = chartArea?.right ?? targetCanvas.width;
+        const chartTop = chartArea?.top ?? 0;
+        const chartBottom = chartArea?.bottom ?? targetCanvas.height;
+        const labelAreaRight = Math.min(xScale.left, chartLeft + (chartRight - chartLeft) * 0.4);
+        const inLabelArea = x >= 0 && x <= labelAreaRight && y >= chartTop && y <= chartBottom;
+        if (inLabelArea) {
+          const meta = currentChart.getDatasetMeta(0);
+          if (!meta?.data?.length) { hide(); return; }
+          let closestIndex = 0;
+          let minDist = Infinity;
+          for (let i = 0; i < meta.data.length; i++) {
+            const bar = meta.data[i] as unknown as { y: number };
+            const d = Math.abs(bar.y - y);
+            if (d < minDist) { minDist = d; closestIndex = i; }
+          }
+          const labelData = winProbabilityLabelDataByCanvas.get(targetCanvas);
+          if (labelData?.[closestIndex]?.length) {
+            show(labelData[closestIndex], e.clientX, e.clientY);
+            return;
+          }
+        }
+        hide();
+      };
+      canvas.addEventListener('mousemove', onMouseMove);
+      canvas.addEventListener('mouseleave', hide);
+    }
+  };
+}
+Chart.register(createWinProbabilityLabelHoverPlugin());
 
 import { ProjectsStoreService } from '../../../data/projects-store.service';
 import { OptimizationPoint, Variant, ReportingMetrics, Goal } from '../../../data/models';
@@ -162,7 +235,7 @@ export interface PointVariantRow {
   templateUrl: './reporting.component.html',
   styleUrls: ['./reporting.component.scss']
 })
-export class ResultsComponent implements OnInit, OnDestroy {
+export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   projectId: string = '';
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
@@ -198,7 +271,12 @@ export class ResultsComponent implements OnInit, OnDestroy {
   private animationTimeoutId: ReturnType<typeof setTimeout> | null = null;
   /** Current top combos for chart 2 tooltip (CR · Uplift). */
   topCombosForChart: CombinationRow[] = [];
-  
+  /** Label tooltip when hovering over "Combination X" in win probability chart (component-driven). */
+  winProbabilityLabelTooltipVisible = false;
+  winProbabilityLabelTooltipText = '';
+  winProbabilityLabelTooltipX = 0;
+  winProbabilityLabelTooltipY = 0;
+
   // KPI cards: by goal = combo-based, by point = variant-based (same as charts)
   controlCR = 0;
   /** By goal: best CR and uplift from top combination. */
@@ -231,7 +309,7 @@ export class ResultsComponent implements OnInit, OnDestroy {
   }> = new Map();
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   displayedColumnsWithExpand: string[] = ['expand', 'variant', 'users', 'conversions', 'conversionRate', 'confidence'];
-  combinationColumnsWithExpand: string[] = ['expand', 'combination', 'users', 'conversions', 'conversionRate', 'uplift', 'winProbability', 'preview'];
+  combinationColumnsWithExpand: string[] = ['expand', 'comboId', 'combination', 'users', 'conversions', 'conversionRate', 'uplift', 'winProbability', 'preview'];
   pointVariantColumns: string[] = ['variantText', 'combosCount', 'totalUsers', 'totalConversions', 'bestConversionRate', 'bestWinProbability'];
 
   @ViewChild('combinationTable') combinationTable: MatTable<CombinationRow> | null = null;
@@ -244,14 +322,17 @@ export class ResultsComponent implements OnInit, OnDestroy {
     return this.resultsViewMode === 'byGoal' ? this.conversionRateChartGoalRef : this.conversionRateChartPointRef;
   }
 
-  /** Rows to display: byGoal = all combos (goal filter for selected goal); byPoint = combos for selected point. */
+  /** Rows to display: byGoal = all combos (goal filter); byPoint = combos for selected point. Sorted by winProbability desc so row index matches chart order. */
   get displayCombinationRows(): CombinationRow[] {
+    let rows: CombinationRow[];
     if (this.resultsViewMode === 'byPoint') {
       if (!this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') return [];
       const sid = String(this.selectedPointIdFilter);
-      return this.combinationRows.filter(c => c.points.some(p => String(p.pointId) === sid));
+      rows = this.combinationRows.filter(c => c.points.some(p => String(p.pointId) === sid));
+    } else {
+      rows = this.combinationRows;
     }
-    return this.combinationRows;
+    return [...rows].sort((a, b) => b.metrics.winProbability - a.metrics.winProbability);
   }
 
   /** Users count for uplift formatting in by-goal view. */
@@ -392,8 +473,99 @@ export class ResultsComponent implements OnInit, OnDestroy {
     }
   }
 
+  ngAfterViewInit(): void {
+    setTimeout(() => this.syncWinProbabilityLabelTooltipData(), 0);
+    setTimeout(() => this.syncWinProbabilityLabelTooltipData(), 150);
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  /** Sync label tooltip data to the win probability chart (so hover on "Combination X" shows full texts). Call after chart exists. */
+  private syncWinProbabilityLabelTooltipData(): void {
+    const chartInstance = this.winProbabilityChartRef?.chart;
+    if (!chartInstance || !this.topCombosForChart.length) return;
+    const canvas = chartInstance.canvas as HTMLCanvasElement;
+    const data = this.topCombosForChart.map(c => c.points.map(p => `${p.pointName}: ${p.variantText || '—'}`));
+    winProbabilityLabelDataByCanvas.set(canvas, data);
+    winProbabilityChartByCanvas.set(canvas, chartInstance);
+  }
+
+  onWinProbabilityChartMouseMove(event: MouseEvent): void {
+    const chartInstance = this.winProbabilityChartRef?.chart;
+    const canvas = chartInstance?.canvas as HTMLCanvasElement | undefined;
+    if (!canvas?.getBoundingClientRect || canvas.id !== 'winProbabilityChart') {
+      this.winProbabilityLabelTooltipVisible = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+      this.winProbabilityLabelTooltipVisible = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    if (!chartInstance?.chartArea || !this.topCombosForChart.length) {
+      this.winProbabilityLabelTooltipVisible = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (event.clientX - rect.left) * scaleX;
+    const y = (event.clientY - rect.top) * scaleY;
+    const yScale = chartInstance.scales['y'];
+    const xScale = chartInstance.scales['x'];
+    if (!yScale || !xScale) {
+      this.winProbabilityLabelTooltipVisible = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    const chartArea = chartInstance.chartArea;
+    const chartLeft = chartArea?.left ?? 0;
+    const chartRight = chartArea?.right ?? canvas.width;
+    const chartTop = chartArea?.top ?? 0;
+    const chartBottom = chartArea?.bottom ?? canvas.height;
+    const labelAreaRight = Math.min(xScale.left, chartLeft + (chartRight - chartLeft) * 0.4);
+    const inLabelArea = x >= 0 && x <= labelAreaRight && y >= chartTop && y <= chartBottom;
+    if (!inLabelArea) {
+      this.winProbabilityLabelTooltipVisible = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    const meta = chartInstance.getDatasetMeta(0);
+    if (!meta?.data?.length) {
+      this.winProbabilityLabelTooltipVisible = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    let closestIndex = 0;
+    let minDist = Infinity;
+    for (let i = 0; i < meta.data.length; i++) {
+      const bar = meta.data[i] as unknown as { y: number };
+      const d = Math.abs(bar.y - y);
+      if (d < minDist) {
+        minDist = d;
+        closestIndex = i;
+      }
+    }
+    const lines = this.topCombosForChart[closestIndex]?.points.map(p => `${p.pointName}: ${p.variantText || '—'}`) ?? [];
+    if (lines.length === 0) {
+      this.winProbabilityLabelTooltipVisible = false;
+      this.cdr.markForCheck();
+      return;
+    }
+    this.winProbabilityLabelTooltipText = lines.join('\n');
+    this.winProbabilityLabelTooltipX = Math.min(event.clientX + 12, window.innerWidth - 380);
+    this.winProbabilityLabelTooltipY = Math.max(8, event.clientY - 8);
+    this.winProbabilityLabelTooltipVisible = true;
+    this.cdr.markForCheck();
+  }
+
+  onWinProbabilityChartMouseLeave(): void {
+    this.winProbabilityLabelTooltipVisible = false;
+    this.cdr.markForCheck();
   }
 
   loadData(): void {
@@ -746,8 +918,8 @@ export class ResultsComponent implements OnInit, OnDestroy {
       // By-goal line chart is in a separate canvas (*ngIf); it's created after detectChanges.
       // Force update in next tick so the new chart instance receives and draws the data.
       setTimeout(() => {
-        this.conversionRateChartGoalRef?.update('active');
-        this.winProbabilityChartRef?.update('active');
+        this.conversionRateChartGoalRef?.chart?.update('active');
+        this.winProbabilityChartRef?.chart?.update('active');
         this.cdr.detectChanges();
       }, 0);
     }
@@ -831,7 +1003,7 @@ export class ResultsComponent implements OnInit, OnDestroy {
     (d.datasets[0].data as number[]).push(...data);
     (d.datasets[0].backgroundColor as string[]).length = 0;
     (d.datasets[0].backgroundColor as string[]).push(...backgroundColor);
-    this.winProbabilityChartRef?.update('active');
+    this.winProbabilityChartRef?.chart?.update('active');
   }
 
   private applyGoalTypeFilter(metrics: ReportingMetrics[], goalType: string): ReportingMetrics[] {
@@ -1491,7 +1663,7 @@ export class ResultsComponent implements OnInit, OnDestroy {
       
       (chartData.datasets[0].data as number[]).push(controlCR);
       (chartData.datasets[1].data as number[]).push(bestCR);
-      this.conversionRateChartGoalRef?.update('active');
+      this.conversionRateChartGoalRef?.chart?.update('active');
     }
 
     if (frame.day % 3 === 0) {
@@ -1633,7 +1805,7 @@ export class ResultsComponent implements OnInit, OnDestroy {
   /** Updates only the win probability chart (mutate in place + update('active')). Does not touch the line chart. */
   private setWinProbabilityChartFromCombos(topCombos: CombinationRow[]): void {
     this.topCombosForChart = topCombos;
-    const labels = topCombos.map(c => this.getCombinationLabel(c));
+    const labels = topCombos.map((c, i) => `Combination ${i + 1}`);
     const data = topCombos.map(c => c.metrics.winProbability * 100);
     const backgroundColor = topCombos.map((c, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)');
     const d = this.winProbabilityChartData;
@@ -1644,7 +1816,8 @@ export class ResultsComponent implements OnInit, OnDestroy {
     (d.datasets[0].data as number[]).push(...data);
     (d.datasets[0].backgroundColor as string[]).length = 0;
     (d.datasets[0].backgroundColor as string[]).push(...backgroundColor);
-    this.winProbabilityChartRef?.update('active');
+    this.winProbabilityChartRef?.chart?.update('active');
+    this.syncWinProbabilityLabelTooltipData();
   }
 
   private updateKPIs(): void {
@@ -1877,6 +2050,18 @@ export class ResultsComponent implements OnInit, OnDestroy {
 
   trackByComboId(index: number, combo: CombinationRow): string {
     return combo.comboId;
+  }
+
+  /** 1-based display index of combo in the table (matches chart bar position when chart shows top N). */
+  getCombinationDisplayIndex(combo: CombinationRow): number {
+    const rows = this.displayCombinationRows;
+    const idx = rows.findIndex(c => c.comboId === combo.comboId);
+    return idx >= 0 ? idx + 1 : 0;
+  }
+
+  /** Full combination text for tooltip (pointName: variantText per point). */
+  getCombinationFullTooltip(combo: CombinationRow): string {
+    return combo.points.map(p => `${p.pointName}: ${p.variantText || '—'}`).join('\n');
   }
 }
 
