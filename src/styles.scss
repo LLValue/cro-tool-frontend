@@ -36,6 +36,16 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+// "How it works" and similar CTAs: link style (all pages)
+a.link-style-button {
+  color:#212121;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 // Unified table appearance (same as variants table)
 .app-table-wrapper {
   overflow-x: auto;

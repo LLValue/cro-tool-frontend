@@ -130,7 +130,12 @@
           <!-- AI Brief Helper toolbar -->
           <div class="ai-brief-helper-toolbar">
             <div class="ai-brief-helper-heading">
-              <h3 class="ai-brief-helper-title">AI brief helper</h3>
+              <h3 class="ai-brief-helper-title">
+                AI brief helper
+                <button mat-icon-button type="button" class="info-icon" (click)="openWhatWillBeFilledModal()" matTooltip="What will be filled">
+                  <mat-icon>info</mat-icon>
+                </button>
+              </h3>
               <p class="ai-brief-helper-subtitle">Draft a stronger objective and context for this optimization point.</p>
             </div>
             <div class="ai-brief-helper-actions">
@@ -139,9 +144,6 @@
               </button>
               <button *ngIf="canShowImproveBrief" mat-raised-button color="primary" type="button" (click)="requestBriefDraft('improve')" [disabled]="briefDraftLoading">
                 Improve my brief
-              </button>
-              <button mat-button type="button" (click)="openWhatWillBeFilledModal()">
-                What will be filled?
               </button>
             </div>
           </div>
@@ -431,7 +433,7 @@
                     <th class="col-expand"></th>
                     <th class="col-id">ID</th>
                     <th class="col-status">Status</th>
-                    <th class="col-text">Variant text</th>
+                    <th class="col-text">Content</th>
                     <th class="col-ux">UX score</th>
                     <th class="col-compliance">Compliance score</th>
                     <th class="col-created">Created</th>
@@ -465,7 +467,10 @@
                         </div>
                       </td>
                       <td class="col-text">
-                        <div *ngIf="editingVariantId !== variant.id" class="text-preview" (click)="startEditVariant(variant)">{{ variant.text }}</div>
+                        <div *ngIf="editingVariantId !== variant.id" class="text-preview" (click)="startEditVariant(variant)">
+                          <span class="text-preview-content">{{ variant.text }}</span>
+                          <mat-icon class="text-preview-edit-icon" aria-hidden="true">edit</mat-icon>
+                        </div>
                         <div *ngIf="editingVariantId === variant.id" class="text-edit">
                           <textarea [(ngModel)]="editingVariantText" [ngModelOptions]="{standalone: true}" rows="2"></textarea>
                           <div class="inline-edit-actions">
@@ -474,12 +479,9 @@
                           </div>
                         </div>
                       </td>
-                      <td class="col-ux"><span class="score-pill">{{ variant.uxScore }}/10</span></td>
+                      <td class="col-ux"><span class="score-pill" [ngClass]="getScorePillClass(variant.uxScore)">{{ variant.uxScore }}/10</span></td>
                       <td class="col-compliance">
-                        <span class="score-pill" [class.warning]="hasComplianceWarning(variant)">
-                          {{ variant.complianceScore }}/10
-                        </span>
-                        <mat-icon *ngIf="hasComplianceWarning(variant)" class="warning-icon" matTooltip="Needs review">warning</mat-icon>
+                        <span class="score-pill" [ngClass]="getScorePillClass(variant.complianceScore)">{{ variant.complianceScore }}/10</span>
                       </td>
                       <td class="col-created">{{ formatDateShort(variant.createdAt) }}</td>
                       <td class="col-links">
@@ -509,8 +511,8 @@
                           <p class="details-helper">This variant may require manual review.</p>
                         </div>
                         <div class="details-section details-meta">
-                          <p><strong>Variant ID:</strong> {{ variant.id }}</p>
-                          <p><strong>Created:</strong> {{ formatDate(variant.createdAt) }}</p>
+                          <p><span class="details-meta-label">Variant ID:</span> {{ variant.id }}</p>
+                          <p><span class="details-meta-label">Created:</span> {{ formatDate(variant.createdAt) }}</p>
                         </div>
                       </td>
                     </tr>

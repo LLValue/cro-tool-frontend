@@ -7,13 +7,15 @@
 <mat-card class="ai-assistant-card" [class.collapsed]="!aiAssistantExpanded">
   <div class="ai-assistant-header" (click)="toggleAiAssistant()">
     <div class="ai-assistant-title-section">
-      <h3 class="ai-assistant-title">AI Briefing Assistant</h3>
+      <h3 class="ai-assistant-title">
+        AI Briefing Assistant
+        <button mat-icon-button type="button" class="info-icon" (click)="openHowItWorksModal($event); $event.stopPropagation()" matTooltip="How it works" [attr.aria-label]="'How it works'">
+          <mat-icon>info</mat-icon>
+        </button>
+      </h3>
       <p class="ai-assistant-subtitle">Auto-fill your brief from trusted sources (URLs or documents). Review and approve suggestions before using them.</p>
     </div>
     <div class="ai-assistant-actions">
-      <button mat-raised-button color="primary" (click)="openHowItWorksModal($event)" type="button">
-        How it works
-      </button>
       <button mat-icon-button type="button" [attr.aria-label]="aiAssistantExpanded ? 'Collapse' : 'Expand'">
         <mat-icon>{{ aiAssistantExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
       </button>

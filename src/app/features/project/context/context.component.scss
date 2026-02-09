@@ -31,6 +31,42 @@
   margin: 0 0 8px 0;
   font-size: 20px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .info-icon {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    margin-left: 4px;
+    pointer-events: auto;
+
+    &.mat-mdc-icon-button .mat-icon {
+      color: inherit;
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+      color: inherit;
+    }
+
+    &:hover,
+    &.mat-mdc-icon-button:hover {
+      color: var(--theme-primary, #7EF473);
+
+      .mat-icon {
+        color: inherit;
+      }
+    }
+  }
 }
 
 .ai-assistant-subtitle {
@@ -285,6 +321,20 @@
 
     &:hover {
       background: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  .ai-assistant-title {
+    .info-icon {
+      color: rgba(255, 255, 255, 0.7);
+
+      &:hover {
+        color: var(--theme-primary, #7EF473);
+
+        mat-icon {
+          color: inherit;
+        }
+      }
     }
   }
 

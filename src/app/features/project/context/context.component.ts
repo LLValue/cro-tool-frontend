@@ -927,7 +927,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     if (!fieldValue || typeof fieldValue !== 'string') return false;
     
     const trimmed = fieldValue.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    if (trimmed.startsWith('{')) {
       const braceCount = (trimmed.match(/[{}]/g) || []).length;
       const quoteCount = (trimmed.match(/["']/g) || []).length;
       if (braceCount > 5 || quoteCount > 10) {

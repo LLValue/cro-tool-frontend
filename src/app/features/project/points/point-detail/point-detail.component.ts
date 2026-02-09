@@ -326,6 +326,14 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     return (variant.complianceScore < 7) || !!((variant.riskFlags?.length ?? 0) > 0);
   }
 
+  /** CSS class for score pill: green (8+), orange (5-7), red (<5). */
+  getScorePillClass(score: number | null | undefined): 'score-green' | 'score-orange' | 'score-red' {
+    const s = score ?? 0;
+    if (s >= 8) return 'score-green';
+    if (s >= 5) return 'score-orange';
+    return 'score-red';
+  }
+
   toggleExpand(variantId: string): void {
     this.expandedVariantId = this.expandedVariantId === variantId ? null : variantId;
   }
