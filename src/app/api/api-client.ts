@@ -35,13 +35,13 @@ import {
   SetGoalsRequest
 } from '../api-contracts/goals.contracts';
 import {
-  ReportingResponse,
+  ResultsResponse,
   SimulationStartRequest,
   SimulateMonthResponse,
   ResetResponse,
   SimulationsListResponse,
   SimulationDetailResponse
-} from '../api-contracts/reporting.contracts';
+} from '../api-contracts/results.contracts';
 
 export interface ApiClient {
   // Auth
@@ -86,9 +86,9 @@ export interface ApiClient {
   goalsGet(projectId: string): Observable<GoalDto[]>;
   goalsSet(projectId: string, req: SetGoalsRequest): Observable<GoalDto[]>;
 
-  // Reporting
-  reportingGet(projectId: string): Observable<ReportingResponse>;
-  simulateStart(projectId: string, req: SimulationStartRequest): Observable<ReportingResponse>;
+  // Results
+  resultsGet(projectId: string): Observable<ResultsResponse>;
+  simulateStart(projectId: string, req: SimulationStartRequest): Observable<ResultsResponse>;
   simulateMonth(projectId: string): Observable<SimulateMonthResponse>;
   resetResults(projectId: string): Observable<ResetResponse>;
 

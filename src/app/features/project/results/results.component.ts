@@ -154,7 +154,7 @@ function createWinProbabilityLabelHoverPlugin(): { id: string; afterInit: (chart
 Chart.register(createWinProbabilityLabelHoverPlugin());
 
 import { ProjectsStoreService } from '../../../data/projects-store.service';
-import { OptimizationPoint, Variant, ReportingMetrics, Goal } from '../../../data/models';
+import { OptimizationPoint, Variant, ResultsMetrics, Goal } from '../../../data/models';
 import { ToastHelperService } from '../../../shared/toast-helper.service';
 import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { PreviewPanelComponent } from '../../../shared/preview-panel/preview-panel.component';
@@ -176,7 +176,7 @@ import {
   SimulationFrame,
   CombinationMetrics,
   SimulationDetailResponse
-} from '../../../api-contracts/reporting.contracts';
+} from '../../../api-contracts/results.contracts';
 
 /** One row in the by-point view: a variant of the selected point with aggregated combo metrics. */
 export interface PointVariantRow {
@@ -192,7 +192,7 @@ export interface PointVariantRow {
 }
 
 @Component({
-  selector: 'app-reporting',
+  selector: 'app-results',
   standalone: true,
   imports: [
     MatTableModule,
@@ -232,17 +232,17 @@ export interface PointVariantRow {
       ])
     ])
   ],
-  templateUrl: './reporting.component.html',
-  styleUrls: ['./reporting.component.scss']
+  templateUrl: './results.component.html',
+  styleUrls: ['./results.component.scss']
 })
 export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   projectId: string = '';
   points: OptimizationPoint[] = [];
   variants: Variant[] = [];
   goals: Goal[] = [];
-  globalMetrics: ReportingMetrics[] = [];
-  pointMetrics: ReportingMetrics[] = [];
-  private latestMetrics: ReportingMetrics[] = [];
+  globalMetrics: ResultsMetrics[] = [];
+  pointMetrics: ResultsMetrics[] = [];
+  private latestMetrics: ResultsMetrics[] = [];
   selectedPointId: string = '';
   selectedGoalType: string = 'all';
   selectedGoalId: string = 'all';
@@ -294,7 +294,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Legacy single set (used where view is implicit). */
   bestCR = 0;
   uplift = 0;
-  previousMetrics: ReportingMetrics[] = [];
+  previousMetrics: ResultsMetrics[] = [];
   previewHtml: string = '';
   originalPreviewHtml: string = '';
   previewUrl: string = '';
@@ -305,7 +305,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   // Grouped metrics by goal for Page Overview
   metricsByGoal: Map<string, {
     goal: Goal;
-    metrics: ReportingMetrics[];
+    metrics: ResultsMetrics[];
   }> = new Map();
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   displayedColumnsWithExpand: string[] = ['expand', 'variant', 'users', 'conversions', 'conversionRate', 'confidence'];
@@ -612,7 +612,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
       );
       this.variants = projectVariants;
       
-      const allMetrics: ReportingMetrics[] = Array.from(metricsMap.values())
+      const allMetrics: ResultsMetrics[] = Array.from(metricsMap.values())
         .filter(m => {
           const variant = projectVariants.find(v => v.id === m.variantId);
           return variant !== undefined;
@@ -670,7 +670,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.store.getMetrics(this.projectId).subscribe({
       next: (metrics) => {
         const projectVariants = this.variants;
-        const allMetrics: ReportingMetrics[] = (metrics || []).filter(m => {
+        const allMetrics: ResultsMetrics[] = (metrics || []).filter(m => {
           const variant = projectVariants.find(v => v.id === m.variantId);
           return variant !== undefined;
         });
@@ -689,7 +689,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.updateMetrics();
   }
 
-  sortMetrics(metrics: ReportingMetrics[]): ReportingMetrics[] {
+  sortMetrics(metrics: ResultsMetrics[]): ResultsMetrics[] {
     return [...metrics].sort((a, b) => {
       if (b.conversionRate !== a.conversionRate) {
         return b.conversionRate - a.conversionRate;
@@ -743,7 +743,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private groupMetricsByGoal(metrics: ReportingMetrics[]): void {
+  private groupMetricsByGoal(metrics: ResultsMetrics[]): void {
     this.metricsByGoal.clear();
     
     // Group by goal type and goal ID (when available from backend)
@@ -1006,7 +1006,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.winProbabilityChartRef?.chart?.update('active');
   }
 
-  private applyGoalTypeFilter(metrics: ReportingMetrics[], goalType: string): ReportingMetrics[] {
+  private applyGoalTypeFilter(metrics: ResultsMetrics[], goalType: string): ResultsMetrics[] {
     if (goalType === 'all') {
       // Aggregate metrics across goal types per variant
       const byVariant = new Map<string, { users: number; conversions: number; confidenceSum: number; confidenceWeight: number; pointId: string }>();
@@ -1154,13 +1154,13 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     return variant?.text || 'Unknown';
   }
 
-  isWinner(metric: ReportingMetrics): boolean {
+  isWinner(metric: ResultsMetrics): boolean {
     if (this.globalMetrics.length === 0) return false;
     const maxCR = Math.max(...this.globalMetrics.map(m => m.conversionRate));
     return metric.conversionRate === maxCR && metric.confidence >= 80;
   }
 
-  isLoser(metric: ReportingMetrics): boolean {
+  isLoser(metric: ResultsMetrics): boolean {
     const variant = this.variants.find(v => v.id === metric.variantId);
     return variant?.status === 'discarded' || false;
   }
@@ -1185,7 +1185,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     return isExpanded;
   }
 
-  isRowExpandedPredicate = (row: ReportingMetrics): boolean => {
+  isRowExpandedPredicate = (row: ResultsMetrics): boolean => {
     return this.isRowExpanded(row.variantId);
   }
 
@@ -1207,7 +1207,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.variantLoading.get(variantId) || false;
   }
 
-  trackByVariantId(index: number, row: ReportingMetrics): string {
+  trackByVariantId(index: number, row: ResultsMetrics): string {
     return row.variantId;
   }
 
@@ -1303,7 +1303,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
                     this.loadingPreview = false;
                   },
                   error: (err) => {
-                    console.error('[Reporting] Error loading preview:', err);
+                    console.error('[Results] Error loading preview:', err);
                     this.variantLoading.set(variantId, false);
                     this.toast.showError('Could not load page preview');
                     this.loadingPreview = false;
@@ -1456,7 +1456,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.variants.filter(v => v.optimizationPointId === this.selectedPointId).length;
   }
 
-  getMetricsByGoalEntries(): Array<{key: string, value: {goal: Goal, metrics: ReportingMetrics[]}}> {
+  getMetricsByGoalEntries(): Array<{key: string, value: {goal: Goal, metrics: ResultsMetrics[]}}> {
     return Array.from(this.metricsByGoal.entries()).map(([key, value]) => ({ key, value }));
   }
 

@@ -14,7 +14,7 @@ Angular-based frontend application for CRO (Conversion Rate Optimization) manage
   - Legal & Brand Guardrails (risk level, forbidden words, mandatory/prohibited claims, disclaimers, tone restrictions)
 - **Variants**: Generate and manage text variants with UX and compliance scoring (status: active | discarded)
 - **Goals**: Configure primary and secondary conversion goals (clickSelector, urlReached, dataLayerEvent)
-- **Reporting**: View metrics with deterministic traffic simulation, animated updates, and winner/loser highlighting
+- **Results**: View metrics with deterministic traffic simulation, animated updates, and winner/loser highlighting
 - **Preview**: Preview projects with applied variants, cookie pop-up removal, and loading indicators
 - **Activation**: Configure and manage project activation scripts with scope, anti-flicker, and status management
 
@@ -50,7 +50,7 @@ npm start
 - Angular Material
 - RxJS (BehaviorSubject for state management)
 - TypeScript
-- Chart.js with ng2-charts (for reporting visualizations)
+- Chart.js with ng2-charts (for results visualizations)
 - Angular Animations
 
 ## Backend Integration
@@ -80,7 +80,7 @@ This frontend communicates with a backend API. See `API_CONTRACTS.md` for comple
 ### Variant Management
 - Variants are sorted by UX score (highest first)
 - Status can be `active` or `discarded` (no `pending` status)
-- Discarded variants remain visible in reporting for historical metrics
+- Discarded variants remain visible in results for historical metrics
 
 ### Project Status
 - Projects can be `draft`, `active`, or `archived`
@@ -128,7 +128,7 @@ src/
 │   │       ├── points/    # Optimization points
 │   │       ├── variants/  # Variants management
 │   │       ├── goals/     # Goals configuration
-│   │       ├── reporting/ # Reporting & metrics
+│   │       ├── results/ # Results & metrics
 │   │       ├── preview/  # Preview with variants
 │   │       └── activation/ # Activation configuration
 │   └── shared/           # Shared components and services

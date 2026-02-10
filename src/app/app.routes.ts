@@ -41,8 +41,8 @@ export const routes: Routes = [
         loadComponent: () => import('./features/project/points/point-detail/point-detail.component').then(m => m.PointDetailComponent)
       },
       {
-        path: 'reporting',
-        loadComponent: () => import('./features/project/reporting/reporting.component').then(m => m.ResultsComponent)
+        path: 'results',
+        loadComponent: () => import('./features/project/results/results.component').then(m => m.ResultsComponent)
       },
       {
         path: 'activation',

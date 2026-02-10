@@ -4,31 +4,31 @@ import { map } from 'rxjs/operators';
 import { API_CLIENT } from '../api-client.token';
 import { ApiClient } from '../api-client';
 import {
-  ReportingResponse,
+  ResultsResponse,
   SimulationStartRequest,
-  ReportingMetricsDto
-} from '../../api-contracts/reporting.contracts';
-import { ReportingMetrics } from '../../data/models';
+  ResultsMetricsDto
+} from '../../api-contracts/results.contracts';
+import { ResultsMetrics } from '../../data/models';
 
 @Injectable({
   providedIn: 'root'
 })
-export class ReportingApiService {
+export class ResultsApiService {
   constructor(@Inject(API_CLIENT) private apiClient: ApiClient) {}
 
-  getReporting(projectId: string): Observable<ReportingMetrics[]> {
-    return this.apiClient.reportingGet(projectId).pipe(
+  getResults(projectId: string): Observable<ResultsMetrics[]> {
+    return this.apiClient.resultsGet(projectId).pipe(
       map(response => response.metrics.map(dto => this.dtoToModel(dto)))
     );
   }
 
-  startSimulation(projectId: string, req: SimulationStartRequest): Observable<ReportingMetrics[]> {
+  startSimulation(projectId: string, req: SimulationStartRequest): Observable<ResultsMetrics[]> {
     return this.apiClient.simulateStart(projectId, req).pipe(
       map(response => response.metrics.map(dto => this.dtoToModel(dto)))
     );
   }
 
-  private dtoToModel(dto: ReportingMetricsDto): ReportingMetrics {
+  private dtoToModel(dto: ResultsMetricsDto): ResultsMetrics {
     return {
       variantId: dto.variantId,
       pointId: dto.pointId,

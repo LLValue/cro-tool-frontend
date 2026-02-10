@@ -110,19 +110,19 @@ Create/Update body: `productDescription?`, `targetAudiences?`, `valueProps?`, `t
 
 ---
 
-## Reporting & results
+## Results
 
 | Method | Path | Request | Response |
 |--------|------|---------|----------|
-| GET | `/projects/:projectId/reporting` | — | `ReportingResponse` |
-| POST | `/projects/:projectId/reporting/simulate` | `{ durationMs?, intervalMs? }` | `ReportingResponse` |
+| GET | `/projects/:projectId/reporting` | — | `ResultsResponse` |
+| POST | `/projects/:projectId/reporting/simulate` | `{ durationMs?, intervalMs? }` | `ResultsResponse` |
 | POST | `/projects/:projectId/results/simulate-month` | `{}` | `SimulateMonthResponse` (incl. `id`; `id: ""` si no persistió) |
 | POST | `/projects/:projectId/results/reset` | `{}` | `{ success: boolean, message? }` |
 | GET | `/projects/:projectId/results/simulations` | — | `SimulationsListResponse` |
 | GET | `/projects/:projectId/results/simulations/:simulationId` | — | `SimulationDetailResponse` |
 | DELETE | `/projects/:projectId/results/simulations/:simulationId` | — | `204 No Content` |
 
-**ReportingResponse:** `metrics: Array<{ variantId, pointId, goalType, users, conversions, conversionRate, confidence }>`, `lastUpdated` (ISO).
+**ResultsResponse:** `metrics: Array<{ variantId, pointId, goalType, users, conversions, conversionRate, confidence }>`, `lastUpdated` (ISO).
 
 **SimulateMonthResponse:** `id` (string; "" si no hubo datos y no se persistió), `combinations`, `frames`, `controlMetrics`.  
 CombinationRow: `comboId`, `points[]`, `metrics`.  

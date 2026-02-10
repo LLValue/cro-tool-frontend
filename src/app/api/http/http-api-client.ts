@@ -39,13 +39,13 @@ import {
   SetGoalsRequest
 } from '../../api-contracts/goals.contracts';
 import {
-  ReportingResponse,
+  ResultsResponse,
   SimulationStartRequest,
   SimulateMonthResponse,
   ResetResponse,
   SimulationsListResponse,
   SimulationDetailResponse
-} from '../../api-contracts/reporting.contracts';
+} from '../../api-contracts/results.contracts';
 
 /**
  * Real HTTP API client implementation.
@@ -181,13 +181,13 @@ export class HttpApiClient implements ApiClient {
     return this.http.put<GoalDto[]>(`${this.baseUrl}/projects/${projectId}/goals`, req);
   }
 
-  // Reporting
-  reportingGet(projectId: string): Observable<ReportingResponse> {
-    return this.http.get<ReportingResponse>(`${this.baseUrl}/projects/${projectId}/reporting`);
+  // Results
+  resultsGet(projectId: string): Observable<ResultsResponse> {
+    return this.http.get<ResultsResponse>(`${this.baseUrl}/projects/${projectId}/reporting`);
   }
 
-  simulateStart(projectId: string, req: SimulationStartRequest): Observable<ReportingResponse> {
-    return this.http.post<ReportingResponse>(`${this.baseUrl}/projects/${projectId}/reporting/simulate`, req);
+  simulateStart(projectId: string, req: SimulationStartRequest): Observable<ResultsResponse> {
+    return this.http.post<ResultsResponse>(`${this.baseUrl}/projects/${projectId}/reporting/simulate`, req);
   }
 
   simulateMonth(projectId: string): Observable<SimulateMonthResponse> {

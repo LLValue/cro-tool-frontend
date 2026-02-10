@@ -74,7 +74,7 @@ export interface Goal {
   createdAt?: Date;
 }
 
-export interface ReportingMetrics {
+export interface ResultsMetrics {
   variantId: string;
   pointId: string;
   goalType: 'clickSelector' | 'urlReached' | 'dataLayerEvent' | 'all';

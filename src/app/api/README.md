@@ -11,7 +11,7 @@ TypeScript interfaces defining request/response DTOs that match the backend API:
 - `points.contracts.ts` - Optimization point DTOs
 - `variants.contracts.ts` - Variant DTOs
 - `goals.contracts.ts` - Goal DTOs
-- `reporting.contracts.ts` - Reporting DTOs
+- `results.contracts.ts` - Results DTOs
 
 ### ApiClient Interface (`api-client.ts`)
 Defines the contract for all API operations. The `HttpApiClient` implements this interface.

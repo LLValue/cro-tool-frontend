@@ -1,4 +1,4 @@
-export interface ReportingMetricsDto {
+export interface ResultsMetricsDto {
   variantId: string;
   pointId: string;
   goalType: 'clickSelector' | 'urlReached' | 'dataLayerEvent';
@@ -8,8 +8,8 @@ export interface ReportingMetricsDto {
   confidence: number;
 }
 
-export interface ReportingResponse {
-  metrics: ReportingMetricsDto[];
+export interface ResultsResponse {
+  metrics: ResultsMetricsDto[];
   lastUpdated: string; // ISO string
 }
 

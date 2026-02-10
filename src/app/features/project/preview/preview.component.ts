@@ -324,7 +324,7 @@ export class PreviewComponent implements OnInit, OnDestroy {
   }
 
   goBack(): void {
-    this.router.navigate(['/projects', this.projectId, 'reporting']);
+    this.router.navigate(['/projects', this.projectId, 'results']);
   }
 
   private removeCookiePopupsFromHtml(html: string): string {

@@ -2,13 +2,13 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, of, throwError, forkJoin } from 'rxjs';
 import { map, catchError, tap, switchMap, shareReplay, take } from 'rxjs/operators';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Project, BriefingGuardrails, OptimizationPoint, Variant, Goal, ReportingMetrics } from './models';
+import { Project, BriefingGuardrails, OptimizationPoint, Variant, Goal, ResultsMetrics } from './models';
 import { ProjectsApiService } from '../api/services/projects-api.service';
 import { BriefingGuardrailsApiService } from '../api/services/briefing-guardrails-api.service';
 import { PointsApiService } from '../api/services/points-api.service';
 import { VariantsApiService } from '../api/services/variants-api.service';
 import { GoalsApiService } from '../api/services/goals-api.service';
-import { ReportingApiService } from '../api/services/reporting-api.service';
+import { ResultsApiService } from '../api/services/results-api.service';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +18,7 @@ export class ProjectsStoreService {
   private pointsSubject = new BehaviorSubject<OptimizationPoint[]>([]);
   private variantsSubject = new BehaviorSubject<Variant[]>([]);
   private goalsSubject = new BehaviorSubject<Goal[]>([]);
-  private metricsSubject = new BehaviorSubject<Map<string, ReportingMetrics>>(new Map());
+  private metricsSubject = new BehaviorSubject<Map<string, ResultsMetrics>>(new Map());
 
   public projects$ = this.projectsSubject.asObservable().pipe(shareReplay(1));
   public points$ = this.pointsSubject.asObservable().pipe(shareReplay(1));
@@ -32,7 +32,7 @@ export class ProjectsStoreService {
     private pointsApi: PointsApiService,
     private variantsApi: VariantsApiService,
     private goalsApi: GoalsApiService,
-    private reportingApi: ReportingApiService
+    private resultsApi: ResultsApiService
   ) {
     this.loadProjects();
   }
@@ -500,12 +500,12 @@ export class ProjectsStoreService {
     return this.goals$;
   }
 
-  // Reporting - Deterministic simulation
+  // Results - Deterministic simulation
   simulateTraffic(projectId: string, durationMs: number = 6000, intervalMs: number = 200): Observable<void> {
     return new Observable(observer => {
-      this.reportingApi.startSimulation(projectId, { durationMs, intervalMs }).subscribe({
+      this.resultsApi.startSimulation(projectId, { durationMs, intervalMs }).subscribe({
         next: metrics => {
-          const metricsMap = new Map<string, ReportingMetrics>();
+          const metricsMap = new Map<string, ResultsMetrics>();
           metrics.forEach(m => metricsMap.set(`${m.variantId}:${m.goalType}`, m));
           this.metricsSubject.next(metricsMap);
           observer.next();
@@ -513,7 +513,7 @@ export class ProjectsStoreService {
         },
         error: (err: HttpErrorResponse) => {
           if (err.status === 404) {
-            const metricsMap = new Map<string, ReportingMetrics>();
+            const metricsMap = new Map<string, ResultsMetrics>();
             this.metricsSubject.next(metricsMap);
             observer.next();
             observer.complete();
@@ -525,11 +525,11 @@ export class ProjectsStoreService {
     });
   }
 
-  getMetrics(projectId: string): Observable<ReportingMetrics[]> {
-    return this.reportingApi.getReporting(projectId).pipe(
+  getMetrics(projectId: string): Observable<ResultsMetrics[]> {
+    return this.resultsApi.getResults(projectId).pipe(
       map(metrics => {
         if (metrics && metrics.length > 0) {
-          const metricsMap = new Map<string, ReportingMetrics>();
+          const metricsMap = new Map<string, ResultsMetrics>();
           metrics.forEach(m => metricsMap.set(`${m.variantId}:${m.goalType}`, m));
           this.metricsSubject.next(metricsMap);
         }
