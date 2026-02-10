@@ -258,48 +258,86 @@ export class PointsComponent implements OnInit, OnDestroy {
     return cleanedSelector.trim();
   }
 
+  /** Load page HTML for the preview panel. If not in project/cache, always fetches via proxy so iframe never shows error. */
   loadPreview(): void {
     const projectId = this.getProjectId();
     if (!projectId) return;
 
     this.loadingPreview = true;
-    this.store.listProjects().pipe(take(1)).subscribe({
-      next: (projects) => {
-        const project = projects.find(p => p.id === projectId);
-        if (project?.previewHtml) {
+    const projectSub = this.projectsApi.getProject(projectId).pipe(take(1)).subscribe({
+      next: (project) => {
+        const pageUrl = (project?.pageUrl || '').trim();
+        if (!pageUrl) {
+          this.loadingPreview = false;
+          return;
+        }
+        this.previewUrl = pageUrl;
+
+        if (project?.previewHtml?.trim()) {
           this.previewHtml = project.previewHtml;
           if (!this.originalPreviewHtml) {
             this.originalPreviewHtml = project.previewHtml;
           }
           this.useIframe = true;
           this.loadingPreview = false;
-        } else if (project?.pageUrl) {
-          this.previewUrl = project.pageUrl;
-          this.loadingPreview = false;
-        } else {
-          this.projectsApi.getProject(projectId).pipe(take(1)).subscribe({
-            next: (p) => {
-              if (p.previewHtml) {
-                this.previewHtml = p.previewHtml;
-                if (!this.originalPreviewHtml) {
-                  this.originalPreviewHtml = p.previewHtml;
-                }
-                this.useIframe = true;
-              } else if (p.pageUrl) {
-                this.previewUrl = p.pageUrl;
-              }
-              this.loadingPreview = false;
-            },
-            error: () => {
-              this.loadingPreview = false;
-            }
-          });
+          return;
         }
+
+        const fetchSub = this.apiClient.proxyFetch(pageUrl).subscribe({
+          next: (response) => {
+            if (response?.html?.trim()) {
+              const processedHtml = this.removeCookiePopupsFromHtml(response.html);
+              this.previewHtml = processedHtml;
+              this.originalPreviewHtml = processedHtml;
+              this.useIframe = true;
+            }
+            this.loadingPreview = false;
+          },
+          error: () => {
+            this.toast.showError('Could not load page preview');
+            this.loadingPreview = false;
+          }
+        });
+        this.subscriptions.add(fetchSub);
       },
       error: () => {
         this.loadingPreview = false;
       }
     });
+    this.subscriptions.add(projectSub);
+  }
+
+  private removeCookiePopupsFromHtml(html: string): string {
+    if (!html) return html;
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const cookieSelectors = [
+        '[id*="cookie"]', '[class*="cookie"]', '[id*="Cookie"]', '[class*="Cookie"]',
+        '[id*="consent"]', '[class*="consent"]', '[id*="Consent"]', '[class*="Consent"]',
+        '[id*="gdpr"]', '[class*="gdpr"]', '[id*="GDPR"]', '[class*="GDPR"]',
+        '[id*="onetrust"]', '[class*="onetrust"]', '[id*="OneTrust"]', '[class*="OneTrust"]',
+        '[id*="cookiebot"]', '[class*="cookiebot"]', '[id*="Cookiebot"]', '[class*="Cookiebot"]',
+        '[id*="cookie-banner"]', '[class*="cookie-banner"]',
+        '[id*="cookie-notice"]', '[class*="cookie-notice"]',
+        '[id*="cookie-consent"]', '[class*="cookie-consent"]',
+        '[id*="CybotCookiebotDialog"]', '[class*="CybotCookiebotDialog"]',
+        '[data-testid*="cookie"]', '[data-testid*="Cookie"]'
+      ];
+      cookieSelectors.forEach(selector => {
+        try {
+          doc.querySelectorAll(selector).forEach(el => {
+            const text = (el.textContent || '').toLowerCase();
+            if (text.includes('cookie') || text.includes('consent') || text.includes('gdpr')) {
+              el.remove();
+            }
+          });
+        } catch (_) {}
+      });
+      return doc.documentElement.outerHTML;
+    } catch {
+      return html;
+    }
   }
 
   onPreviewReload(): void {
