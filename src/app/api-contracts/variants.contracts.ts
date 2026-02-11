@@ -1,5 +1,6 @@
 export interface VariantDto {
   id: string;
+  displayOrder: number; // 0 = control (original), 1, 2, 3... = generated
   projectId: string;
   optimizationPointId: string;
   text: string;

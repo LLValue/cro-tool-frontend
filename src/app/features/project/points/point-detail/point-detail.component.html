@@ -391,8 +391,8 @@
             <div class="enabled-strip" *ngIf="enabledVariants.length > 0">
               <span class="enabled-strip-label">Enabled set ({{ enabledVariants.length }})</span>
               <mat-chip-set class="enabled-chips">
-                <mat-chip *ngFor="let v of enabledVariants" (click)="scrollToVariantAndPreview(v)">
-                  {{ getVariantDisplayId(v) }}
+                <mat-chip *ngFor="let v of enabledVariants" (click)="scrollToVariantAndPreview(v)" [class.control-chip]="v.displayOrder === 0">
+                  {{ v.displayOrder === 0 ? 'Original' : '#' + v.displayOrder }}
                 </mat-chip>
               </mat-chip-set>
             </div>
@@ -453,17 +453,22 @@
                       </td>
                       <td class="col-status">
                         <div class="status-toggle-row">
-                          <mat-slide-toggle
-                            class="variant-use-toggle"
-                            [class.approved]="variant.status === 'approved'"
-                            [checked]="variant.status === 'approved'"
-                            [disabled]="variant.status === 'discarded'"
-                            (change)="onVariantUseInExperimentChange(variant, $event.checked)"
-                            [matTooltip]="variant.status === 'discarded' ? 'Discarded variants are kept for history.' : 'Use in experiment'">
-                          </mat-slide-toggle>
-                          <span class="status-badge" [class.enabled]="variant.status === 'approved'" [class.disabled]="variant.status === 'pending'" [class.discarded]="variant.status === 'discarded'">
-                            {{ variant.status === 'approved' ? '✓ Enabled' : variant.status === 'pending' ? 'Disabled' : 'Discarded' }}
-                          </span>
+                          <ng-container *ngIf="variant.displayOrder === 0">
+                            <span class="status-badge control">⚡ Control (Original)</span>
+                          </ng-container>
+                          <ng-container *ngIf="variant.displayOrder !== 0">
+                            <mat-slide-toggle
+                              class="variant-use-toggle"
+                              [class.approved]="variant.status === 'approved'"
+                              [checked]="variant.status === 'approved'"
+                              [disabled]="variant.status === 'discarded'"
+                              (change)="onVariantUseInExperimentChange(variant, $event.checked)"
+                              [matTooltip]="variant.status === 'discarded' ? 'Discarded variants are kept for history.' : 'Use in experiment'">
+                            </mat-slide-toggle>
+                            <span class="status-badge" [class.enabled]="variant.status === 'approved'" [class.disabled]="variant.status === 'pending'" [class.discarded]="variant.status === 'discarded'">
+                              {{ variant.status === 'approved' ? '✓ Enabled' : variant.status === 'pending' ? 'Disabled' : 'Discarded' }}
+                            </span>
+                          </ng-container>
                         </div>
                       </td>
                       <td class="col-text">
@@ -486,7 +491,7 @@
                       <td class="col-created">{{ formatDateShort(variant.createdAt) }}</td>
                       <td class="col-links">
                         <a href="#" class="table-link" (click)="previewVariant(variant); $event.preventDefault()">Preview</a>
-                        <a href="#" class="table-link" (click)="deleteVariant(variant.id); $event.preventDefault()">Discard</a>
+                        <a *ngIf="variant.displayOrder !== 0" href="#" class="table-link" (click)="deleteVariant(variant.id); $event.preventDefault()">Discard</a>
                       </td>
                     </tr>
                     <tr *ngIf="isExpanded(variant.id)" class="details-row">

@@ -187,8 +187,10 @@ export interface PointVariantRow {
   bestConversionRate: number;
   avgConversionRate: number;
   bestWinProbability: number;
+  bestUplift: number;
   totalUsers: number;
   totalConversions: number;
+  isControl: boolean;
 }
 
 @Component({
@@ -250,8 +252,10 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPointIdFilter: string = 'all';
   /** Filter for results: 'all' or goal id. Default view uses primary goal. */
   selectedGoalIdFilter: string = 'all';
-  /** 'byGoal' = all combinations for selected goal (default); 'byPoint' = each point separately. */
-  resultsViewMode: 'byGoal' | 'byPoint' = 'byGoal';
+  /** Derived from selectedPointIdFilter: 'byPoint' when a specific point is selected, else 'byGoal'. */
+  get resultsViewMode(): 'byGoal' | 'byPoint' {
+    return (this.selectedPointIdFilter && this.selectedPointIdFilter !== 'all') ? 'byPoint' : 'byGoal';
+  }
   simulating = false;
   isSimulating = false; // For 30-day simulation
   animatingMetrics = false;
@@ -310,7 +314,8 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   displayedColumns: string[] = ['variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   displayedColumnsWithExpand: string[] = ['expand', 'variant', 'users', 'conversions', 'conversionRate', 'confidence'];
   combinationColumnsWithExpand: string[] = ['expand', 'comboId', 'combination', 'users', 'conversions', 'conversionRate', 'uplift', 'winProbability', 'preview'];
-  pointVariantColumns: string[] = ['variantText', 'combosCount', 'totalUsers', 'totalConversions', 'bestConversionRate', 'bestWinProbability'];
+  /** Same column set as combination table for consistent UX. */
+  pointVariantColumns: string[] = ['expand', 'comboId', 'combination', 'users', 'conversions', 'conversionRate', 'uplift', 'winProbability', 'preview'];
 
   @ViewChild('combinationTable') combinationTable: MatTable<CombinationRow> | null = null;
   @ViewChild('conversionRateChartGoal') conversionRateChartGoalRef: BaseChartDirective | null = null;
@@ -366,12 +371,15 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       byVariant.get(key)!.combos.push(combo);
     }
+    const controlId = this.controlComboId;
     return Array.from(byVariant.values()).map(({ variantId, variantName, variantText, combos }) => {
       const bestCR = combos.length ? Math.max(...combos.map(c => c.metrics.conversionRate)) : 0;
       const bestWP = combos.length ? Math.max(...combos.map(c => c.metrics.winProbability)) : 0;
+      const bestUplift = combos.length ? Math.max(...combos.map(c => c.metrics.uplift)) : 0;
       const totalUsers = combos.reduce((s, c) => s + c.metrics.users, 0);
       const totalConversions = combos.reduce((s, c) => s + c.metrics.conversions, 0);
       const avgCR = totalUsers > 0 ? totalConversions / totalUsers : 0;
+      const isControl = controlId != null && combos.some(c => c.comboId === controlId);
       return {
         variantId,
         variantName,
@@ -380,8 +388,10 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
         bestConversionRate: bestCR,
         avgConversionRate: avgCR,
         bestWinProbability: bestWP,
+        bestUplift,
         totalUsers,
-        totalConversions
+        totalConversions,
+        isControl
       };
     }).sort((a, b) => b.bestConversionRate - a.bestConversionRate);
   }
@@ -397,6 +407,8 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   currentExpandedVariantId: string | null = null;
   currentExpandedVariantHtml: string = '';
   private subscriptions = new Subscription();
+  /** Subscriptions for current load (points, goals, metrics). Replaced on each loadData() to avoid accumulation. */
+  private dataSubscription = new Subscription();
 
   // Chart data for simulation (ticket)
   public conversionRateOverTimeChartData: ChartConfiguration<'line'>['data'] = {
@@ -450,18 +462,10 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.loadSavedSimulation();
     }
 
-    this.route.params.subscribe(params => {
-      const newProjectId = params['projectId'];
-      if (newProjectId && newProjectId !== this.projectId) {
-        this.projectId = newProjectId;
-        this.loadData();
-        this.loadPreview();
-        this.loadSavedSimulation();
-      }
-    });
-
-    if (this.route.parent) {
-      this.route.parent.params.subscribe(params => {
+    // Single param source: parent has projectId when route is project/:projectId/results
+    const params$ = this.route.parent ? this.route.parent.params : this.route.params;
+    this.subscriptions.add(
+      params$.subscribe(params => {
         const newProjectId = params['projectId'];
         if (newProjectId && newProjectId !== this.projectId) {
           this.projectId = newProjectId;
@@ -469,8 +473,8 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
           this.loadPreview();
           this.loadSavedSimulation();
         }
-      });
-    }
+      })
+    );
   }
 
   ngAfterViewInit(): void {
@@ -479,6 +483,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.dataSubscription.unsubscribe();
     this.subscriptions.unsubscribe();
   }
 
@@ -569,17 +574,19 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   loadData(): void {
+    this.dataSubscription.unsubscribe();
+    this.dataSubscription = new Subscription();
+
     const pointsSub = this.store.listPoints(this.projectId).subscribe({
       next: points => {
         this.points = points;
         if (points.length > 0 && !this.selectedPointId) {
           this.selectedPointId = points[0].id;
         }
-        
         if (points.length > 0) {
           points.forEach(point => {
             const variantsSub = this.store.listVariants(point.id).subscribe();
-            this.subscriptions.add(variantsSub);
+            this.dataSubscription.add(variantsSub);
           });
         }
       },
@@ -587,7 +594,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.points = [];
       }
     });
-    this.subscriptions.add(pointsSub);
+    this.dataSubscription.add(pointsSub);
 
     const goalsSub = this.store.getGoals(this.projectId).subscribe({
       next: goals => {
@@ -601,35 +608,34 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.goals = [];
       }
     });
-    this.subscriptions.add(goalsSub);
+    this.dataSubscription.add(goalsSub);
 
     const metricsSub = combineLatest([
       this.store.variants$,
       this.store.metrics$
     ]).subscribe(([variants, metricsMap]) => {
-      const projectVariants = variants.filter(v => 
+      const projectVariants = variants.filter(v =>
         v.projectId === this.projectId && (v.status === 'pending' || v.status === 'approved' || v.status === 'discarded')
       );
       this.variants = projectVariants;
-      
       const allMetrics: ResultsMetrics[] = Array.from(metricsMap.values())
         .filter(m => {
           const variant = projectVariants.find(v => v.id === m.variantId);
           return variant !== undefined;
         });
-
       this.latestMetrics = allMetrics;
       this.recomputeMetrics();
     });
-    this.subscriptions.add(metricsSub);
+    this.dataSubscription.add(metricsSub);
 
-    this.store.getMetrics(this.projectId).subscribe({
+    const metricsOneSub = this.store.getMetrics(this.projectId).subscribe({
       next: () => {},
       error: () => {
         this.globalMetrics = [];
         this.pointMetrics = [];
       }
     });
+    this.dataSubscription.add(metricsOneSub);
   }
 
   /** Carga la última simulación guardada (si existe) y la muestra sin animación. */
@@ -801,22 +807,6 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.refreshFilteredChartsAndKPIs();
   }
 
-  onResultsViewModeChange(): void {
-    if (this.resultsViewMode === 'byPoint') {
-      if (!this.selectedPointIdFilter || this.selectedPointIdFilter === 'all') {
-        this.selectedPointIdFilter = this.points.length > 0 ? String(this.points[0].id) : '';
-      }
-    }
-    this.refreshFilteredChartsAndKPIs();
-    this.cdr.detectChanges();
-    // Second pass after view/ngIf updated so KPIs bindings refresh
-    setTimeout(() => {
-      this.updateKPIs();
-      this.applyDisplayedKPIsForCurrentView();
-      this.cdr.detectChanges();
-    }, 0);
-  }
-
   onResultsPointChange(): void {
     this.refreshFilteredChartsAndKPIs();
     this.cdr.detectChanges();
@@ -925,24 +915,27 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /** Charts for by-point view: line = CR over time per variant, bar = variants win probability. */
+  /** Charts for by-point view: same as by-goal — Control line + one line per variant (CR over time). */
   private refreshChartsForByPoint(framesToUse?: SimulationFrame[]): void {
     const frames = framesToUse ?? this.simulationFrames ?? [];
     const pointId = this.selectedPointIdFilter;
     if (!pointId || pointId === 'all' || !frames.length) {
       this.setWinProbabilityChartFromPointVariants([]);
+      this.conversionRateOverTimeChartData = { labels: [], datasets: [] };
       if (this.conversionRateOverTimeChartOptions?.plugins?.title) {
         (this.conversionRateOverTimeChartOptions.plugins.title as { text?: string }).text = 'Conversion rate over time';
       }
       return;
     }
     const pointIdStr = String(pointId);
+    const controlComboId = this.controlComboId;
 
     const comboToVariant = new Map<string, string>();
     for (const combo of this.combinationRows) {
       const p = combo.points.find(pt => String(pt.pointId) === pointIdStr);
       if (p) comboToVariant.set(combo.comboId, p.variantId);
     }
+    const controlVariantId = controlComboId != null ? comboToVariant.get(controlComboId) ?? null : null;
 
     const variantOrder = [...new Set(comboToVariant.values())];
     const variantLabels = new Map<string, string>();
@@ -951,15 +944,29 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (p && !variantLabels.has(p.variantId)) variantLabels.set(p.variantId, p.variantText.length > 20 ? p.variantText.slice(0, 20) + '…' : p.variantText);
     }
 
-    const colors = ['rgb(255, 99, 132)', 'rgb(75, 192, 192)', 'rgb(255, 205, 86)', 'rgb(54, 162, 235)', 'rgb(153, 102, 255)'];
     const labels: string[] = [];
+    frames.forEach(frame => labels.push(`Day ${frame.day}`));
+
     const datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; tension: number }[] = [];
 
+    // 1) Control line (same as by-goal): CR of the control combo per frame
+    const controlData: number[] = [];
     frames.forEach(frame => {
-      labels.push(`Day ${frame.day}`);
+      const controlInFrame = controlComboId ? frame.combos.find(c => c.comboId === controlComboId) : null;
+      controlData.push(controlInFrame?.conversionRate ?? this.controlMetrics?.conversionRate ?? 0);
+    });
+    datasets.push({
+      label: 'Control',
+      data: controlData,
+      borderColor: 'rgb(75, 192, 192)',
+      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+      tension: 0.1
     });
 
+    // 2) One line per variant (excluding control — already shown as Control). Same order as by-goal style: control first, then others.
+    const variantColors = ['rgb(255, 99, 132)', 'rgb(255, 205, 86)', 'rgb(54, 162, 235)', 'rgb(153, 102, 255)', 'rgb(201, 203, 207)'];
     variantOrder.forEach((variantId, idx) => {
+      if (variantId === controlVariantId) return; // already drawn as Control
       const data: number[] = [];
       frames.forEach(frame => {
         const rates = frame.combos
@@ -968,7 +975,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
         const avg = rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : 0;
         data.push(avg);
       });
-      const color = colors[idx % colors.length];
+      const color = variantColors[idx % variantColors.length];
       datasets.push({
         label: variantLabels.get(variantId) ?? variantId,
         data,
@@ -980,7 +987,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.conversionRateOverTimeChartData = { labels, datasets };
     if (this.conversionRateOverTimeChartOptions?.plugins?.title) {
-      (this.conversionRateOverTimeChartOptions.plugins.title as { text?: string }).text = 'Conversion rate over time (by variant)';
+      (this.conversionRateOverTimeChartOptions.plugins.title as { text?: string }).text = 'Conversion rate over time';
     }
 
     const variantRows = this.pointVariantRows;
@@ -2062,6 +2069,40 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Full combination text for tooltip (pointName: variantText per point). */
   getCombinationFullTooltip(combo: CombinationRow): string {
     return combo.points.map(p => `${p.pointName}: ${p.variantText || '—'}`).join('\n');
+  }
+
+  /** By-point table: 1-based display index. */
+  getPointVariantDisplayIndex(row: PointVariantRow): number {
+    const rows = this.pointVariantRows;
+    const idx = rows.findIndex(r => r.variantId === row.variantId);
+    return idx >= 0 ? idx + 1 : 0;
+  }
+
+  isControlPointVariant(row: PointVariantRow): boolean {
+    return row.isControl;
+  }
+
+  isWinnerPointVariant(row: PointVariantRow): boolean {
+    const rows = this.pointVariantRows;
+    return rows.length > 0 && rows[0].variantId === row.variantId;
+  }
+
+  isLoserPointVariant(row: PointVariantRow): boolean {
+    const rows = this.pointVariantRows;
+    if (rows.length === 0) return false;
+    const bottomThreshold = Math.floor(rows.length * 0.2);
+    const bottomStart = rows.length - bottomThreshold;
+    const index = rows.findIndex(r => r.variantId === row.variantId);
+    return index >= bottomStart && index >= 0;
+  }
+
+  /** Preview one combo that contains this variant (best CR). */
+  previewPointVariant(row: PointVariantRow): void {
+    const sid = String(this.selectedPointIdFilter);
+    const combo = this.combinationRows
+      .filter(c => c.points.some(p => String(p.pointId) === sid && p.variantId === row.variantId))
+      .sort((a, b) => b.metrics.conversionRate - a.metrics.conversionRate)[0];
+    if (combo) this.previewCombination(combo);
   }
 }
 

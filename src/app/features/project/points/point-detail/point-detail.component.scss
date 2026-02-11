@@ -431,6 +431,10 @@
       cursor: pointer;
       font-size: 12px;
     }
+    mat-chip.control-chip {
+      background: rgba(33, 150, 243, 0.2);
+      color: #1976d2;
+    }
   }
 }
 
@@ -499,6 +503,10 @@
     font-weight: 600;
     margin-right: 6px;
 
+    &.control {
+      background: rgba(33, 150, 243, 0.2);
+      color: #1976d2;
+    }
     &.enabled {
       background: rgba(76, 175, 80, 0.2);
       color: #2e7d32;
@@ -651,9 +659,14 @@
     background: rgba(76, 175, 80, 0.15);
     border-color: rgba(76, 175, 80, 0.35);
     .enabled-strip-label { color: #81c784; }
+    .enabled-chips mat-chip.control-chip {
+      background: rgba(33, 150, 243, 0.25);
+      color: #42a5f5;
+    }
   }
   .variants-table {
     .variant-row.discarded-row { background: rgba(255, 255, 255, 0.02); }
+    .status-badge.control { background: rgba(33, 150, 243, 0.25); color: #42a5f5; }
     .status-badge.disabled { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); }
     .status-badge.discarded { background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.6); }
     .text-edit textarea {

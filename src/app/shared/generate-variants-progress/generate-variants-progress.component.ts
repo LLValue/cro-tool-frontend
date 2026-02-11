@@ -157,7 +157,9 @@ export class GenerateVariantsProgressComponent implements OnInit, OnDestroy {
       next: (result) => {
         // Store the generated data (could be variants array or brief data object)
         this.generatedData = result;
-        this.variantCount = Array.isArray(result) ? result.length : (result?.variantCount || 10);
+        this.variantCount = Array.isArray(result)
+          ? result.filter((v: { displayOrder?: number }) => (v.displayOrder ?? 0) > 0).length
+          : (result?.variantCount || 10);
         this.responseReceived = true;
         this.completeProgress();
       },

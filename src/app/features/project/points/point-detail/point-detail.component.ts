@@ -310,7 +310,7 @@ export class PointDetailComponent implements OnInit, OnDestroy {
   }
 
   getVariantDisplayId(variant: Variant): string {
-    return variant.id.length > 8 ? variant.id.slice(-8) : variant.id;
+    return `#${variant.displayOrder ?? 0}`;
   }
 
   /** Returns flags to display; excludes "none" and empty so the Flags section only shows when there are meaningful flags. */

@@ -64,6 +64,7 @@ export class VariantsApiService {
   private dtoToModel(dto: VariantDto): Variant {
     return {
       id: dto.id,
+      displayOrder: dto.displayOrder ?? 0,
       projectId: dto.projectId,
       optimizationPointId: dto.optimizationPointId,
       text: dto.text,

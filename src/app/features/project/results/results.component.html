@@ -13,25 +13,17 @@
 
 <!-- Results section: KPI + Charts + Combination table (when simulation data exists) -->
 <section class="results-section" *ngIf="combinationRows.length > 0">
-  <div class="results-view-switcher">
-    <span class="view-label">View</span>
-    <button mat-stroked-button [class.active]="resultsViewMode === 'byGoal'" (click)="resultsViewMode = 'byGoal'; onResultsViewModeChange()">
-      By goal
-    </button>
-    <button mat-stroked-button [class.active]="resultsViewMode === 'byPoint'" (click)="resultsViewMode = 'byPoint'; onResultsViewModeChange()">
-      By point
-    </button>
-  </div>
   <div class="results-filters">
-    <mat-form-field *ngIf="resultsViewMode === 'byGoal'" appearance="outline" class="filter-field">
+    <mat-form-field appearance="outline" class="filter-field">
       <mat-label>Goal</mat-label>
       <mat-select [(ngModel)]="selectedGoalIdFilter" (selectionChange)="onResultsGoalChange()">
         <mat-option *ngFor="let g of goals" [value]="g.id">{{ g.name || g.type }}</mat-option>
       </mat-select>
     </mat-form-field>
-    <mat-form-field *ngIf="resultsViewMode === 'byPoint'" appearance="outline" class="filter-field">
-      <mat-label>Optimization point</mat-label>
-      <mat-select [(ngModel)]="selectedPointIdFilter" (ngModelChange)="onResultsPointChange()">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Point</mat-label>
+      <mat-select [(ngModel)]="selectedPointIdFilter" (selectionChange)="onResultsPointChange()">
+        <mat-option value="all">All Points</mat-option>
         <mat-option *ngFor="let p of points" [value]="p.id">{{ p.name }}</mat-option>
       </mat-select>
     </mat-form-field>
@@ -264,35 +256,76 @@
     </table>
   </div>
 
-  <!-- By point: variants of the selected point (no combinations) -->
+  <!-- By point: same columns as goals table (variants of the selected point) -->
   <div class="table-section app-table-wrapper" *ngIf="resultsViewMode === 'byPoint'">
-    <table mat-table [dataSource]="pointVariantRows" class="metrics-table point-variant-table">
-      <ng-container matColumnDef="variantText">
-        <th mat-header-cell *matHeaderCellDef>Variant</th>
-        <td mat-cell *matCellDef="let row" class="variant-text-cell">{{ row.variantText }}</td>
+    <table mat-table [dataSource]="pointVariantRows" class="metrics-table point-variant-table combination-table">
+      <ng-container matColumnDef="expand">
+        <th mat-header-cell *matHeaderCellDef style="width: 48px;"></th>
+        <td mat-cell *matCellDef="let row" style="width: 48px;"></td>
       </ng-container>
-      <ng-container matColumnDef="combosCount">
-        <th mat-header-cell *matHeaderCellDef>Combos</th>
-        <td mat-cell *matCellDef="let row">{{ row.combosCount }}</td>
+      <ng-container matColumnDef="comboId">
+        <th mat-header-cell *matHeaderCellDef>Id</th>
+        <td mat-cell *matCellDef="let row" class="combo-id-cell">
+          <span class="metric-value">{{ getPointVariantDisplayIndex(row) }}</span>
+        </td>
       </ng-container>
-      <ng-container matColumnDef="totalUsers">
+      <ng-container matColumnDef="combination">
+        <th mat-header-cell *matHeaderCellDef>Combination</th>
+        <td mat-cell *matCellDef="let row" class="combination-cell">
+          <div class="combo-badges">
+            <span class="control-badge" *ngIf="isControlPointVariant(row)">Control</span>
+            <span class="winner-badge" *ngIf="isWinnerPointVariant(row)">Winner</span>
+            <span class="discarded-badge" *ngIf="isLoserPointVariant(row)">Discarded</span>
+          </div>
+          <div class="combination-text combo-name-cell">
+            <span class="point-value">{{ row.variantText || '—' }}</span>
+          </div>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="users">
         <th mat-header-cell *matHeaderCellDef>Users</th>
-        <td mat-cell *matCellDef="let row">{{ row.totalUsers }}</td>
+        <td mat-cell *matCellDef="let row" class="metric-cell">
+          <span class="metric-value">{{ row.totalUsers }}</span>
+        </td>
       </ng-container>
-      <ng-container matColumnDef="totalConversions">
+      <ng-container matColumnDef="conversions">
         <th mat-header-cell *matHeaderCellDef>Conversions</th>
-        <td mat-cell *matCellDef="let row">{{ row.totalConversions }}</td>
+        <td mat-cell *matCellDef="let row" class="metric-cell">
+          <span class="metric-value">{{ row.totalConversions }}</span>
+        </td>
       </ng-container>
-      <ng-container matColumnDef="bestConversionRate">
-        <th mat-header-cell *matHeaderCellDef>Best CR</th>
-        <td mat-cell *matCellDef="let row">{{ (row.bestConversionRate * 100).toFixed(2) }}%</td>
+      <ng-container matColumnDef="conversionRate">
+        <th mat-header-cell *matHeaderCellDef>Conversion rate</th>
+        <td mat-cell *matCellDef="let row" class="metric-cell">
+          <span class="metric-value">{{ formatConversionRate(row.bestConversionRate, row.totalUsers) }}</span>
+        </td>
       </ng-container>
-      <ng-container matColumnDef="bestWinProbability">
+      <ng-container matColumnDef="uplift">
+        <th mat-header-cell *matHeaderCellDef>Uplift vs control</th>
+        <td mat-cell *matCellDef="let row" class="metric-cell">
+          <span class="metric-value">{{ formatUplift(row.bestUplift, row.totalUsers) }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="winProbability">
         <th mat-header-cell *matHeaderCellDef>Win probability</th>
-        <td mat-cell *matCellDef="let row">{{ (row.bestWinProbability * 100).toFixed(0) }}%</td>
+        <td mat-cell *matCellDef="let row" class="metric-cell metric-cell-right">
+          <span class="metric-value">{{ formatWinProbability(row.bestWinProbability, row.totalUsers) }}</span>
+        </td>
+      </ng-container>
+      <ng-container matColumnDef="preview">
+        <th mat-header-cell *matHeaderCellDef>Preview</th>
+        <td mat-cell *matCellDef="let row" class="preview-cell">
+          <button mat-button color="primary" (click)="previewPointVariant(row)" class="preview-link">
+            <mat-icon class="preview-icon">visibility</mat-icon>
+            Preview
+          </button>
+        </td>
       </ng-container>
       <tr mat-header-row *matHeaderRowDef="pointVariantColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: pointVariantColumns;"></tr>
+      <tr mat-row *matRowDef="let row; columns: pointVariantColumns;"
+          [class.winner-row]="isWinnerPointVariant(row)"
+          [class.discarded-row]="isLoserPointVariant(row)"
+          [class.control-row]="isControlPointVariant(row)"></tr>
     </table>
   </div>
 </section>
