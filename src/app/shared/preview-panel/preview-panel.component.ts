@@ -84,6 +84,9 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
   }
 
   ngAfterViewInit(): void {
+    if (this.previewHtml?.trim() && this.useIframe && !this.loading && this.previewIframe?.nativeElement) {
+      setTimeout(() => this.writeIframeContent(), 0);
+    }
     if (this.highlightSelector) {
       setTimeout(() => this.highlightElement(this.highlightSelector), 100);
     }
@@ -226,15 +229,13 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     });
   }
 
-  /** Write previewHtml into the iframe via contentDocument. Returns true if write was done. Skips if doc already has substantial content. */
+  /** Write previewHtml into the iframe via contentDocument. Returns true if write was done. */
   private writeIframeContent(): boolean {
     const iframe = this.previewIframe?.nativeElement;
     if (!iframe || !this.previewHtml?.trim()) return false;
     try {
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
       if (!doc) return false;
-      const bodyLength = doc.body?.innerHTML?.length ?? 0;
-      if (bodyLength > 500) return true; // already has content, consider success
       doc.open();
       doc.write(this.previewHtml);
       doc.close();
