@@ -224,11 +224,21 @@ export class PreviewService {
     try {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
-      
-      const elements = doc.querySelectorAll(cleanSelector);
-      
-      console.log('[PreviewService] Elements found with DOMParser:', elements.length);
-      
+
+      let elements = doc.querySelectorAll(cleanSelector);
+
+      if (elements.length === 0 && cleanSelector.includes(' > ')) {
+        const fallbacks = this.getFallbackSelectorsFromPath(cleanSelector);
+        for (const fallback of fallbacks) {
+          const found = doc.querySelectorAll(fallback);
+          if (found.length === 1) {
+            elements = found;
+            console.log('[PreviewService] Using fallback selector:', fallback);
+            break;
+          }
+        }
+      }
+
       if (elements.length === 0) {
         console.log('[PreviewService] No elements found, trying regex fallback');
         return this.applyVariantWithRegex(html, cleanSelector, newText);
@@ -297,6 +307,28 @@ export class PreviewService {
     } catch {
       return true;
     }
+  }
+
+  /**
+   * When a long path selector fails (e.g. after re-fetching HTML), derive shorter descendant selectors
+   * from path segments that have a class. Example: "section > div.dc-adobe-banner > div.dc-adobe-text-banner > h1"
+   * -> try "div.dc-adobe-text-banner h1", "div.dc-adobe-banner h1", etc.
+   */
+  private getFallbackSelectorsFromPath(pathSelector: string): string[] {
+    const segments = pathSelector.split(/\s*>\s*/).map(s => s.trim()).filter(Boolean);
+    if (segments.length < 2) return [];
+    const lastSegment = segments[segments.length - 1];
+    const lastTag = lastSegment.replace(/:nth-of-type\(\d+\)/g, '').replace(/:first-of-type/g, '').trim();
+    const targetTag = lastTag.split('.')[0] || lastTag; // "h1" or "div.foo" -> "div"
+    const fallbacks: string[] = [];
+    for (let i = segments.length - 1; i >= 0; i--) {
+      const seg = segments[i];
+      if (!seg.includes('.')) continue;
+      const withoutNth = seg.replace(/:nth-of-type\(\d+\)/g, '').replace(/:first-of-type/g, '').trim();
+      if (!withoutNth) continue;
+      fallbacks.push(withoutNth + ' ' + targetTag);
+    }
+    return fallbacks;
   }
 
   /**

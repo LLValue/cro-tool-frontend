@@ -405,6 +405,9 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
     this.selectionMode = false;
   }
 
+  /** Classes we add during selection; must be excluded when building the selector. */
+  private static readonly SELECTION_MARKER_CLASSES = ['point-editor-selected', 'point-editor-highlight', 'highlighted-element'];
+
   private generateSelectorForElement(element: HTMLElement): string {
     const iframeDoc = this.previewIframe?.nativeElement?.contentDocument;
     if (!iframeDoc) return '';
@@ -417,15 +420,33 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       }
     }
 
-    // Try classes
+    // Try classes (exclude our own selection markers)
     if (element.className && typeof element.className === 'string') {
-      const classes = element.className.split(/\s+/).filter(c => c);
+      const classes = element.className.split(/\s+/).filter(c => c)
+        .filter(c => !PreviewPanelComponent.SELECTION_MARKER_CLASSES.includes(c));
       if (classes.length > 0) {
         const classSelector = '.' + classes.join('.');
         if (iframeDoc.querySelectorAll(classSelector).length === 1) {
           return classSelector;
         }
       }
+    }
+
+    // Prefer short "ancestor class + tag" selector so it works when HTML is re-fetched
+    const targetTag = element.tagName.toLowerCase();
+    let ancestor: HTMLElement | null = element.parentElement;
+    while (ancestor && ancestor !== iframeDoc.body) {
+      if (ancestor.className && typeof ancestor.className === 'string') {
+        const aClasses = ancestor.className.split(/\s+/).filter(c => c)
+          .filter(c => !PreviewPanelComponent.SELECTION_MARKER_CLASSES.includes(c));
+        if (aClasses.length > 0) {
+          const shortSelector = '.' + aClasses.join('.') + ' ' + targetTag;
+          if (iframeDoc.querySelectorAll(shortSelector).length === 1) {
+            return shortSelector;
+          }
+        }
+      }
+      ancestor = ancestor.parentElement;
     }
 
     // Build path
@@ -442,7 +463,8 @@ export class PreviewPanelComponent implements OnInit, AfterViewInit, OnDestroy, 
       }
       
       if (current.className && typeof current.className === 'string') {
-        const classes = current.className.split(/\s+/).filter(c => c);
+        const classes = current.className.split(/\s+/).filter(c => c)
+          .filter(c => !PreviewPanelComponent.SELECTION_MARKER_CLASSES.includes(c));
         if (classes.length > 0) {
           selector += '.' + classes.join('.');
         }

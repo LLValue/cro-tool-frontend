@@ -873,13 +873,17 @@ export class PointDetailComponent implements OnInit, OnDestroy {
     this.toast.showSuccess('Element selected! Review the details below.');
   }
 
+  /** Classes we add during selection; must be excluded when building the selector. */
+  private static readonly SELECTION_MARKER_CLASSES = ['point-editor-selected', 'point-editor-highlight', 'highlighted-element'];
+
   generateSelector(element: HTMLElement): string {
     if (element.id) {
       return `#${element.id}`;
     }
 
     if (element.className && typeof element.className === 'string') {
-      const classes = element.className.split(' ').filter(c => c.trim());
+      const classes = element.className.split(' ').filter(c => c.trim())
+        .filter(c => !PointDetailComponent.SELECTION_MARKER_CLASSES.includes(c));
       if (classes.length > 0) {
         const classSelector = '.' + classes.join('.');
         const iframeDoc = this.previewFrame?.nativeElement?.contentDocument;
@@ -900,6 +904,26 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Prefer short "ancestor class + tag" selector so it works when HTML is re-fetched (structure may differ)
+    const iframeDoc = this.previewFrame?.nativeElement?.contentDocument;
+    if (iframeDoc) {
+      const targetTag = element.tagName.toLowerCase();
+      let ancestor: HTMLElement | null = element.parentElement;
+      while (ancestor && ancestor !== iframeDoc.body) {
+        if (ancestor.className && typeof ancestor.className === 'string') {
+          const aClasses = ancestor.className.split(' ').filter(c => c.trim())
+            .filter(c => !PointDetailComponent.SELECTION_MARKER_CLASSES.includes(c));
+          if (aClasses.length > 0) {
+            const shortSelector = '.' + aClasses.join('.') + ' ' + targetTag;
+            if (iframeDoc.querySelectorAll(shortSelector).length === 1) {
+              return shortSelector;
+            }
+          }
+        }
+        ancestor = ancestor.parentElement;
+      }
+    }
+
     const path: string[] = [];
     let current: HTMLElement | null = element;
 
@@ -913,7 +937,8 @@ export class PointDetailComponent implements OnInit, OnDestroy {
       }
       
       if (current.className && typeof current.className === 'string') {
-        const classes = current.className.split(' ').filter(c => c.trim());
+        const classes = current.className.split(' ').filter(c => c.trim())
+          .filter(c => !PointDetailComponent.SELECTION_MARKER_CLASSES.includes(c));
         if (classes.length > 0) {
           selector += '.' + classes.join('.');
         }
