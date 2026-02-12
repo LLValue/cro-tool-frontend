@@ -82,6 +82,26 @@ export class PreviewService {
           left: -9999px !important;
           z-index: -9999 !important;
         }
+
+        /* Normalize select elements for consistent preview appearance */
+        select {
+          appearance: none !important;
+          -webkit-appearance: none !important;
+          -moz-appearance: none !important;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+          background-repeat: no-repeat !important;
+          background-position: right 8px center !important;
+          padding-right: 28px !important;
+          border: 1px solid #ccc !important;
+          border-radius: 4px !important;
+          background-color: #fff !important;
+          cursor: pointer !important;
+        }
+        select:focus {
+          outline: 2px solid #2196F3 !important;
+          outline-offset: -1px !important;
+          border-color: #2196F3 !important;
+        }
       `;
       doc.head.appendChild(style);
 
