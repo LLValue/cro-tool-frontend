@@ -63,7 +63,7 @@ export class ContextComponent implements OnInit, OnDestroy {
   guardrailsSubmitted = false;
 
   // AI Assistant state
-  aiAssistantExpanded = true; // Expanded by default
+  aiAssistantExpanded = true; // Set after load: collapsed if form has data, expanded if empty
   aiAssistantUsed = false; // Track if it has been used
   urls: string[] = [];
   uploadedFiles: { name: string; file: File }[] = [];
@@ -269,13 +269,27 @@ export class ContextComponent implements OnInit, OnDestroy {
             sensitiveClaims: sensitiveClaimsText
           }, { emitEvent: false });
           this.isUpdatingForm = false;
+          this.aiAssistantExpanded = !this.hasBriefingContent();
+        } else {
+          this.aiAssistantExpanded = true;
         }
       },
       error: () => {
-        // If briefing_guardrails doesn't exist yet, form stays empty
         this.isUpdatingForm = false;
+        this.aiAssistantExpanded = true;
       }
     });
+  }
+
+  /** True if any briefing field has non-empty content. */
+  private hasBriefingContent(): boolean {
+    const v = this.globalForm.value;
+    const fields = [
+      v.productDescription, v.targetAudiences, v.valueProps, v.topObjections,
+      v.language, v.toneAndStyle, v.pageContextAndGoal, v.funnelStageAndNextAction,
+      v.brandGuidelines, v.allowedFacts, v.forbiddenWords, v.sensitiveClaims
+    ];
+    return fields.some(f => (typeof f === 'string' ? f : String(f || '')).trim().length > 0);
   }
 
 
