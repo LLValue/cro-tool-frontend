@@ -782,13 +782,46 @@ export class ContextComponent implements OnInit, OnDestroy {
     }
 
     this.isUpdatingForm = false;
+    this.saveBriefingToBackend();
     const filledCount = response.summary?.filled_fields || 0;
     const needsReviewCount = response.summary?.needs_review_count || 0;
-    let message = `Draft brief generated successfully. ${filledCount} fields filled.`;
+    let message = `Draft brief generated and saved. ${filledCount} fields filled.`;
     if (needsReviewCount > 0) {
       message += ` ${needsReviewCount} field(s) need review.`;
     }
     this.toast.showSuccess(message);
+  }
+
+  /** Builds payload from globalForm and persists to API (used after AI generate). */
+  private saveBriefingToBackend(): void {
+    if (!this.projectId) return;
+    const values = this.globalForm.value;
+    const targetAudiencesArray = values.targetAudiences ? String(values.targetAudiences).split('\n').filter((line: string) => line.trim()) : [];
+    const valuePropsArray = values.valueProps ? String(values.valueProps).split('\n').filter((line: string) => line.trim()) : [];
+    const topObjectionsArray = values.topObjections ? String(values.topObjections).split('\n').filter((line: string) => line.trim()) : [];
+    const combinedFunnel = values.funnelStageAndNextAction?.trim() || '';
+    const parts = combinedFunnel.split(' - ').map((p: string) => p.trim()).filter((p: string) => p);
+    const funnelStageText = parts[0] || '';
+    const nextActionText = parts.length > 1 ? parts.slice(1).join(' - ') : combinedFunnel;
+    const allowedFactsArray = values.allowedFacts ? String(values.allowedFacts).split('\n').filter((line: string) => line.trim()) : [];
+    const forbiddenWordsArray = values.forbiddenWords ? String(values.forbiddenWords).split('\n').filter((line: string) => line.trim()) : [];
+    const sensitiveClaimsArray = values.sensitiveClaims ? String(values.sensitiveClaims).split('\n').filter((line: string) => line.trim()) : [];
+
+    this.store.updateBriefingGuardrails(this.projectId, {
+      productDescription: values.productDescription,
+      targetAudiences: values.targetAudiences,
+      valueProps: valuePropsArray,
+      topObjections: topObjectionsArray,
+      language: values.language || '',
+      toneAndStyle: values.toneAndStyle || '',
+      pageContextAndGoal: values.pageContextAndGoal,
+      funnelStage: funnelStageText || undefined,
+      nextAction: nextActionText || undefined,
+      brandGuidelines: values.brandGuidelines,
+      allowedFacts: allowedFactsArray,
+      forbiddenWords: forbiddenWordsArray,
+      sensitiveClaims: sensitiveClaimsArray
+    });
   }
 
   private setFieldState(fieldName: string, source: 'manual' | 'ai_draft', reviewStatus: 'ok' | 'needs_review' | 'missing', confidence: 'high' | 'medium' | 'low'): void {
