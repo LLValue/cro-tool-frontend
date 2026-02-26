@@ -191,6 +191,72 @@ export interface PointVariantRow {
   totalUsers: number;
   totalConversions: number;
   isControl: boolean;
+  /** Aggregated CR = totalConversions / totalUsers (shown in by-point table). */
+  aggregatedCR: number;
+  /** Uplift of aggregated CR vs the control variant's aggregated CR. */
+  aggregatedUplift: number;
+  /** Win probability computed from aggregated Beta distribution via Monte Carlo. */
+  aggregatedWinProbability: number;
+}
+
+// ---------------------------------------------------------------------------
+// Beta distribution helpers (for by-point win probability)
+// ---------------------------------------------------------------------------
+
+/** Box-Muller normal sample. */
+function normalSampleFE(): number {
+  const u1 = Math.random();
+  const u2 = Math.random();
+  return Math.sqrt(-2 * Math.log(u1 < 1e-10 ? 1e-10 : u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+/** Marsaglia & Tsang gamma sampling. */
+function gammaSampleFE(shape: number): number {
+  if (shape < 1) return gammaSampleFE(shape + 1) * Math.pow(Math.random(), 1 / shape);
+  const d = shape - 1 / 3;
+  const c = 1 / Math.sqrt(9 * d);
+  for (;;) {
+    const x = normalSampleFE();
+    const vRaw = 1 + c * x;
+    if (vRaw <= 0) continue;
+    const v = vRaw * vRaw * vRaw;
+    const u = Math.random();
+    if (u < 1 - 0.0331 * x * x * x * x) return d * v;
+    if (Math.log(u < 1e-10 ? 1e-10 : u) < 0.5 * x * x + d * (1 - v + Math.log(v < 1e-10 ? 1e-10 : v))) return d * v;
+  }
+}
+
+/** Beta(alpha, beta) sample using gamma method. */
+function betaSampleFE(alpha: number, beta: number): number {
+  const x = gammaSampleFE(alpha);
+  const y = gammaSampleFE(beta);
+  return x / (x + y);
+}
+
+/**
+ * Monte Carlo win probability for each variant given aggregated users/conversions.
+ * Returns win probability [0,1] for each variant (same order as input).
+ */
+function computeWinProbabilitiesFE(
+  variants: Array<{ users: number; conversions: number }>,
+  samples = 1500
+): number[] {
+  const n = variants.length;
+  if (n === 0) return [];
+  if (n === 1) return [1];
+  const wins = new Array<number>(n).fill(0);
+  for (let s = 0; s < samples; s++) {
+    let bestRate = -1;
+    let bestIdx = 0;
+    for (let j = 0; j < n; j++) {
+      const alpha = variants[j].conversions + 1;
+      const beta = Math.max(1, variants[j].users - variants[j].conversions) + 1;
+      const rate = betaSampleFE(alpha, beta);
+      if (rate > bestRate) { bestRate = rate; bestIdx = j; }
+    }
+    wins[bestIdx]++;
+  }
+  return wins.map(w => w / samples);
 }
 
 @Component({
@@ -372,7 +438,9 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
       byVariant.get(key)!.combos.push(combo);
     }
     const controlId = this.controlComboId;
-    return Array.from(byVariant.values()).map(({ variantId, variantName, variantText, combos }) => {
+
+    // Build base rows with aggregated users/conversions
+    const baseRows = Array.from(byVariant.values()).map(({ variantId, variantName, variantText, combos }) => {
       const bestCR = combos.length ? Math.max(...combos.map(c => c.metrics.conversionRate)) : 0;
       const bestWP = combos.length ? Math.max(...combos.map(c => c.metrics.winProbability)) : 0;
       const bestUplift = combos.length ? Math.max(...combos.map(c => c.metrics.uplift)) : 0;
@@ -380,20 +448,23 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
       const totalConversions = combos.reduce((s, c) => s + c.metrics.conversions, 0);
       const avgCR = totalUsers > 0 ? totalConversions / totalUsers : 0;
       const isControl = controlId != null && combos.some(c => c.comboId === controlId);
-      return {
-        variantId,
-        variantName,
-        variantText,
-        combosCount: combos.length,
-        bestConversionRate: bestCR,
-        avgConversionRate: avgCR,
-        bestWinProbability: bestWP,
-        bestUplift,
-        totalUsers,
-        totalConversions,
-        isControl
-      };
-    }).sort((a, b) => b.bestConversionRate - a.bestConversionRate);
+      return { variantId, variantName, variantText, combosCount: combos.length, bestConversionRate: bestCR, avgConversionRate: avgCR, bestWinProbability: bestWP, bestUplift, totalUsers, totalConversions, isControl };
+    });
+
+    // Compute control's aggregated CR for uplift calculation
+    const controlRow = baseRows.find(r => r.isControl);
+    const controlAggCR = controlRow ? controlRow.avgConversionRate : 0;
+
+    // Compute win probabilities from aggregated Beta distributions
+    const wpInputs = baseRows.map(r => ({ users: r.totalUsers, conversions: r.totalConversions }));
+    const winProbs = computeWinProbabilitiesFE(wpInputs);
+
+    return baseRows.map((r, i) => ({
+      ...r,
+      aggregatedCR: r.avgConversionRate,
+      aggregatedUplift: controlAggCR > 0 ? (r.avgConversionRate - controlAggCR) / controlAggCR : 0,
+      aggregatedWinProbability: winProbs[i] ?? 0,
+    })).sort((a, b) => b.aggregatedCR - a.aggregatedCR);
   }
 
   // Track expanded rows
@@ -1002,7 +1073,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     const d = this.winProbabilityChartData;
     if (!d.datasets?.length || !d.labels) return;
     const labelList = rows.map(r => r.variantText.length > 25 ? r.variantText.slice(0, 25) + '…' : r.variantText);
-    const data = rows.map(r => r.bestWinProbability * 100);
+    const data = rows.map(r => r.aggregatedWinProbability * 100);
     const backgroundColor = rows.map((_, i) => i === 0 ? 'rgba(46, 125, 50, 0.8)' : 'rgba(33, 150, 243, 0.8)');
     d.labels.length = 0;
     d.labels.push(...labelList);
@@ -1844,9 +1915,10 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     const variantRows = this.pointVariantRows;
     if (variantRows.length > 0) {
-      const bestVariant = variantRows.reduce((a, b) => a.bestConversionRate >= b.bestConversionRate ? a : b);
-      this.bestCRByPoint = bestVariant.bestConversionRate;
-      this.upliftByPoint = this.controlCR > 0 ? (this.bestCRByPoint - this.controlCR) / this.controlCR : 0;
+      // Use aggregated CR (totalConversions/totalUsers) — consistent with table display
+      const bestVariant = variantRows.reduce((a, b) => a.aggregatedCR >= b.aggregatedCR ? a : b);
+      this.bestCRByPoint = bestVariant.aggregatedCR;
+      this.upliftByPoint = bestVariant.aggregatedUplift;
       this.usersForUpliftByPoint = bestVariant.totalUsers;
     } else {
       this.bestCRByPoint = 0;
