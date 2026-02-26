@@ -42,7 +42,8 @@ gcloud run deploy ${SERVICE_NAME} \
     --region ${REGION} \
     --project ${PROJECT_ID} \
     --allow-unauthenticated \
-    --timeout=600
+    --timeout=600 \
+    --min-instances=1
 
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}Deploy complete!${NC}"
