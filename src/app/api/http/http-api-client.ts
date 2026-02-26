@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, timer } from 'rxjs';
+import { map, switchMap, exhaustMap, filter, take, timeout } from 'rxjs/operators';
 import { ApiClient } from '../api-client';
 import {
   LoginRequest,
@@ -46,11 +46,17 @@ import {
   SimulationsListResponse,
   SimulationDetailResponse
 } from '../../api-contracts/results.contracts';
+import { JobStatusResponse, JobStartedResponse } from '../../api-contracts/jobs.contracts';
+
+// Poll every 5 seconds. Short enough for responsive UX, long enough to not spam the server.
+const JOB_POLL_INTERVAL_MS = 5_000;
+// Total wait budget: 12 minutes. Exceeds the longest pipeline (~2 min) with ample margin.
+const JOB_POLL_TIMEOUT_MS = 12 * 60 * 1_000;
 
 /**
  * Real HTTP API client implementation.
  * HTTP implementation of the ApiClient interface.
- * 
+ *
  * Usage in main.ts:
  * {
  *   provide: API_CLIENT,
@@ -61,6 +67,33 @@ import {
 export class HttpApiClient implements ApiClient {
   private http = inject(HttpClient);
   private baseUrl = '/api';
+
+  /**
+   * Polls GET /api/jobs/:jobId every JOB_POLL_INTERVAL_MS until status !== 'running',
+   * then resolves with the typed result or throws on failure.
+   *
+   * This is the core mechanism that replaces long-lived HTTP connections for VPN users:
+   * each poll is a short request (< 1s), so VPN idle-TCP-timeout never triggers.
+   */
+  private pollJob<T>(jobId: string): Observable<T> {
+    // timer(0, interval): emits immediately at t=0, then every interval ms.
+    // exhaustMap: ignores new ticks while a poll request is still in-flight
+    //   (prevents a slow server response from triggering a second concurrent request).
+    // timeout: must be BEFORE filter+take so it guards the full waiting period,
+    //   not just the final emission (after take(1) the stream is already complete).
+    return timer(0, JOB_POLL_INTERVAL_MS).pipe(
+      exhaustMap(() => this.http.get<JobStatusResponse>(`${this.baseUrl}/jobs/${jobId}`)),
+      timeout(JOB_POLL_TIMEOUT_MS),
+      filter(job => job.status !== 'running'),
+      take(1),
+      map(job => {
+        if (job.status === 'failed') {
+          throw new Error(job.error ?? 'Job failed');
+        }
+        return job.result as T;
+      })
+    );
+  }
 
   // Auth
   authLogin(req: LoginRequest): Observable<LoginResponse> {
@@ -115,7 +148,12 @@ export class HttpApiClient implements ApiClient {
 
   // Briefing Assistant
   briefingAssistantGenerate(projectId: string, req: BriefingAssistantGenerateRequest): Observable<BriefingAssistantGenerateResponse> {
-    return this.http.post<BriefingAssistantGenerateResponse>(`${this.baseUrl}/projects/${projectId}/briefing-assistant/generate`, req);
+    return this.http.post<JobStartedResponse>(
+      `${this.baseUrl}/projects/${projectId}/briefing-assistant/generate`,
+      req
+    ).pipe(
+      switchMap(({ jobId }) => this.pollJob<BriefingAssistantGenerateResponse>(jobId))
+    );
   }
 
   briefingAssistantApproveProofPoints(projectId: string, req: BriefingAssistantApproveProofPointsRequest): Observable<BriefingAssistantApproveProofPointsResponse> {
@@ -140,7 +178,12 @@ export class HttpApiClient implements ApiClient {
   }
 
   pointsBriefDraft(projectId: string, pointId: string, req: PointBriefDraftRequest): Observable<PointBriefDraftResponse> {
-    return this.http.post<PointBriefDraftResponse>(`${this.baseUrl}/projects/${projectId}/points/${pointId}/ai/brief-draft`, req);
+    return this.http.post<JobStartedResponse>(
+      `${this.baseUrl}/projects/${projectId}/points/${pointId}/ai/brief-draft`,
+      req
+    ).pipe(
+      switchMap(({ jobId }) => this.pollJob<PointBriefDraftResponse>(jobId))
+    );
   }
 
   // Variants
@@ -153,7 +196,12 @@ export class HttpApiClient implements ApiClient {
   }
 
   variantsGenerate(projectId: string, pointId: string, req: GenerateVariantsRequest): Observable<VariantDto[]> {
-    return this.http.post<VariantDto[]>(`${this.baseUrl}/projects/${projectId}/points/${pointId}/variants/generate`, req);
+    return this.http.post<JobStartedResponse>(
+      `${this.baseUrl}/projects/${projectId}/points/${pointId}/variants/generate`,
+      req
+    ).pipe(
+      switchMap(({ jobId }) => this.pollJob<VariantDto[]>(jobId))
+    );
   }
 
   variantsUpdate(projectId: string, variantId: string, req: UpdateVariantRequest): Observable<VariantDto> {
@@ -240,4 +288,3 @@ export class HttpApiClient implements ApiClient {
     );
   }
 }
-
