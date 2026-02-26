@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, interval } from 'rxjs';
-import { map, switchMap, filter, take, timeout } from 'rxjs/operators';
+import { Observable, timer } from 'rxjs';
+import { map, switchMap, exhaustMap, filter, take, timeout } from 'rxjs/operators';
 import { ApiClient } from '../api-client';
 import {
   LoginRequest,
@@ -76,11 +76,16 @@ export class HttpApiClient implements ApiClient {
    * each poll is a short request (< 1s), so VPN idle-TCP-timeout never triggers.
    */
   private pollJob<T>(jobId: string): Observable<T> {
-    return interval(JOB_POLL_INTERVAL_MS).pipe(
-      switchMap(() => this.http.get<JobStatusResponse>(`${this.baseUrl}/jobs/${jobId}`)),
+    // timer(0, interval): emits immediately at t=0, then every interval ms.
+    // exhaustMap: ignores new ticks while a poll request is still in-flight
+    //   (prevents a slow server response from triggering a second concurrent request).
+    // timeout: must be BEFORE filter+take so it guards the full waiting period,
+    //   not just the final emission (after take(1) the stream is already complete).
+    return timer(0, JOB_POLL_INTERVAL_MS).pipe(
+      exhaustMap(() => this.http.get<JobStatusResponse>(`${this.baseUrl}/jobs/${jobId}`)),
+      timeout(JOB_POLL_TIMEOUT_MS),
       filter(job => job.status !== 'running'),
       take(1),
-      timeout(JOB_POLL_TIMEOUT_MS),
       map(job => {
         if (job.status === 'failed') {
           throw new Error(job.error ?? 'Job failed');
