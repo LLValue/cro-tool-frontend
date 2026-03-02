@@ -297,19 +297,19 @@
       <ng-container matColumnDef="conversionRate">
         <th mat-header-cell *matHeaderCellDef>Conversion rate</th>
         <td mat-cell *matCellDef="let row" class="metric-cell">
-          <span class="metric-value">{{ formatConversionRate(row.bestConversionRate, row.totalUsers) }}</span>
+          <span class="metric-value">{{ formatConversionRate(row.aggregatedCR, row.totalUsers) }}</span>
         </td>
       </ng-container>
       <ng-container matColumnDef="uplift">
         <th mat-header-cell *matHeaderCellDef>Uplift vs control</th>
         <td mat-cell *matCellDef="let row" class="metric-cell">
-          <span class="metric-value">{{ formatUplift(row.bestUplift, row.totalUsers) }}</span>
+          <span class="metric-value">{{ formatUplift(row.aggregatedUplift, row.totalUsers) }}</span>
         </td>
       </ng-container>
       <ng-container matColumnDef="winProbability">
         <th mat-header-cell *matHeaderCellDef>Win probability</th>
         <td mat-cell *matCellDef="let row" class="metric-cell metric-cell-right">
-          <span class="metric-value">{{ formatWinProbability(row.bestWinProbability, row.totalUsers) }}</span>
+          <span class="metric-value">{{ formatWinProbability(row.aggregatedWinProbability, row.totalUsers) }}</span>
         </td>
       </ng-container>
       <ng-container matColumnDef="preview">
