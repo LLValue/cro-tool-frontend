@@ -183,11 +183,6 @@ export interface PointVariantRow {
   variantId: string;
   variantName: string;
   variantText: string;
-  combosCount: number;
-  bestConversionRate: number;
-  avgConversionRate: number;
-  bestWinProbability: number;
-  bestUplift: number;
   totalUsers: number;
   totalConversions: number;
   isControl: boolean;
@@ -441,30 +436,38 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Build base rows with aggregated users/conversions
     const baseRows = Array.from(byVariant.values()).map(({ variantId, variantName, variantText, combos }) => {
-      const bestCR = combos.length ? Math.max(...combos.map(c => c.metrics.conversionRate)) : 0;
-      const bestWP = combos.length ? Math.max(...combos.map(c => c.metrics.winProbability)) : 0;
-      const bestUplift = combos.length ? Math.max(...combos.map(c => c.metrics.uplift)) : 0;
       const totalUsers = combos.reduce((s, c) => s + c.metrics.users, 0);
       const totalConversions = combos.reduce((s, c) => s + c.metrics.conversions, 0);
-      const avgCR = totalUsers > 0 ? totalConversions / totalUsers : 0;
       const isControl = controlId != null && combos.some(c => c.comboId === controlId);
-      return { variantId, variantName, variantText, combosCount: combos.length, bestConversionRate: bestCR, avgConversionRate: avgCR, bestWinProbability: bestWP, bestUplift, totalUsers, totalConversions, isControl };
+      return { variantId, variantName, variantText, totalUsers, totalConversions, isControl };
     });
 
     // Compute control's aggregated CR for uplift calculation
     const controlRow = baseRows.find(r => r.isControl);
-    const controlAggCR = controlRow ? controlRow.avgConversionRate : 0;
+    const controlAggCR = controlRow
+      ? (controlRow.totalUsers > 0 ? controlRow.totalConversions / controlRow.totalUsers : 0)
+      : 0;
 
     // Compute win probabilities from aggregated Beta distributions
     const wpInputs = baseRows.map(r => ({ users: r.totalUsers, conversions: r.totalConversions }));
     const winProbs = computeWinProbabilitiesFE(wpInputs);
 
-    return baseRows.map((r, i) => ({
-      ...r,
-      aggregatedCR: r.avgConversionRate,
-      aggregatedUplift: controlAggCR > 0 ? (r.avgConversionRate - controlAggCR) / controlAggCR : 0,
-      aggregatedWinProbability: winProbs[i] ?? 0,
-    })).sort((a, b) => b.aggregatedCR - a.aggregatedCR);
+    return baseRows
+      .map((r, i) => {
+        const aggregatedCR = r.totalUsers > 0 ? r.totalConversions / r.totalUsers : 0;
+        return {
+          variantId: r.variantId,
+          variantName: r.variantName,
+          variantText: r.variantText,
+          totalUsers: r.totalUsers,
+          totalConversions: r.totalConversions,
+          isControl: r.isControl,
+          aggregatedCR,
+          aggregatedUplift: controlAggCR > 0 ? (aggregatedCR - controlAggCR) / controlAggCR : 0,
+          aggregatedWinProbability: winProbs[i] ?? 0,
+        };
+      })
+      .sort((a, b) => b.aggregatedCR - a.aggregatedCR);
   }
 
   // Track expanded rows
@@ -1899,6 +1902,10 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private updateKPIs(): void {
+    // NOTE: this.controlCR is the combination-level CR from the server (used by the
+    // "by combination" view and the time-series charts). The "by point" view uses
+    // aggregatedUplift from buildPointVariantRows(), which is computed from the
+    // aggregated totalConversions/totalUsers of the control — intentionally different sources.
     if (this.controlMetrics) {
       this.controlCR = this.controlMetrics.conversionRate;
     }
