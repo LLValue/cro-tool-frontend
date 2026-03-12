@@ -63,6 +63,7 @@ export interface SimulateMonthResponse {
   combinations: CombinationRow[];
   frames: SimulationFrame[]; // 30 frames, one per day
   controlMetrics: CombinationMetrics;
+  controlComboId: string;
 }
 
 export interface ResetResponse {
@@ -99,5 +100,6 @@ export interface SimulationDetailResponse {
   combinations: CombinationRow[];
   frames: SimulationFrame[];
   controlMetrics: CombinationMetrics;
+  controlComboId: string | null; // null for records saved before this field was added
   createdAt: string; // ISO date
 }

@@ -735,7 +735,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.combinationRows = [...detail.combinations].sort((a, b) => b.metrics.conversionRate - a.metrics.conversionRate);
     this.simulationFrames = detail.frames;
     this.controlMetrics = detail.controlMetrics;
-    this.controlComboId = detail.combinations.find(c => c.metrics.uplift === 0)?.comboId ?? null;
+    this.controlComboId = detail.controlComboId ?? null;
     this.currentSimulationId = detail.id?.trim() ? detail.id : null;
     this.selectedPointIdFilter = 'all';
     const primary = this.goals.find(g => g.isPrimary) || this.goals[0];
@@ -1979,7 +1979,7 @@ export class ResultsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   formatWinProbability(wp: number, users: number): string {
-    if (users < 50) return '—';
+    if (users === 0) return '—';
     return `${(wp * 100).toFixed(0)}%`;
   }
 
