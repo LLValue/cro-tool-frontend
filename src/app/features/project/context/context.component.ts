@@ -90,6 +90,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     { value: 'es-PE', label: 'Spanish (Peru) - es-PE' },
     { value: 'es-UY', label: 'Spanish (Uruguay) - es-UY' },
     { value: 'fr-FR', label: 'French (France) - fr-FR' },
+    { value: 'hu-HU', label: 'Hungarian (Hungary) - hu-HU' },
     { value: 'it-IT', label: 'Italian (Italy) - it-IT' },
     { value: 'nl-NL', label: 'Dutch (Netherlands) - nl-NL' },
     { value: 'no-NO', label: 'Norwegian (Norway) - no-NO' },
