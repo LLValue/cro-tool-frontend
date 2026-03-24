@@ -96,6 +96,7 @@ export class ContextComponent implements OnInit, OnDestroy {
     { value: 'no-NO', label: 'Norwegian (Norway) - no-NO' },
     { value: 'pt-BR', label: 'Portuguese (Brazil) - pt-BR' },
     { value: 'pt-PT', label: 'Portuguese (Portugal) - pt-PT' },
+    { value: 'sl-SI', label: 'Slovenian (Slovenia) - sl-SI' },
     { value: 'sv-SE', label: 'Swedish (Sweden) - sv-SE' }
   ];
 
